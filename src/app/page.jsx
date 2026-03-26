@@ -19,7 +19,8 @@ export default function LoginPage() {
       await login(username, password);
       router.push('/dashboard');
     } catch (err) {
-      setError('Credenciales incorrectas. Verifica tu usuario.');
+      // AQUÍ ESTÁ LA MAGIA: Ahora usamos el mensaje exacto que tiró auth.jsx
+      setError(err.message || 'Ocurrió un error inesperado al intentar ingresar.');
     } finally {
       setLoading(false);
     }
