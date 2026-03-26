@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useMemo } from 'react';
 import { getProductos, getCategorias, getFullImageUrl } from '@/services/api';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 // Componentes Reutilizables
 import SearchBar from '@/components/ui/SearchBar';
@@ -15,6 +16,7 @@ export default function InventarioPage() {
     const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('Todas');
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
     const [mostrarMenuColumnas, setMostrarMenuColumnas] = useState(false);
+    const handleError = useErrorHandler();
 
     // Columnas visibles por defecto
     const [columnasVisibles, setColumnasVisibles] = useState([
@@ -40,7 +42,7 @@ export default function InventarioPage() {
                 setProductos(p);
                 setCategorias(c || []);
             } catch (err) {
-                console.error("Error en inventario:", err);
+                handleError(err);
             } finally {
                 setLoading(false);
             }

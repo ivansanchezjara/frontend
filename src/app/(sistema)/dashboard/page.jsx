@@ -44,7 +44,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-4">
                     <div className="flex flex-col items-end hidden sm:flex">
                         <span className="text-xs font-black text-slate-900">{nombreUsuario}</span>
-                        <span className="text-[9px] font-bold text-blue-500 uppercase">Acceso Autorizado</span>
+                        <span className="text-[9px] font-bold text-blue-500 uppercase">Usuario</span>
                     </div>
                     <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center font-bold text-slate-600 border border-slate-200 shadow-sm">
                         {iniciales}
