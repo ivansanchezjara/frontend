@@ -1,6 +1,6 @@
 import Cookies from 'js-cookie';
-
-const API_URL = "http://127.0.0.1:8000/api";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = `${BASE_URL}/api`;
 
 export async function getProductos() {
     const token = Cookies.get('token');
@@ -30,3 +30,26 @@ export async function getProductos() {
 
     return res.json();
 }
+
+export const getCategorias = async () => {
+    const token = Cookies.get('token');
+    const res = await fetch(`http://127.0.0.1:8000/api/categorias/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!res.ok) {
+        // Leemos la respuesta de Django para saber el motivo exacto
+        const errorText = await res.text();
+        console.error("💥 RECHAZO DE DJANGO:", res.status, errorText);
+        // Si no queremos que rompa toda la página, devolvemos un array vacío por ahora
+        return [];
+    }
+
+    return await res.json();
+};
+
+export const getFullImageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    return `${BASE_URL}${path}`;
+};

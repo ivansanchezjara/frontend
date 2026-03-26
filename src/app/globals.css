@@ -1,12 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
   --background: #f8fafc;
-  /* Slate-50: Un gris muy clarito profesional */
   --foreground: #0f172a;
-  /* Slate-900: Azul casi negro para textos */
 }
 
 body {
@@ -16,5 +12,3 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
-/* Quitamos el dark mode automático para que el ERP sea consistente */

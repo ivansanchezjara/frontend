@@ -25,7 +25,6 @@ export const login = async (username, password) => {
 export const logout = () => {
     Cookies.remove('token');
     Cookies.remove('refresh');
-    window.location.href = '/login';
 };
 
 export const getToken = () => Cookies.get('token');
