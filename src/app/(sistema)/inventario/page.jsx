@@ -10,6 +10,8 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 import ProductTable, { COLUMNAS_INVENTARIO, COLUMNAS_VISIBLES_POR_DEFECTO } from '@/components/inventario/ProductTable';
 import ProductDetailPanel from '@/components/inventario/ProductDetailPanel';
 import CategoryFilter from '@/components/ui/CategoryFilter';
+import EmptyState from '@/components/ui/EmptyState';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function InventarioPage() {
     // --- ESTADOS ---
@@ -17,6 +19,7 @@ export default function InventarioPage() {
     const [categorias, setCategorias] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
+    const busquedaRetrasada = useDebounce(busqueda, 400);
     const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('Todas');
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
     const [mostrarMenuColumnas, setMostrarMenuColumnas] = useState(false);
@@ -42,7 +45,7 @@ export default function InventarioPage() {
     // --- FILTRADO INTELIGENTE ---
     const productosFiltrados = useMemo(() => {
         const normalizar = (t) => t?.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() || "";
-        const bNormalizada = normalizar(busqueda);
+        const bNormalizada = normalizar(busquedaRetrasada);
         const palabras = bNormalizada.split(' ').filter(p => p !== '');
 
         return productos.filter(prod => {
@@ -102,19 +105,12 @@ export default function InventarioPage() {
 
                     {/* 2. 🚀 ESTADO VACÍO (Empty State) O TABLA */}
                     {productosFiltrados.length === 0 ? (
-                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-16 text-center flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
-                            <span className="text-6xl mb-4">🔍</span>
-                            <h3 className="text-xl font-black text-slate-900 mb-2">No se encontraron productos</h3>
-                            <p className="text-slate-500 font-medium text-sm max-w-sm mx-auto">
-                                Intenta buscar con otros términos o cambia la categoría seleccionada.
-                            </p>
-                            <button
-                                onClick={() => { setBusqueda(''); setCategoriaSeleccionada('Todas'); }}
-                                className="mt-6 px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 hover:text-slate-900 transition-colors text-xs uppercase tracking-widest"
-                            >
-                                Limpiar Filtros
-                            </button>
-                        </div>
+                        <EmptyState
+                            titulo="No se encontraron productos"
+                            descripcion="Intenta buscar con otros términos o cambia la categoría."
+                            textoBoton="Limpiar Filtros"
+                            onAction={() => { setBusqueda(''); setCategoriaSeleccionada('Todas'); }}
+                        />
                     ) : (
                         <ProductTable
                             productos={productosFiltrados}

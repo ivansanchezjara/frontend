@@ -1,9 +1,22 @@
 // src/components/inventario/ProductDetailPanel.jsx
+import { useEffect } from 'react';
 import { getFullImageUrl } from '@/services/api';
 
 export default function ProductDetailPanel({ producto, onClose }) {
+
+    // 1. LOS HOOKS SIEMPRE VAN ARRIBA DE TODO (Regla de React)
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
+    // 2. EL RETURN CONDICIONAL VA DESPUÉS DE LOS HOOKS
     if (!producto) return null;
 
+    // 3. RENDERIZADO NORMAL
     return (
         <>
             {/* Fondo oscuro (Overlay) */}
