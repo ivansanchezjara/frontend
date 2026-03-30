@@ -81,26 +81,28 @@ export default function InventarioPage() {
             <main className="flex-1 overflow-y-auto p-8">
                 <div className="max-w-7xl mx-auto space-y-6">
                     {/* BARRA DE HERRAMIENTAS */}
-                    <div className="flex flex-col md:flex-row gap-4 items-end">
-                        <SearchBar value={busqueda} onChange={setBusqueda} placeholder="Buscar por código, nombre o marca..." />
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col gap-5 relative z-20">
+                        <div className="flex flex-col md:flex-row gap-4 items-end">
+                            <SearchBar value={busqueda} onChange={setBusqueda} placeholder="Buscar por código, nombre o marca..." />
 
-                        <CategoryFilter
-                            categorias={categorias}
-                            value={categoriaSeleccionada}
-                            onChange={setCategoriaSeleccionada}
-                        />
+                            <CategoryFilter
+                                categorias={categorias}
+                                value={categoriaSeleccionada}
+                                onChange={setCategoriaSeleccionada}
+                            />
 
-                        <ColumnSelector
-                            opciones={COLUMNAS_INVENTARIO}
-                            visibles={columnasVisibles}
-                            onToggle={toggleColumna}
-                            isOpen={mostrarMenuColumnas}
-                            setIsOpen={setMostrarMenuColumnas}
-                        />
-                    </div>
-
-                    <div className="px-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                        {productosFiltrados.length} Resultados encontrados
+                            <ColumnSelector
+                                opciones={COLUMNAS_INVENTARIO}
+                                visibles={columnasVisibles}
+                                onToggle={toggleColumna}
+                                isOpen={mostrarMenuColumnas}
+                                setIsOpen={setMostrarMenuColumnas}
+                            />
+                        </div>
+                        <div className="flex items-center gap-2 px-1 text-[11px] font-bold text-slate-400">
+                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                            {productosFiltrados.length} Resultados encontrados
+                        </div>
                     </div>
 
                     {/* 2. 🚀 ESTADO VACÍO (Empty State) O TABLA */}
