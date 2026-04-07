@@ -101,7 +101,7 @@ export default function SistemaLayout({ children }) {
 
             {/* 🚀 CONTENIDO PRINCIPAL (CORREGIDO) */}
             <main
-                className={`flex-1 flex flex-col min-h-screen text-slate-900 transition-all duration-300 ease-in-out 
+                className={`flex-1 flex flex-col min-h-screen text-slate-900 transition-all duration-300 ease-in-out min-w-0
                 /* El margen solo existe en escritorio (md:) */
                 ${isExpanded ? 'md:ml-64' : 'md:ml-20'} 
                 /* En móvil el margen es 0 */

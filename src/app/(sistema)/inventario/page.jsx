@@ -1,6 +1,7 @@
+// src/app/inventario/page.jsx (o la ruta donde lo tengas)
 "use client";
 import { useEffect, useState, useMemo } from 'react';
-import { getProductos, getCategorias } from '@/services/api';
+import { getProductos } from '@/services/api'; // Solo pedimos productos
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 // --- COMPONENTES IMPORTADOS ---
@@ -9,30 +10,34 @@ import ColumnSelector from '@/components/ui/ColumnSelector';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import ProductTable, { COLUMNAS_INVENTARIO, COLUMNAS_VISIBLES_POR_DEFECTO } from '@/components/inventario/ProductTable';
 import ProductDetailPanel from '@/components/inventario/ProductDetailPanel';
-import CategoryFilter from '@/components/ui/CategoryFilter';
 import EmptyState from '@/components/ui/EmptyState';
 import { useDebounce } from '@/hooks/useDebounce';
+
+// Función ultra rápida afuera del componente
+const normalizar = (t) => t?.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() || "";
 
 export default function InventarioPage() {
     // --- ESTADOS ---
     const [productos, setProductos] = useState([]);
-    const [categorias, setCategorias] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // Búsqueda fluida
     const [busqueda, setBusqueda] = useState('');
     const busquedaRetrasada = useDebounce(busqueda, 400);
-    const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('Todas');
+
+    // Interfaz
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
     const [mostrarMenuColumnas, setMostrarMenuColumnas] = useState(false);
-    const handleError = useErrorHandler();
     const [columnasVisibles, setColumnasVisibles] = useState(COLUMNAS_VISIBLES_POR_DEFECTO);
+    const handleError = useErrorHandler();
 
-    // --- CARGA DE DATOS ---
+    // --- CARGA DE DATOS (Optimizada) ---
     useEffect(() => {
         async function fetchData() {
             try {
-                const [p, c] = await Promise.all([getProductos(), getCategorias()]);
-                setProductos(p);
-                setCategorias(c || []);
+                // Ya no pedimos categorías, carga mucho más rápido
+                const p = await getProductos();
+                setProductos(p || []);
             } catch (err) {
                 handleError(err);
             } finally {
@@ -42,21 +47,18 @@ export default function InventarioPage() {
         fetchData();
     }, [handleError]);
 
-    // --- FILTRADO INTELIGENTE ---
+    // --- FILTRADO INTELIGENTE (Ahora sí funciona el Debounce) ---
     const productosFiltrados = useMemo(() => {
-        const normalizar = (t) => t?.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() || "";
         const bNormalizada = normalizar(busquedaRetrasada);
         const palabras = bNormalizada.split(' ').filter(p => p !== '');
 
-        return productos.filter(prod => {
-            const coincideCat = categoriaSeleccionada === 'Todas' || prod.categoria?.nombre === categoriaSeleccionada;
-            if (!coincideCat) return false;
-            if (palabras.length === 0) return true;
+        if (palabras.length === 0) return productos;
 
+        return productos.filter(prod => {
             const contenido = normalizar(`${prod.nombre_general} ${prod.general_code} ${prod.brand} ${prod.categoria?.nombre || ''}`);
             return palabras.every(p => contenido.includes(p));
         });
-    }, [productos, busqueda, categoriaSeleccionada]);
+    }, [productos, busquedaRetrasada]); // 🚀 ¡Dependencia corregida!
 
     const toggleColumna = (id) => {
         setColumnasVisibles(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
@@ -78,40 +80,48 @@ export default function InventarioPage() {
                 </button>
             </header>
 
-            <main className="flex-1 overflow-y-auto p-8">
-                <div className="max-w-7xl mx-auto space-y-6">
+            <main className="flex-1 overflow-y-auto p-8 min-w-0">
+                <div className="max-w-7xl mx-auto space-y-4">
                     {/* BARRA DE HERRAMIENTAS */}
-                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col gap-5 relative z-20">
-                        <div className="flex flex-col md:flex-row gap-4 items-end">
-                            <SearchBar value={busqueda} onChange={setBusqueda} placeholder="Buscar por código, nombre o marca..." />
+                    <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-2 relative z-20">
+                        <div className="flex flex-row items-center gap-3 w-full">
 
-                            <CategoryFilter
-                                categorias={categorias}
-                                value={categoriaSeleccionada}
-                                onChange={setCategoriaSeleccionada}
-                            />
+                            {/* Buscador */}
+                            <div className="flex-1">
+                                <SearchBar
+                                    value={busqueda}
+                                    onChange={setBusqueda}
+                                    placeholder="Buscar por código, nombre o categoría..."
+                                />
+                            </div>
 
-                            <ColumnSelector
-                                opciones={COLUMNAS_INVENTARIO}
-                                visibles={columnasVisibles}
-                                onToggle={toggleColumna}
-                                isOpen={mostrarMenuColumnas}
-                                setIsOpen={setMostrarMenuColumnas}
-                            />
+
+                            <div className="shrink-0">
+                                <ColumnSelector
+                                    opciones={COLUMNAS_INVENTARIO}
+                                    visibles={columnasVisibles}
+                                    onToggle={toggleColumna}
+                                    isOpen={mostrarMenuColumnas}
+                                    setIsOpen={setMostrarMenuColumnas}
+                                />
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2 px-1 text-[11px] font-bold text-slate-400">
-                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                            {productosFiltrados.length} Resultados encontrados
+
+
+                        <div className="flex items-center gap-2 px-2 text-[11px] font-bold text-slate-400 whitespace-nowrap">
+                            <div className={`w-1.5 h-1.5 rounded-full ${productosFiltrados.length > 0 ? 'bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.6)]' : 'bg-slate-300'}`}></div>
+                            {productosFiltrados.length} Resultados
                         </div>
+
                     </div>
 
-                    {/* 2. 🚀 ESTADO VACÍO (Empty State) O TABLA */}
+                    {/* ESTADO VACÍO O TABLA */}
                     {productosFiltrados.length === 0 ? (
                         <EmptyState
                             titulo="No se encontraron productos"
-                            descripcion="Intenta buscar con otros términos o cambia la categoría."
-                            textoBoton="Limpiar Filtros"
-                            onAction={() => { setBusqueda(''); setCategoriaSeleccionada('Todas'); }}
+                            descripcion="Intenta buscar con otros términos."
+                            textoBoton="Limpiar Búsqueda"
+                            onAction={() => setBusqueda('')}
                         />
                     ) : (
                         <ProductTable
