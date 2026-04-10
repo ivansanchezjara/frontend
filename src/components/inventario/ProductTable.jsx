@@ -1,4 +1,3 @@
-// src/components/inventario/ProductTable.jsx
 import { getFullImageUrl } from '@/services/api';
 import ResizableHeader from '../ui/ResizableHeader';
 

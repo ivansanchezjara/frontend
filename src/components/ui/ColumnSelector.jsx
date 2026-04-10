@@ -1,4 +1,3 @@
-// src/components/ui/ColumnSelector.jsx
 export default function ColumnSelector({ opciones, visibles, onToggle, isOpen, setIsOpen }) {
     return (
         <div className="relative">

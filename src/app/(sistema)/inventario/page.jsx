@@ -1,143 +1,123 @@
-// src/app/inventario/page.jsx (o la ruta donde lo tengas)
 "use client";
-import { useEffect, useState, useMemo } from 'react';
-import { getProductos } from '@/services/api'; // Solo pedimos productos
-import { useErrorHandler } from '@/hooks/useErrorHandler';
-
-// --- COMPONENTES IMPORTADOS ---
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import ProductTable, { COLUMNAS_VISIBLES_POR_DEFECTO } from '@/components/inventario/ProductTable';
 import SearchBar from '@/components/ui/SearchBar';
-import ColumnSelector from '@/components/ui/ColumnSelector';
 import LoadingScreen from '@/components/ui/LoadingScreen';
-import ProductTable, { COLUMNAS_INVENTARIO, COLUMNAS_VISIBLES_POR_DEFECTO } from '@/components/inventario/ProductTable';
-import ProductDetailPanel from '@/components/inventario/ProductDetailPanel';
 import EmptyState from '@/components/ui/EmptyState';
-import { useDebounce } from '@/hooks/useDebounce';
-
-// Función ultra rápida afuera del componente
-const normalizar = (t) => t?.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() || "";
+// Si tenés el ColumnSelector, lo importás. Si no, lo podés omitir por ahora.
+// import ColumnSelector from '@/components/ui/ColumnSelector'; 
 
 export default function InventarioPage() {
-    // --- ESTADOS ---
     const [productos, setProductos] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    // Búsqueda fluida
-    const [busqueda, setBusqueda] = useState('');
-    const busquedaRetrasada = useDebounce(busqueda, 400);
-
-    // Interfaz
-    const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-    const [mostrarMenuColumnas, setMostrarMenuColumnas] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     const [columnasVisibles, setColumnasVisibles] = useState(COLUMNAS_VISIBLES_POR_DEFECTO);
-    const handleError = useErrorHandler();
 
-    // --- CARGA DE DATOS (Optimizada) ---
+    // Fetch de productos (ajustá la URL según tu API)
     useEffect(() => {
-        async function fetchData() {
+        const fetchInventario = async () => {
+            setLoading(true);
             try {
-                // Ya no pedimos categorías, carga mucho más rápido
-                const p = await getProductos();
-                setProductos(p || []);
-            } catch (err) {
-                handleError(err);
+                const token = localStorage.getItem('access_token');
+                // Asumiendo que tu endpoint soporta búsqueda: ?search=
+                const url = searchTerm
+                    ? `http://127.0.0.1:8000/api/productos/?search=${searchTerm}`
+                    : `http://127.0.0.1:8000/api/productos/`;
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Si tu API usa paginación, será data.results. Si no, es data directo.
+                    setProductos(data.results || data);
+                }
+            } catch (error) {
+                console.error("Error cargando inventario:", error);
             } finally {
                 setLoading(false);
             }
-        }
-        fetchData();
-    }, [handleError]);
+        };
 
-    // --- FILTRADO INTELIGENTE (Ahora sí funciona el Debounce) ---
-    const productosFiltrados = useMemo(() => {
-        const bNormalizada = normalizar(busquedaRetrasada);
-        const palabras = bNormalizada.split(' ').filter(p => p !== '');
+        // Pequeño debounce manual para no saturar la API al escribir rápido
+        const timeoutId = setTimeout(() => {
+            fetchInventario();
+        }, 500);
 
-        if (palabras.length === 0) return productos;
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm]);
 
-        return productos.filter(prod => {
-            const contenido = normalizar(`${prod.nombre_general} ${prod.general_code} ${prod.brand} ${prod.categoria?.nombre || ''}`);
-            return palabras.every(p => contenido.includes(p));
-        });
-    }, [productos, busquedaRetrasada]); // 🚀 ¡Dependencia corregida!
-
-    const toggleColumna = (id) => {
-        setColumnasVisibles(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
+    // Función que se ejecuta al hacer clic en una fila de la tabla
+    const handleSelectProducto = (producto) => {
+        // En el futuro, esto podría abrir un panel lateral (Slide-over) 
+        // para ver el historial de movimientos de ese producto específico.
+        console.log("Producto seleccionado para ver historial:", producto.nombre_general);
     };
 
-    // --- RENDER ---
-    if (loading) return <LoadingScreen texto="Cargando Inventario..." />;
-
     return (
-        <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
-            {/* HEADER */}
-            <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 shrink-0 z-10">
+        <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-6">
+
+            {/* 1. HEADER Y ACCIONES PRINCIPALES */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                 <div>
-                    <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Inventario</h2>
-                    <p className="text-[10px] font-bold text-blue-600 uppercase">Control de Existencias</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Control de Inventario</h1>
+                    <p className="text-slate-500 font-medium mt-1 text-sm md:text-base">
+                        Supervisá el stock, registrá ingresos y gestioná los precios de venta.
+                    </p>
                 </div>
-                <button className="bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-xs hover:bg-blue-600 transition-all shadow-lg active:scale-95 cursor-pointer">
-                    + NUEVO PRODUCTO
-                </button>
-            </header>
 
-            <main className="flex-1 overflow-y-auto p-8 min-w-0">
-                <div className="max-w-7xl mx-auto space-y-4">
-                    {/* BARRA DE HERRAMIENTAS */}
-                    <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-2 relative z-20">
-                        <div className="flex flex-row items-center gap-3 w-full">
-
-                            {/* Buscador */}
-                            <div className="flex-1">
-                                <SearchBar
-                                    value={busqueda}
-                                    onChange={setBusqueda}
-                                    placeholder="Buscar por código, nombre o categoría..."
-                                />
-                            </div>
-
-
-                            <div className="shrink-0">
-                                <ColumnSelector
-                                    opciones={COLUMNAS_INVENTARIO}
-                                    visibles={columnasVisibles}
-                                    onToggle={toggleColumna}
-                                    isOpen={mostrarMenuColumnas}
-                                    setIsOpen={setMostrarMenuColumnas}
-                                />
-                            </div>
-                        </div>
-
-
-                        <div className="flex items-center gap-2 px-2 text-[11px] font-bold text-slate-400 whitespace-nowrap">
-                            <div className={`w-1.5 h-1.5 rounded-full ${productosFiltrados.length > 0 ? 'bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.6)]' : 'bg-slate-300'}`}></div>
-                            {productosFiltrados.length} Resultados
-                        </div>
-
-                    </div>
-
-                    {/* ESTADO VACÍO O TABLA */}
-                    {productosFiltrados.length === 0 ? (
-                        <EmptyState
-                            titulo="No se encontraron productos"
-                            descripcion="Intenta buscar con otros términos."
-                            textoBoton="Limpiar Búsqueda"
-                            onAction={() => setBusqueda('')}
-                        />
-                    ) : (
-                        <ProductTable
-                            productos={productosFiltrados}
-                            columnasVisibles={columnasVisibles}
-                            onSelectProducto={setProductoSeleccionado}
-                        />
-                    )}
+                {/* Los botones de Movimientos */}
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <Link
+                        href="/inventario/ingresos/nuevo"
+                        className="flex-1 md:flex-none bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-bold py-2.5 px-4 rounded-xl transition-colors text-sm text-center flex items-center justify-center gap-2"
+                    >
+                        <span>📥</span> Registrar Ingreso
+                    </Link>
+                    <Link
+                        href="/inventario/ajustes/nuevo"
+                        className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-sm transition-colors text-sm text-center flex items-center justify-center gap-2"
+                    >
+                        <span>📈</span> Ajuste Comercial
+                    </Link>
                 </div>
-            </main>
+            </div>
 
-            {/* COMPONENTE PANEL LATERAL */}
-            <ProductDetailPanel
-                producto={productoSeleccionado}
-                onClose={() => setProductoSeleccionado(null)}
-            />
+            {/* 2. BARRA DE HERRAMIENTAS (Buscador) */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                <div className="w-full sm:max-w-md">
+                    <SearchBar
+                        value={searchTerm}
+                        onChange={setSearchTerm}
+                        placeholder="Buscar por código, producto o marca..."
+                    />
+                </div>
+                {/* Aquí podrías poner el ColumnSelector si querés que elijan qué ver */}
+            </div>
+
+            {/* 3. TABLA DE DATOS */}
+            {loading ? (
+                <LoadingScreen message="Cargando inventario..." />
+            ) : productos.length === 0 ? (
+                <EmptyState
+                    icon="📦"
+                    title="No se encontraron productos"
+                    message={searchTerm ? "Intentá con otro término de búsqueda." : "El inventario está vacío. Los productos deben crearse primero en el Catálogo."}
+                    actionLabel={searchTerm ? "Limpiar Búsqueda" : "Ir al Catálogo"}
+                    onAction={() => searchTerm ? setSearchTerm('') : window.location.href = '/catalogo'}
+                />
+            ) : (
+                <div className="animate-in fade-in duration-500">
+                    <ProductTable
+                        productos={productos}
+                        columnasVisibles={columnasVisibles}
+                        onSelectProducto={handleSelectProducto}
+                    />
+                </div>
+            )}
+
         </div>
     );
 }

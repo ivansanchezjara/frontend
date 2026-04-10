@@ -1,4 +1,3 @@
-// src/components/inventario/ProductDetailPanel.jsx
 import { useEffect } from 'react';
 import { getFullImageUrl } from '@/services/api';
 

@@ -1,4 +1,3 @@
-// src/components/ui/LoadingScreen.jsx
 export default function LoadingScreen({ texto = "Cargando Thalys ERP..." }) {
     return (
         <div className="flex-1 flex items-center justify-center bg-slate-50">

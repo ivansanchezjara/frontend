@@ -1,4 +1,3 @@
-// src/components/ui/SearchBar.jsx
 export default function SearchBar({ value, onChange, placeholder }) {
     return (
         <div className="relative group w-full">

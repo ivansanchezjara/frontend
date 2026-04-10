@@ -10,82 +10,91 @@ export default function DashboardPage() {
     useEffect(() => {
         const user = getUser();
         if (user) {
-            // 1. Armamos el nombre completo usando first_name y last_name si existen
-            let nombreCompleto = 'Usuario';
-
-            if (user.first_name && user.last_name) {
-                nombreCompleto = `${user.first_name} ${user.last_name}`;
-            } else if (user.first_name) {
-                nombreCompleto = user.first_name;
-            } else if (user.username) {
-                nombreCompleto = user.username;
-            }
+            let nombreCompleto = user.first_name && user.last_name
+                ? `${user.first_name} ${user.last_name}`
+                : user.first_name || user.username || 'Usuario';
 
             setNombreUsuario(nombreCompleto);
 
-            // 2. Generar iniciales (Ej: "Ivan Sanchez" -> "IS")
             const words = nombreCompleto.trim().split(' ');
-            let letters = words[0][0]; // Primera letra del nombre
-
+            let letters = words[0][0];
             if (words.length > 1) {
-                letters += words[words.length - 1][0]; // Primera letra del último apellido
+                letters += words[words.length - 1][0];
             } else if (nombreCompleto.length > 1) {
-                letters += nombreCompleto[1]; // Si solo tiene un nombre, toma la 2da letra
+                letters += nombreCompleto[1];
             }
-
             setIniciales(letters.toUpperCase());
         }
     }, []);
 
+    const modulosActivos = [
+        { href: '/catalogo', icon: '📖', title: 'Catálogo Master', desc: 'Gestión de productos, fotos y descripciones de Thalys.', color: 'emerald' },
+        { href: '/inventario', icon: '📦', title: 'Inventario y Precios', desc: 'Control de stock, ingresos de mercadería y costos.', color: 'blue' },
+    ];
+
+    const modulosFuturos = [
+        { icon: '🏢', title: 'Gestión de Depósito', desc: 'Ubicaciones físicas, picking y despachos.' },
+        { icon: '🤝', title: 'Ventas y CRM', desc: 'Seguimiento de clientes, cotizaciones y persecución comercial.' },
+        { icon: '💵', title: 'Caja y Ventas Diarias', desc: 'Apertura, cierre y facturación en mostrador.' },
+        { icon: '💳', title: 'Cobranzas', desc: 'Gestión de cuentas por cobrar y conciliación de clientes.' },
+        { icon: '📊', title: 'Finanzas y Gastos', desc: 'Flujo de caja, gastos fijos y rentabilidad macro.' },
+        { icon: '🔧', title: 'Asistencia Técnica', desc: 'Servicio post-venta y reparaciones de equipos.' },
+        { icon: '👥', title: 'Recursos Humanos', desc: 'Legajos, asistencia y gestión de equipo.' },
+    ];
+
     return (
-        <>
-            <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 sticky top-0 z-10">
-                <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Dashboard General</h2>
-                <div className="flex items-center gap-4">
-                    <div className="flex flex-col items-end hidden sm:flex">
-                        <span className="text-xs font-black text-slate-900">{nombreUsuario}</span>
-                        <span className="text-[9px] font-bold text-blue-500 uppercase">Usuario</span>
-                    </div>
-                    <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center font-bold text-slate-600 border border-slate-200 shadow-sm">
-                        {iniciales}
-                    </div>
-                </div>
-            </header>
+        <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-10">
+            {/* Header de Bienvenida */}
+            <div className="animate-in fade-in slide-in-from-left-4 duration-700">
+                <h3 className="text-3xl font-black text-slate-900 tracking-tight">
+                    Bienvenido, <span className="text-blue-600">{nombreUsuario}</span>
+                </h3>
+                <p className="text-slate-500 font-medium mt-1">Torre de control para gestión integral.</p>
+            </div>
 
-            <div className="p-10 max-w-6xl">
-                <div className="mb-10 animate-in fade-in duration-700">
-                    <h3 className="text-3xl font-black text-slate-900 tracking-tight">
-                        Bienvenido, <span className="text-blue-600">{nombreUsuario}</span>
-                    </h3>
-                    <p className="text-slate-500 font-medium">Gestioná los recursos de tu empresa desde un solo lugar.</p>
+            {/* Sección: Módulos Operativos */}
+            <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                    <span className="h-px flex-1 bg-slate-200"></span>
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Áreas Operativas</h4>
+                    <span className="h-px flex-1 bg-slate-200"></span>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Link href="/inventario" className="group">
-                        <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-500 transition-all duration-300 relative overflow-hidden h-full cursor-pointer">
-                            <div className="relative z-10">
-                                <span className="inline-block p-4 bg-blue-50 text-blue-600 rounded-2xl mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors text-2xl">
-                                    📦
+                {/* Ahora usan la misma grilla y tamaño que los módulos futuros */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {modulosActivos.map((mod) => (
+                        <Link key={mod.href} href={mod.href} className="group h-full">
+                            <div className={`bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-${mod.color}-500 transition-all duration-300 flex flex-col h-full`}>
+                                <span className={`inline-flex items-center justify-center w-12 h-12 bg-${mod.color}-50 text-${mod.color}-600 rounded-xl mb-4 group-hover:bg-${mod.color}-600 group-hover:text-white transition-colors text-2xl`}>
+                                    {mod.icon}
                                 </span>
-                                <h4 className="text-2xl font-black text-slate-900">Control de Inventario</h4>
-                                <p className="text-slate-500 mt-2 text-sm leading-relaxed max-w-[280px]">
-                                    Administrá stock, categorías y variantes de productos en tiempo real.
-                                </p>
+                                <h5 className="font-black text-slate-900 text-sm uppercase tracking-tight">{mod.title}</h5>
+                                <p className="text-slate-500 text-[11px] mt-1 font-medium">{mod.desc}</p>
                             </div>
-                        </div>
-                    </Link>
-
-                    <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm opacity-60 flex flex-col justify-center">
-                        <span className="inline-block p-4 bg-slate-100 text-slate-400 rounded-2xl mb-6 text-2xl w-fit">
-                            🔄
-                        </span>
-                        <h4 className="text-2xl font-black text-slate-400">Movimientos</h4>
-                        <p className="text-slate-400 mt-2 text-sm leading-relaxed">
-                            Próximamente: Salidas provisorias, consignaciones y devoluciones.
-                        </p>
-                    </div>
+                        </Link>
+                    ))}
                 </div>
             </div>
-        </>
+
+            {/* Sección: Roadmap Proyectado */}
+            <div className="space-y-6 opacity-80">
+                <div className="flex items-center gap-3">
+                    <span className="h-px flex-1 bg-slate-200"></span>
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Próximamente en ERP.CORE</h4>
+                    <span className="h-px flex-1 bg-slate-200"></span>
+                </div>
+
+                {/* Grilla idéntica a la de arriba */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {modulosFuturos.map((mod) => (
+                        <div key={mod.title} className="bg-slate-50/50 p-6 rounded-2xl border border-slate-200 border-dashed flex flex-col grayscale opacity-60 h-full">
+                            <span className="text-2xl mb-4">{mod.icon}</span>
+                            <h5 className="font-black text-slate-700 text-sm uppercase tracking-tight">{mod.title}</h5>
+                            <p className="text-slate-500 text-[11px] mt-1 font-medium">{mod.desc}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
     );
 }
