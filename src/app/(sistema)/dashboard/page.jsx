@@ -28,12 +28,12 @@ export default function DashboardPage() {
     }, []);
 
     const modulosActivos = [
-        { href: '/catalogo', icon: '📖', title: 'Catálogo Master', desc: 'Gestión de productos, fotos y descripciones de Thalys.', color: 'emerald' },
-        { href: '/inventario', icon: '📦', title: 'Inventario y Precios', desc: 'Control de stock, ingresos de mercadería y costos.', color: 'blue' },
+        { href: '/inventario/stock', icon: '📖', title: 'Catálogo Master', desc: 'Gestión de productos, fotos y descripciones de Thalys.', color: 'emerald' },
+        { href: '/inventario', icon: '📦', title: 'Stock y Disponibilidad', desc: 'Consulta rápida de existencias, vencimientos y ubicaciones.', color: 'blue' },
+        { href: '/inventario/movimientos', icon: '🏢', title: 'Gestión de Movimientos', desc: 'Carga de ingresos, consignaciones y ajustes comerciales.' },
     ];
 
     const modulosFuturos = [
-        { icon: '🏢', title: 'Gestión de Depósito', desc: 'Ubicaciones físicas, picking y despachos.' },
         { icon: '🤝', title: 'Ventas y CRM', desc: 'Seguimiento de clientes, cotizaciones y persecución comercial.' },
         { icon: '💵', title: 'Caja y Ventas Diarias', desc: 'Apertura, cierre y facturación en mostrador.' },
         { icon: '💳', title: 'Cobranzas', desc: 'Gestión de cuentas por cobrar y conciliación de clientes.' },
