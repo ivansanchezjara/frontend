@@ -5,11 +5,13 @@ import { getProductos, getCategorias } from '@/services/api';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useDebounce } from '@/hooks/useDebounce';
 import Link from 'next/link';
+import { Image as ImageIcon } from 'lucide-react';
 
 // UI Components
 import SearchBar from '@/components/ui/SearchBar';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import EmptyState from '@/components/ui/EmptyState';
+import Header from '@/components/ui/Header';
 
 // Catálogo Components
 import ProductoCard from '@/components/catalogo/ProductoCard';
@@ -96,18 +98,24 @@ export default function CatalogoPage() {
         <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
 
             {/* HEADER */}
-            <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 shrink-0 z-10">
-                <div>
-                    <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Catálogo</h2>
-                    <p className="text-[10px] font-bold text-emerald-600 uppercase">Master Data · {productos.length} productos</p>
-                </div>
+            <Header
+                title="Catálogo"
+                subtitle={`Master Data · ${productos.length} productos`}
+                subtitleClassName="text-emerald-600"
+            >
+                <Link
+                    href="/media-manager"
+                    className="flex items-center gap-1.5 bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-50 hover:text-emerald-600 transition-all shadow-sm active:scale-95 cursor-pointer"
+                >
+                    <ImageIcon size={14} /> MEDIA
+                </Link>
                 <Link
                     href="/catalogo/nuevo"
-                    className="bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-600 transition-all shadow-lg active:scale-95 cursor-pointer"
+                    className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-700 transition-all shadow-lg active:scale-95 cursor-pointer"
                 >
                     + NUEVO PRODUCTO
                 </Link>
-            </header>
+            </Header>
 
             <main className="flex-1 overflow-y-auto p-8 min-w-0">
                 <div className="max-w-7xl mx-auto space-y-4">
@@ -125,13 +133,13 @@ export default function CatalogoPage() {
                                 />
                             </div>
 
-                            {/* Toggle Grilla / Tabla */}
+                            {/* Toggle Grilla / Tabla con acento verde */}
                             <div className="flex items-center bg-slate-100 rounded-xl p-1 gap-1 shrink-0">
                                 <button
                                     id="btn-vista-grilla"
                                     onClick={() => setVista('grilla')}
                                     title="Vista grilla"
-                                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs transition-all ${vista === 'grilla' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                    className={`flex items-center outline-none focus:outline-none gap-1.5 px-3 py-2 rounded-lg font-bold text-xs transition-all ${vista === 'grilla' ? 'bg-emerald-50 text-emerald-700 shadow-sm' : 'text-slate-400 hover:text-emerald-600'}`}
                                 >
                                     <IconGrid />
                                     <span className="hidden sm:inline">Grilla</span>
@@ -140,7 +148,7 @@ export default function CatalogoPage() {
                                     id="btn-vista-tabla"
                                     onClick={() => setVista('tabla')}
                                     title="Vista tabla"
-                                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-xs transition-all ${vista === 'tabla' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                    className={`flex items-center outline-none focus:outline-none gap-1.5 px-3 py-2 rounded-lg font-bold text-xs transition-all ${vista === 'tabla' ? 'bg-emerald-50 text-emerald-700 shadow-sm' : 'text-slate-400 hover:text-emerald-600'}`}
                                 >
                                     <IconList />
                                     <span className="hidden sm:inline">Tabla</span>
@@ -169,7 +177,7 @@ export default function CatalogoPage() {
                     ) : vista === 'grilla' ? (
 
                         /* VISTA GRILLA */
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 animate-in fade-in duration-300">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
                             {productosFiltrados.map(p => (
                                 <ProductoCard key={p.id} producto={p} />
                             ))}
@@ -178,7 +186,7 @@ export default function CatalogoPage() {
                     ) : (
 
                         /* VISTA TABLA */
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in duration-300">
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="bg-slate-50 text-slate-500">
@@ -186,7 +194,6 @@ export default function CatalogoPage() {
                                         <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Marca</th>
                                         <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Categoría</th>
                                         <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Variantes</th>
-                                        <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Stock Total</th>
                                         <th className="py-3 pr-6 pl-4"></th>
                                     </tr>
                                 </thead>

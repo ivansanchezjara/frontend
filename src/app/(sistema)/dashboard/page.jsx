@@ -2,10 +2,49 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getUser } from '@/services/auth';
+import { modulosActivos, modulosFuturos } from '@/config/navigation';
+
+// 1. DICCIONARIO DE FAMILIAS (Colores, etiquetas y divisorias)
+const colorStyles = {
+    emerald: {
+        label: 'Comercial y Ventas',
+        borderHover: 'hover:border-emerald-500',
+        bg: 'bg-emerald-50',
+        text: 'text-emerald-600',
+        groupHoverBg: 'group-hover:bg-emerald-600',
+        line: 'bg-emerald-200'
+    },
+    blue: {
+        label: 'Operaciones y Logística',
+        borderHover: 'hover:border-blue-500',
+        bg: 'bg-blue-50',
+        text: 'text-blue-600',
+        groupHoverBg: 'group-hover:bg-blue-600',
+        line: 'bg-blue-200'
+    },
+    purple: {
+        label: 'Finanzas y Control',
+        borderHover: 'hover:border-purple-500',
+        bg: 'bg-purple-50',
+        text: 'text-purple-600',
+        groupHoverBg: 'group-hover:bg-purple-600',
+        line: 'bg-purple-200'
+    },
+    amber: {
+        label: 'Equipo y Administración',
+        borderHover: 'hover:border-amber-500',
+        bg: 'bg-amber-50',
+        text: 'text-amber-600',
+        groupHoverBg: 'group-hover:bg-amber-600',
+        line: 'bg-amber-200'
+    }
+};
+
+// Array para forzar el orden en el que queremos que aparezcan las familias
+const ordenFamilias = ['emerald', 'blue', 'purple', 'amber'];
 
 export default function DashboardPage() {
     const [nombreUsuario, setNombreUsuario] = useState('Usuario');
-    const [iniciales, setIniciales] = useState('??');
 
     useEffect(() => {
         const user = getUser();
@@ -15,32 +54,8 @@ export default function DashboardPage() {
                 : user.first_name || user.username || 'Usuario';
 
             setNombreUsuario(nombreCompleto);
-
-            const words = nombreCompleto.trim().split(' ');
-            let letters = words[0][0];
-            if (words.length > 1) {
-                letters += words[words.length - 1][0];
-            } else if (nombreCompleto.length > 1) {
-                letters += nombreCompleto[1];
-            }
-            setIniciales(letters.toUpperCase());
         }
     }, []);
-
-    const modulosActivos = [
-        { href: '/inventario/stock', icon: '📖', title: 'Catálogo Master', desc: 'Gestión de productos, fotos y descripciones de Thalys.', color: 'emerald' },
-        { href: '/inventario', icon: '📦', title: 'Stock y Disponibilidad', desc: 'Consulta rápida de existencias, vencimientos y ubicaciones.', color: 'blue' },
-        { href: '/inventario/movimientos', icon: '🏢', title: 'Gestión de Movimientos', desc: 'Carga de ingresos, consignaciones y ajustes comerciales.' },
-    ];
-
-    const modulosFuturos = [
-        { icon: '🤝', title: 'Ventas y CRM', desc: 'Seguimiento de clientes, cotizaciones y persecución comercial.' },
-        { icon: '💵', title: 'Caja y Ventas Diarias', desc: 'Apertura, cierre y facturación en mostrador.' },
-        { icon: '💳', title: 'Cobranzas', desc: 'Gestión de cuentas por cobrar y conciliación de clientes.' },
-        { icon: '📊', title: 'Finanzas y Gastos', desc: 'Flujo de caja, gastos fijos y rentabilidad macro.' },
-        { icon: '🔧', title: 'Asistencia Técnica', desc: 'Servicio post-venta y reparaciones de equipos.' },
-        { icon: '👥', title: 'Recursos Humanos', desc: 'Legajos, asistencia y gestión de equipo.' },
-    ];
 
     return (
         <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-10">
@@ -52,48 +67,59 @@ export default function DashboardPage() {
                 <p className="text-slate-500 font-medium mt-1">Torre de control para gestión integral.</p>
             </div>
 
-            {/* Sección: Módulos Operativos */}
-            <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                    <span className="h-px flex-1 bg-slate-200"></span>
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Áreas Operativas</h4>
-                    <span className="h-px flex-1 bg-slate-200"></span>
-                </div>
+            {/* Renderizado dinámico por Familias */}
+            <div className="space-y-12">
+                {ordenFamilias.map((colorKey) => {
+                    const style = colorStyles[colorKey];
 
-                {/* Ahora usan la misma grilla y tamaño que los módulos futuros */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {modulosActivos.map((mod) => (
-                        <Link key={mod.href} href={mod.href} className="group h-full">
-                            <div className={`bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-${mod.color}-500 transition-all duration-300 flex flex-col h-full`}>
-                                <span className={`inline-flex items-center justify-center w-12 h-12 bg-${mod.color}-50 text-${mod.color}-600 rounded-xl mb-4 group-hover:bg-${mod.color}-600 group-hover:text-white transition-colors text-2xl`}>
-                                    {mod.icon}
-                                </span>
-                                <h5 className="font-black text-slate-900 text-sm uppercase tracking-tight">{mod.title}</h5>
-                                <p className="text-slate-500 text-[11px] mt-1 font-medium">{mod.desc}</p>
+                    // Filtramos qué módulos pertenecen a esta familia
+                    const activos = modulosActivos.filter(m => m.color === colorKey);
+                    const futuros = modulosFuturos.filter(m => m.color === colorKey);
+
+                    // Si no hay ningún módulo en esta familia, no renderizamos la sección
+                    if (activos.length === 0 && futuros.length === 0) return null;
+
+                    return (
+                        <div key={colorKey} className="space-y-6">
+                            {/* Divisoria de la Familia */}
+                            <div className="flex items-center gap-3">
+                                <h4 className={`text-[10px] font-black ${style.text} uppercase tracking-[0.3em]`}>
+                                    {style.label}
+                                </h4>
+                                <span className={`h-px flex-1 ${style.line}`}></span>
                             </div>
-                        </Link>
-                    ))}
-                </div>
-            </div>
 
-            {/* Sección: Roadmap Proyectado */}
-            <div className="space-y-6 opacity-80">
-                <div className="flex items-center gap-3">
-                    <span className="h-px flex-1 bg-slate-200"></span>
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Próximamente en ERP.CORE</h4>
-                    <span className="h-px flex-1 bg-slate-200"></span>
-                </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {/* 1. Renderizamos los Activos primero */}
+                                {activos.map((mod) => (
+                                    <Link key={mod.href} href={mod.href} className="group h-full">
+                                        <div className={`bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full ${style.borderHover}`}>
+                                            <span className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 group-hover:text-white transition-colors text-2xl ${style.bg} ${style.text} ${style.groupHoverBg}`}>
+                                                {mod.icon}
+                                            </span>
+                                            <h5 className="font-black text-slate-900 text-sm uppercase tracking-tight">{mod.title}</h5>
+                                            <p className="text-slate-500 text-[11px] mt-1 font-medium">{mod.desc}</p>
+                                        </div>
+                                    </Link>
+                                ))}
 
-                {/* Grilla idéntica a la de arriba */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {modulosFuturos.map((mod) => (
-                        <div key={mod.title} className="bg-slate-50/50 p-6 rounded-2xl border border-slate-200 border-dashed flex flex-col grayscale opacity-60 h-full">
-                            <span className="text-2xl mb-4">{mod.icon}</span>
-                            <h5 className="font-black text-slate-700 text-sm uppercase tracking-tight">{mod.title}</h5>
-                            <p className="text-slate-500 text-[11px] mt-1 font-medium">{mod.desc}</p>
+                                {/* 2. Renderizamos los Futuros de esta misma familia */}
+                                {futuros.map((mod) => (
+                                    <div key={mod.title} className="bg-slate-50/50 p-6 rounded-2xl border border-slate-200 border-dashed flex flex-col grayscale opacity-60 h-full relative overflow-hidden">
+                                        <span className="text-2xl mb-4">{mod.icon}</span>
+                                        <h5 className="font-black text-slate-700 text-sm uppercase tracking-tight">{mod.title}</h5>
+                                        <p className="text-slate-500 text-[11px] mt-1 font-medium">{mod.desc}</p>
+
+                                        {/* Badge de Próximamente */}
+                                        <div className="absolute top-4 right-4 bg-slate-200 text-slate-500 text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
+                                            Pronto
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    ))}
-                </div>
+                    );
+                })}
             </div>
         </div>
     );

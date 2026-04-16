@@ -60,6 +60,33 @@ export const logout = () => {
 
 export const getToken = () => Cookies.get('token');
 
+export const getProfile = async () => {
+    const token = getToken();
+    const res = await fetch(`${API_URL}/profile/`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('No se pudo cargar el perfil.');
+    return await res.json();
+};
+
+export const updateProfile = async (profileData) => {
+    const token = getToken();
+    const res = await fetch(`${API_URL}/profile/`, {
+        method: 'PATCH',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData),
+    });
+    if (!res.ok) throw new Error('No se pudo actualizar el perfil.');
+    const updatedUser = await res.json();
+    
+    // Sincronizar con localStorage
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    return updatedUser;
+};
+
 // Función auxiliar para obtener el usuario en cualquier componente
 export const getUser = () => {
     if (typeof window !== 'undefined') {
@@ -67,4 +94,4 @@ export const getUser = () => {
         return user ? JSON.parse(user) : null;
     }
     return null;
-};
+};

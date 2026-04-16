@@ -4,9 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-import { crearProducto, getCategorias } from '@/services/api';
+import { crearProducto, getCategorias, crearCategoria } from '@/services/api';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import TagsInput from '@/components/catalogo/TagsInput';
+import FilerModal from '@/components/ui/FilerModal';
+import AttributesEditor from '@/components/catalogo/AttributesEditor';
+import { getFullImageUrl } from '@/services/api';
 
 // ─── Mini componentes de formulario (idénticos a [slug]/page.jsx) ──
 
@@ -57,7 +60,7 @@ function Toggle({ checked, onChange, label, description }) {
 const FORM_INICIAL = {
     nombre_general: '',
     general_code: '',
-    brand: 'Thalys',
+    brand: '',
     categoria_id: '',
     sub_category: '',
     professional_area: '',
@@ -66,6 +69,8 @@ const FORM_INICIAL = {
     featured: false,
     is_published: false,
     tags: [],
+    imagen_principal: null,
+    atributos: {},
 };
 
 export default function NuevoProductoPage() {
@@ -77,6 +82,15 @@ export default function NuevoProductoPage() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
 
+    // Estado para nueva categoría
+    const [isCreatingCat, setIsCreatingCat] = useState(false);
+    const [newCatName, setNewCatName] = useState('');
+    const [savingCat, setSavingCat] = useState(false);
+
+    // Estado del modal Filer 
+    const [isFilerOpen, setIsFilerOpen] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null); // guardamos el objeto entero para mostrar miniatura
+
     useEffect(() => {
         getCategorias().then(cats => {
             setCategorias(cats || []);
@@ -87,6 +101,22 @@ export default function NuevoProductoPage() {
     const field = (key) => (value) => {
         setFormData(prev => ({ ...prev, [key]: value }));
         setError(null);
+    };
+
+    const handleCrearCategoriaConfirm = async () => {
+        if (!newCatName.trim()) return;
+        setSavingCat(true);
+        try {
+            const nuevaCat = await crearCategoria(newCatName.trim());
+            setCategorias([...categorias, nuevaCat]);
+            field('categoria_id')(nuevaCat.id);
+            setIsCreatingCat(false);
+            setNewCatName('');
+        } catch (err) {
+            alert("Error al crear la categoría. Probá de nuevo.");
+        } finally {
+            setSavingCat(false);
+        }
     };
 
     const handleSubmit = async () => {
@@ -154,68 +184,138 @@ export default function NuevoProductoPage() {
 
                     {/* ── Datos generales ── */}
                     <Section title="Datos Generales">
-                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div className="md:col-span-2">
-                                <Field label="Nombre del Producto *">
-                                    <input
-                                        autoFocus
-                                        className={inputClass}
-                                        value={formData.nombre_general}
-                                        onChange={(e) => field('nombre_general')(e.target.value)}
-                                        placeholder="Ej: Cureta Sinus"
-                                    />
-                                </Field>
+                        <div className="p-6 grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-8">
+
+                            {/* CAJA LATERAL DE IMAGEN PRINCIPAL */}
+                            <div className="flex flex-col items-center">
+                                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 w-full lg:text-left text-center">Imagen Principal</label>
+                                <div className="w-full max-w-[180px] lg:max-w-none">
+                                    {selectedImage ? (
+                                        <div className="relative group rounded-2xl overflow-hidden border border-slate-200 aspect-square bg-white">
+                                            <img src={getFullImageUrl(selectedImage.url)} className="w-full h-full object-contain" />
+                                            <div className="absolute inset-x-0 bottom-0 p-3 flex justify-center bg-gradient-to-t from-slate-900/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => setIsFilerOpen(true)}
+                                                    className="bg-white/90 backdrop-blur-sm text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm w-full hover:bg-emerald-50 transition-colors"
+                                                >
+                                                    Cambiar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsFilerOpen(true)}
+                                            className="w-full aspect-square bg-slate-50 border-2 border-dashed border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer text-slate-400 hover:text-emerald-500"
+                                        >
+                                            <span className="text-3xl">🏜️</span>
+                                            <span className="text-xs font-bold mt-1">Elegir</span>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
-                            <Field label="Código General *" hint="Debe ser único en todo el catálogo.">
-                                <input
-                                    className={`${inputClass} font-mono uppercase`}
-                                    value={formData.general_code}
-                                    onChange={(e) => field('general_code')(e.target.value.toUpperCase())}
-                                    placeholder="Ej: TH-CU-SIN"
-                                />
-                            </Field>
+                            {/* CAMPOS DE TEXTO */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
+                                <div className="md:col-span-2">
+                                    <Field label="Nombre del Producto *">
+                                        <input
+                                            autoFocus
+                                            className={inputClass}
+                                            value={formData.nombre_general}
+                                            onChange={(e) => field('nombre_general')(e.target.value)}
+                                            placeholder="Ej: Cureta Sinus"
+                                        />
+                                    </Field>
+                                </div>
 
-                            <Field label="Marca">
-                                <input
-                                    className={inputClass}
-                                    value={formData.brand}
-                                    onChange={(e) => field('brand')(e.target.value)}
-                                    placeholder="Ej: Thalys"
-                                />
-                            </Field>
-
-                            <Field label="Categoría">
-                                <select
-                                    className={inputClass}
-                                    value={formData.categoria_id}
-                                    onChange={(e) => field('categoria_id')(e.target.value)}
-                                >
-                                    <option value="">Sin categoría</option>
-                                    {categorias.map(c => (
-                                        <option key={c.id} value={c.id}>{c.nombre}</option>
-                                    ))}
-                                </select>
-                            </Field>
-
-                            <Field label="Sub-Categoría">
-                                <input
-                                    className={inputClass}
-                                    value={formData.sub_category}
-                                    onChange={(e) => field('sub_category')(e.target.value)}
-                                    placeholder="Ej: Micro-cirugía"
-                                />
-                            </Field>
-
-                            <div className="md:col-span-2">
-                                <Field label="Área Profesional">
+                                <Field label="Código General *" hint="Debe ser único en todo el catálogo.">
                                     <input
-                                        className={inputClass}
-                                        value={formData.professional_area}
-                                        onChange={(e) => field('professional_area')(e.target.value)}
-                                        placeholder="Ej: Odontología, Cirugía general..."
+                                        className={`${inputClass} font-mono uppercase`}
+                                        value={formData.general_code}
+                                        onChange={(e) => field('general_code')(e.target.value.toUpperCase())}
+                                        placeholder="Ej: TH-CU-SIN"
                                     />
                                 </Field>
+
+                                <Field label="Marca">
+                                    <input
+                                        className={inputClass}
+                                        value={formData.brand}
+                                        onChange={(e) => field('brand')(e.target.value)}
+                                        placeholder="Ej: Thalys"
+                                    />
+                                </Field>
+
+                                <Field label="Categoría">
+                                    {!isCreatingCat ? (
+                                        <div className="flex gap-2">
+                                            <select
+                                                className={`${inputClass} flex-1`}
+                                                value={formData.categoria_id}
+                                                onChange={(e) => field('categoria_id')(e.target.value)}
+                                            >
+                                                <option value="">Sin categoría</option>
+                                                {categorias.map(c => (
+                                                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsCreatingCat(true)}
+                                                className="px-3 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold text-xl rounded-xl border border-emerald-200"
+                                                title="Nueva Categoría"
+                                            >+</button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                placeholder="Nombre de nueva categoría..."
+                                                className={`${inputClass} flex-1`}
+                                                value={newCatName}
+                                                onChange={e => setNewCatName(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && handleCrearCategoriaConfirm()}
+                                            />
+                                            <button
+                                                type="button"
+                                                disabled={savingCat}
+                                                onClick={handleCrearCategoriaConfirm}
+                                                className="px-3 bg-emerald-600 text-white hover:bg-emerald-700 font-bold text-sm rounded-xl"
+                                            >
+                                                ✓
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setIsCreatingCat(false); setNewCatName(''); }}
+                                                className="px-3 bg-slate-100 text-slate-500 hover:bg-slate-200 font-bold text-sm rounded-xl"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    )}
+                                </Field>
+
+                                <Field label="Sub-Categoría">
+                                    <input
+                                        className={inputClass}
+                                        value={formData.sub_category}
+                                        onChange={(e) => field('sub_category')(e.target.value)}
+                                        placeholder="Ej: Micro-cirugía"
+                                    />
+                                </Field>
+
+                                <div className="md:col-span-2">
+                                    <Field label="Área Profesional">
+                                        <input
+                                            className={inputClass}
+                                            value={formData.professional_area}
+                                            onChange={(e) => field('professional_area')(e.target.value)}
+                                            placeholder="Ej: Odontología, Cirugía general..."
+                                        />
+                                    </Field>
+                                </div>
                             </div>
                         </div>
                     </Section>
@@ -238,6 +338,16 @@ export default function NuevoProductoPage() {
                                     onChange={field('is_published')}
                                     label="Publicado en Web"
                                     description={formData.is_published ? 'Visible en la tienda online.' : 'No visible al público.'}
+                                />
+                            </div>
+
+                            <div className="mt-6 pt-6 border-t border-slate-100">
+                                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-4 italic">
+                                    ⚙️ Especificaciones Técnicas (JSON)
+                                </label>
+                                <AttributesEditor
+                                    attributes={formData.atributos}
+                                    onChange={field('atributos')}
                                 />
                             </div>
                         </div>
@@ -286,6 +396,15 @@ export default function NuevoProductoPage() {
 
                 </div>
             </main>
+
+            <FilerModal
+                isOpen={isFilerOpen}
+                onClose={() => setIsFilerOpen(false)}
+                onSelectImage={(img) => {
+                    setSelectedImage(img);
+                    field('imagen_principal')(img.id);
+                }}
+            />
         </div>
     );
 }

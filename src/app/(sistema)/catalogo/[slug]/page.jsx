@@ -5,12 +5,16 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
 import {
-    getProducto, getCategorias,
+    getProducto, getCategorias, crearCategoria,
     actualizarProducto,
     crearVariante, actualizarVariante, eliminarVariante,
+    crearImagenProducto, eliminarImagenProducto,
 } from '@/services/api';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import TagsInput from '@/components/catalogo/TagsInput';
+import FilerModal from '@/components/ui/FilerModal';
+import AttributesEditor from '@/components/catalogo/AttributesEditor';
+import { getFullImageUrl } from '@/services/api';
 
 // ─── Mini componentes de formulario ──────────────────────────────
 
@@ -60,7 +64,7 @@ function Toggle({ checked, onChange, label, description }) {
 
 // ─── Modal de Variante ────────────────────────────────────────────
 
-function VarianteModal({ variante, productoId, onClose, onSave }) {
+function VarianteModal({ variante, productoId, onClose, onSave, onRefresh }) {
     const isNew = !variante?.id;
     const autoSlugify = (text) =>
         text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -69,10 +73,40 @@ function VarianteModal({ variante, productoId, onClose, onSave }) {
         nombre_variante: variante?.nombre_variante || '',
         product_code: variante?.product_code || '',
         sub_slug: variante?.sub_slug || '',
+        imagen_variante: variante?.imagen_variante || null,
     });
+    const [selectedImg, setSelectedImg] = useState(variante?.imagen_url ? { url: variante.imagen_url } : null);
+    const [isFilerOpen, setIsFilerOpen] = useState(false);
+    const [isGalleryFilerOpen, setIsGalleryFilerOpen] = useState(false);
     const [slugTouched, setSlugTouched] = useState(!isNew);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
+
+    const handleAddImage = async (img) => {
+        setSaving(true);
+        try {
+            await crearImagenProducto({
+                variante: variante.id,
+                imagen_asset: img.id,
+                orden: variante.imagenes?.length || 0
+            });
+            onRefresh();
+        } catch (e) {
+            alert("Error al agregar imagen a la galería.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDeleteImage = async (id) => {
+        if (!confirm("¿Quitar esta imagen de la galería?")) return;
+        try {
+            await eliminarImagenProducto(id);
+            onRefresh();
+        } catch (e) {
+            alert("Error al eliminar.");
+        }
+    };
 
     const handleNombre = (value) => {
         setForm(prev => ({
@@ -152,6 +186,84 @@ function VarianteModal({ variante, productoId, onClose, onSave }) {
                             onChange={(e) => { setSlugTouched(true); setForm(p => ({ ...p, sub_slug: e.target.value })); }}
                         />
                     </Field>
+
+                    <Field label="Imagen de Referencia (SKU)">
+                        <div className="flex gap-4 items-center">
+                            <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden shrink-0">
+                                {selectedImg ? (
+                                    <img src={getFullImageUrl(selectedImg.url)} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-xl text-slate-300">🏜️</div>
+                                )}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsFilerOpen(true)}
+                                className="text-[11px] font-black text-blue-600 uppercase hover:underline"
+                            >
+                                {selectedImg ? 'Cambiar Foto' : 'Elegir del Filer'}
+                            </button>
+                            {selectedImg && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setSelectedImg(null); setForm(p => ({ ...p, imagen_variante: null })); }}
+                                    className="text-[11px] font-black text-red-500 uppercase hover:underline"
+                                >
+                                    Quitar
+                                </button>
+                            )}
+                        </div>
+                    </Field>
+
+                    <FilerModal
+                        isOpen={isFilerOpen}
+                        onClose={() => setIsFilerOpen(false)}
+                        onSelectImage={(img) => {
+                            setSelectedImg(img);
+                            setForm(p => ({ ...p, imagen_variante: img.id }));
+                            setIsFilerOpen(false);
+                        }}
+                    />
+
+                    {!isNew && (
+                        <div className="pt-2">
+                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-3">Galería Extra</label>
+                            <div className="grid grid-cols-4 gap-3">
+                                {variante.imagenes?.map(img => (
+                                    <div key={img.id} className="relative group rounded-xl overflow-hidden border border-slate-200 aspect-square">
+                                        <img src={getFullImageUrl(img.url)} className="w-full h-full object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteImage(img.id)}
+                                            className="absolute top-1.5 right-1.5 p-1 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={() => setIsGalleryFilerOpen(true)}
+                                    className="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-1 text-slate-400 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-500 transition-all cursor-pointer bg-slate-50"
+                                >
+                                    <span className="text-xl">{saving ? '⌛' : '📸'}</span>
+                                    <span className="text-[9px] font-black uppercase text-center leading-none px-1">Nueva</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <FilerModal
+                        isOpen={isGalleryFilerOpen}
+                        onClose={() => setIsGalleryFilerOpen(false)}
+                        onSelectImage={(img) => {
+                            handleAddImage(img);
+                            setIsGalleryFilerOpen(false);
+                        }}
+                    />
                 </div>
 
                 {/* Footer */}
@@ -167,6 +279,90 @@ function VarianteModal({ variante, productoId, onClose, onSave }) {
                         {saving ? 'Guardando...' : isNew ? 'Crear Variante' : 'Guardar'}
                     </button>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Modal de Galería de Variante ─────────────────────────────────
+
+function GaleriaVarianteModal({ variante, onClose, onRefresh }) {
+    const [isFilerOpen, setIsFilerOpen] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    const handleAddImage = async (img) => {
+        setSaving(true);
+        try {
+            await crearImagenProducto({
+                variante: variante.id,
+                imagen_asset: img.id,
+                orden: variante.imagenes?.length || 0
+            });
+            onRefresh();
+        } catch (e) {
+            alert("Error al agregar imagen a la galería.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!confirm("¿Quitar esta imagen de la galería?")) return;
+        try {
+            await eliminarImagenProducto(id);
+            onRefresh();
+        } catch (e) {
+            alert("Error al eliminar.");
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl z-10 flex flex-col max-h-[80vh]">
+                <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between shrink-0">
+                    <div>
+                        <h3 className="text-lg font-black text-slate-900">Galería Extra</h3>
+                        <p className="text-xs text-slate-400 mt-0.5">Fotos adicionales para <strong>{variante.nombre_variante}</strong></p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">✕</button>
+                </div>
+
+                <div className="p-6 overflow-y-auto flex-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {variante.imagenes?.map(img => (
+                            <div key={img.id} className="relative group rounded-2xl overflow-hidden border border-slate-200 aspect-square">
+                                <img src={getFullImageUrl(img.url)} className="w-full h-full object-cover" />
+                                <button
+                                    onClick={() => handleDelete(img.id)}
+                                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ))}
+                        <button
+                            disabled={saving}
+                            onClick={() => setIsFilerOpen(true)}
+                            className="w-full aspect-square border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-500 transition-all cursor-pointer"
+                        >
+                            <span className="text-2xl">{saving ? '⌛' : '📸'}</span>
+                            <span className="text-[10px] font-black uppercase">Nueva Foto</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                    <button onClick={onClose} className="bg-slate-900 text-white px-6 py-2 rounded-xl font-bold text-xs">Cerrar</button>
+                </div>
+
+                <FilerModal
+                    isOpen={isFilerOpen}
+                    onClose={() => setIsFilerOpen(false)}
+                    onSelectImage={handleAddImage}
+                />
             </div>
         </div>
     );
@@ -193,6 +389,15 @@ export default function FichaProductoPage() {
     const [varianteModal, setVarianteModal] = useState(null); // null | 'new' | {variante}
     const [deletingId, setDeletingId] = useState(null);
 
+    // Estado para nueva categoría
+    const [isCreatingCat, setIsCreatingCat] = useState(false);
+    const [newCatName, setNewCatName] = useState('');
+    const [savingCat, setSavingCat] = useState(false);
+
+    // Estado para Media Manager (Filer) del Producto
+    const [isFilerOpen, setIsFilerOpen] = useState(false);
+    const [selectedMainImg, setSelectedMainImg] = useState(null);
+
     // ── Carga inicial ──
     useEffect(() => {
         async function fetch() {
@@ -212,7 +417,12 @@ export default function FichaProductoPage() {
                     featured: prod.featured ?? false,
                     is_published: prod.is_published ?? false,
                     tags: prod.tags || [],
+                    imagen_principal: prod.imagen_principal || null,
+                    atributos: prod.atributos || {},
                 });
+                if (prod.imagen_principal_url) {
+                    setSelectedMainImg({ url: prod.imagen_principal_url });
+                }
                 setCategorias(cats);
             } catch {
                 setNotFound(true);
@@ -229,6 +439,27 @@ export default function FichaProductoPage() {
         setIsDirty(true);
         setSaveError(null);
         setSaveSuccess(false);
+    };
+
+    const handleCrearCategoriaConfirm = async () => {
+        if (!newCatName.trim()) return;
+        setSavingCat(true);
+        try {
+            const nuevaCat = await crearCategoria(newCatName.trim());
+            setCategorias([...categorias, nuevaCat]);
+            field('categoria_id')(nuevaCat.id);
+            setIsCreatingCat(false);
+            setNewCatName('');
+        } catch (err) {
+            alert("Error al crear la categoría.");
+        } finally {
+            setSavingCat(false);
+        }
+    };
+
+    const refreshProducto = async () => {
+        const prod = await getProducto(slug);
+        setProducto(prod);
     };
 
     const handleSave = async () => {
@@ -266,8 +497,9 @@ export default function FichaProductoPage() {
         try {
             await eliminarVariante(id);
             setProducto(prev => ({ ...prev, variants: prev.variants.filter(v => v.id !== id) }));
-        } catch {
-            alert('No se pudo eliminar la variante.');
+        } catch (err) {
+            const msg = err?.detail || 'No se pudo eliminar la variante.';
+            alert(msg);
         } finally {
             setDeletingId(null);
         }
@@ -294,10 +526,11 @@ export default function FichaProductoPage() {
             {/* Modal variante */}
             {varianteModal !== null && (
                 <VarianteModal
-                    variante={varianteModal === 'new' ? null : varianteModal}
+                    variante={varianteModal === 'new' ? null : (producto.variants.find(v => v.id === varianteModal.id) || varianteModal)}
                     productoId={producto.id}
                     onClose={() => setVarianteModal(null)}
                     onSave={handleVarianteSaved}
+                    onRefresh={refreshProducto}
                 />
             )}
 
@@ -342,42 +575,111 @@ export default function FichaProductoPage() {
 
                         {/* ── Datos generales ── */}
                         <Section title="Datos Generales">
-                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div className="md:col-span-2">
-                                    <Field label="Nombre del Producto">
-                                        <input className={inputClass} value={formData.nombre_general} onChange={(e) => field('nombre_general')(e.target.value)} placeholder="Ej: Cureta Sinus" />
-                                    </Field>
+                            <div className="p-6 grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-8">
+
+                                {/* CAJA LATERAL DE IMAGEN PRINCIPAL */}
+                                <div className="flex flex-col items-center">
+                                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 w-full lg:text-left text-center">Imagen Principal</label>
+                                    <div className="w-full max-w-[180px] lg:max-w-none">
+                                        {selectedMainImg ? (
+                                            <div className="w-full relative group rounded-2xl overflow-hidden border border-slate-200 aspect-square bg-white">
+                                                <img src={getFullImageUrl(selectedMainImg.url)} className="w-full h-full object-contain" />
+                                                <div className="absolute inset-x-0 bottom-0 p-3 flex justify-center bg-gradient-to-t from-slate-900/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => setIsFilerOpen(true)}
+                                                        className="bg-white/90 backdrop-blur-sm text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm w-full hover:bg-emerald-50 transition-colors"
+                                                    >
+                                                        Cambiar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsFilerOpen(true)}
+                                                className="w-full aspect-square bg-slate-50 border-2 border-dashed border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer text-slate-400 hover:text-emerald-500"
+                                            >
+                                                <span className="text-3xl">🏜️</span>
+                                                <span className="text-xs font-bold mt-1">Elegir</span>
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <Field label="Código General">
-                                    <input className={`${inputClass} font-mono uppercase`} value={formData.general_code} onChange={(e) => field('general_code')(e.target.value)} placeholder="Ej: TH-CU-SIN" />
-                                </Field>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
+                                    <div className="md:col-span-2">
+                                        <Field label="Nombre del Producto">
+                                            <input className={inputClass} value={formData.nombre_general} onChange={(e) => field('nombre_general')(e.target.value)} placeholder="Ej: Cureta Sinus" />
+                                        </Field>
+                                    </div>
 
-                                <Field label="Marca">
-                                    <input className={inputClass} value={formData.brand} onChange={(e) => field('brand')(e.target.value)} placeholder="Ej: Thalys" />
-                                </Field>
-
-                                <Field label="Categoría">
-                                    <select
-                                        className={inputClass}
-                                        value={formData.categoria_id}
-                                        onChange={(e) => field('categoria_id')(e.target.value)}
-                                    >
-                                        <option value="">Sin categoría</option>
-                                        {categorias.map(c => (
-                                            <option key={c.id} value={c.id}>{c.nombre}</option>
-                                        ))}
-                                    </select>
-                                </Field>
-
-                                <Field label="Sub-Categoría">
-                                    <input className={inputClass} value={formData.sub_category} onChange={(e) => field('sub_category')(e.target.value)} placeholder="Ej: Micro-cirugía" />
-                                </Field>
-
-                                <div className="md:col-span-2">
-                                    <Field label="Área Profesional">
-                                        <input className={inputClass} value={formData.professional_area} onChange={(e) => field('professional_area')(e.target.value)} placeholder="Ej: Odontología, Cirugía general..." />
+                                    <Field label="Código General">
+                                        <input className={`${inputClass} font-mono uppercase`} value={formData.general_code} onChange={(e) => field('general_code')(e.target.value)} placeholder="Ej: TH-CU-SIN" />
                                     </Field>
+
+                                    <Field label="Marca">
+                                        <input className={inputClass} value={formData.brand} onChange={(e) => field('brand')(e.target.value)} placeholder="Ej: Thalys" />
+                                    </Field>
+
+                                    <Field label="Categoría">
+                                        {!isCreatingCat ? (
+                                            <div className="flex gap-2">
+                                                <select
+                                                    className={`${inputClass} flex-1`}
+                                                    value={formData.categoria_id}
+                                                    onChange={(e) => field('categoria_id')(e.target.value)}
+                                                >
+                                                    <option value="">Sin categoría</option>
+                                                    {categorias.map(c => (
+                                                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                                                    ))}
+                                                </select>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsCreatingCat(true)}
+                                                    className="px-3 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold text-xl rounded-xl border border-emerald-200"
+                                                    title="Nueva Categoría"
+                                                >+</button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    autoFocus
+                                                    placeholder="Nombre de categoría..."
+                                                    className={`${inputClass} flex-1`}
+                                                    value={newCatName}
+                                                    onChange={e => setNewCatName(e.target.value)}
+                                                    onKeyDown={e => e.key === 'Enter' && handleCrearCategoriaConfirm()}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    disabled={savingCat}
+                                                    onClick={handleCrearCategoriaConfirm}
+                                                    className="px-3 bg-emerald-600 text-white hover:bg-emerald-700 font-bold text-sm rounded-xl"
+                                                >
+                                                    ✓
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setIsCreatingCat(false); setNewCatName(''); }}
+                                                    className="px-3 bg-slate-100 text-slate-500 hover:bg-slate-200 font-bold text-sm rounded-xl"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        )}
+                                    </Field>
+
+                                    <Field label="Sub-Categoría">
+                                        <input className={inputClass} value={formData.sub_category} onChange={(e) => field('sub_category')(e.target.value)} placeholder="Ej: Micro-cirugía" />
+                                    </Field>
+
+                                    <div className="md:col-span-2">
+                                        <Field label="Área Profesional">
+                                            <input className={inputClass} value={formData.professional_area} onChange={(e) => field('professional_area')(e.target.value)} placeholder="Ej: Odontología, Cirugía general..." />
+                                        </Field>
+                                    </div>
                                 </div>
                             </div>
                         </Section>
@@ -392,6 +694,16 @@ export default function FichaProductoPage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <Toggle checked={formData.featured} onChange={field('featured')} label="Producto Destacado" description="Aparece resaltado en el catálogo." />
                                     <Toggle checked={formData.is_published} onChange={field('is_published')} label="Publicado en Web" description={formData.is_published ? 'Visible en la tienda online.' : 'No visible al público.'} />
+                                </div>
+
+                                <div className="mt-6 pt-6 border-t border-slate-100">
+                                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-4 italic">
+                                        ⚙️ Especificaciones Técnicas (JSON)
+                                    </label>
+                                    <AttributesEditor
+                                        attributes={formData.atributos}
+                                        onChange={field('atributos')}
+                                    />
                                 </div>
                             </div>
                         </Section>
@@ -444,30 +756,36 @@ export default function FichaProductoPage() {
                                             <th className="py-3 pl-6 pr-4 text-[11px] font-black uppercase tracking-widest">Nombre</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Código SKU</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest hidden md:table-cell">Sub-Slug</th>
-                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-right">Stock</th>
+                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Extras</th>
                                             <th className="py-3 pr-5 pl-4"></th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {producto.variants.map(v => {
-                                            const stock = v.stock ?? 0;
-                                            const stockColor = stock === 0
-                                                ? 'text-red-600 bg-red-50'
-                                                : stock < 10
-                                                    ? 'text-amber-700 bg-amber-50'
-                                                    : 'text-emerald-700 bg-emerald-50';
+
                                             return (
                                                 <tr key={v.id} className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors">
-                                                    <td className="py-3.5 pl-6 pr-4 text-sm font-bold text-slate-800">{v.nombre_variante}</td>
+                                                    <td className="py-3.5 pl-6 pr-4">
+                                                        <div className="flex items-center gap-3">
+                                                            {v.imagen_url ? (
+                                                                <img src={getFullImageUrl(v.imagen_url)} alt={v.nombre_variante} className="w-8 h-8 rounded-lg object-cover border border-slate-200 shrink-0 bg-white" />
+                                                            ) : (
+                                                                <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-xs text-slate-300 shrink-0 shadow-sm">
+                                                                    🏜️
+                                                                </div>
+                                                            )}
+                                                            <span className="text-sm font-bold text-slate-800">{v.nombre_variante}</span>
+                                                        </div>
+                                                    </td>
                                                     <td className="py-3.5 px-4">
                                                         <code className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2 py-1 rounded-lg">{v.product_code}</code>
                                                     </td>
                                                     <td className="py-3.5 px-4 hidden md:table-cell">
                                                         <span className="text-xs text-slate-400 font-mono">{v.sub_slug}</span>
                                                     </td>
-                                                    <td className="py-3.5 px-4 text-right">
-                                                        <span className={`text-xs font-black px-2.5 py-1 rounded-full ${stockColor}`}>
-                                                            {stock === 0 ? 'Sin stock' : `${stock} u.`}
+                                                    <td className="py-3.5 px-4 text-center">
+                                                        <span className="text-xs font-bold text-slate-500 bg-slate-100/80 px-2 py-1 rounded-xl">
+                                                            {v.imagenes?.length || 0} fotos
                                                         </span>
                                                     </td>
                                                     <td className="py-3.5 pr-5 pl-4">
@@ -504,6 +822,15 @@ export default function FichaProductoPage() {
                     </div>
                 </main>
             </div>
+
+            <FilerModal
+                isOpen={isFilerOpen}
+                onClose={() => setIsFilerOpen(false)}
+                onSelectImage={(img) => {
+                    setSelectedMainImg(img);
+                    field('imagen_principal')(img.id);
+                }}
+            />
         </>
     );
 }

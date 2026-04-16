@@ -51,6 +51,15 @@ export const getCategorias = async () => {
     }
 };
 
+export const crearCategoria = async (nombre) => {
+    const res = await fetch(`${API_URL}/catalogo/categorias/`, {
+        method: 'POST',
+        headers: jsonHeaders(),
+        body: JSON.stringify({ nombre }),
+    });
+    return handleResponse(res);
+};
+
 // ─── Productos (lectura) ─────────────────────────────────────────
 
 export async function getProductos() {
@@ -128,6 +137,25 @@ export async function actualizarVariante(id, data) {
 
 export async function eliminarVariante(id) {
     const res = await fetch(`${API_URL}/catalogo/variantes/${id}/`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+    });
+    return handleResponse(res);
+}
+
+// ─── Galería de Imágenes ────────────────────────────────────────
+
+export async function crearImagenProducto(data) {
+    const res = await fetch(`${API_URL}/catalogo/imagenes-producto/`, {
+        method: 'POST',
+        headers: jsonHeaders(),
+        body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+}
+
+export async function eliminarImagenProducto(id) {
+    const res = await fetch(`${API_URL}/catalogo/imagenes-producto/${id}/`, {
         method: 'DELETE',
         headers: authHeaders(),
     });
