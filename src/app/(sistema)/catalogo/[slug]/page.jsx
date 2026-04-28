@@ -6,10 +6,11 @@ import Link from 'next/link';
 
 import {
     getProducto, getCategorias, crearCategoria,
-    actualizarProducto,
+    actualizarProducto, eliminarProducto,
     crearVariante, actualizarVariante, eliminarVariante,
     crearImagenProducto, eliminarImagenProducto,
 } from '@/services/api';
+import { useRouter } from 'next/navigation';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import TagsInput from '@/components/catalogo/TagsInput';
 import FilerModal from '@/components/ui/FilerModal';
@@ -218,6 +219,7 @@ function VarianteModal({ variante, productoId, onClose, onSave, onRefresh }) {
                     <FilerModal
                         isOpen={isFilerOpen}
                         onClose={() => setIsFilerOpen(false)}
+                        initialSearch={form.product_code}
                         onSelectImage={(img) => {
                             setSelectedImg(img);
                             setForm(p => ({ ...p, imagen_variante: img.id }));
@@ -259,6 +261,7 @@ function VarianteModal({ variante, productoId, onClose, onSave, onRefresh }) {
                     <FilerModal
                         isOpen={isGalleryFilerOpen}
                         onClose={() => setIsGalleryFilerOpen(false)}
+                        initialSearch={form.product_code}
                         onSelectImage={(img) => {
                             handleAddImage(img);
                             setIsGalleryFilerOpen(false);
@@ -361,6 +364,7 @@ function GaleriaVarianteModal({ variante, onClose, onRefresh }) {
                 <FilerModal
                     isOpen={isFilerOpen}
                     onClose={() => setIsFilerOpen(false)}
+                    initialSearch={variante.product_code}
                     onSelectImage={handleAddImage}
                 />
             </div>
@@ -372,6 +376,7 @@ function GaleriaVarianteModal({ variante, onClose, onRefresh }) {
 
 export default function FichaProductoPage() {
     const { slug } = useParams();
+    const router = useRouter();
 
     const [producto, setProducto] = useState(null);
     const [categorias, setCategorias] = useState([]);
@@ -393,6 +398,7 @@ export default function FichaProductoPage() {
     const [isCreatingCat, setIsCreatingCat] = useState(false);
     const [newCatName, setNewCatName] = useState('');
     const [savingCat, setSavingCat] = useState(false);
+    const [isDeletingProd, setIsDeletingProd] = useState(false);
 
     // Estado para Media Manager (Filer) del Producto
     const [isFilerOpen, setIsFilerOpen] = useState(false);
@@ -502,6 +508,23 @@ export default function FichaProductoPage() {
             alert(msg);
         } finally {
             setDeletingId(null);
+        }
+    };
+
+    const handleDeleteProducto = async () => {
+        const confirmMsg = `¿Estás seguro de que deseas desactivar el producto "${producto.nombre_general}"?\n\nEsto archivará el producto y todas sus variantes. Dejará de ser visible en el catálogo e inventario.`;
+        
+        if (!window.confirm(confirmMsg)) return;
+
+        setIsDeletingProd(true);
+        try {
+            await eliminarProducto(slug);
+            router.push('/catalogo');
+        } catch (err) {
+            const msg = err?.detail || 'No se pudo desactivar el producto.';
+            alert(msg);
+        } finally {
+            setIsDeletingProd(false);
         }
     };
 
@@ -819,6 +842,30 @@ export default function FichaProductoPage() {
                             )}
                         </section>
 
+                        {/* ── Zona de Peligro ── */}
+                        <div className="pt-10 pb-20">
+                            <Section 
+                                title="Zona de Peligro" 
+                                subtitle="Acciones críticas que afectan la visibilidad del producto en el sistema."
+                            >
+                                <div className="p-6 bg-red-50/30 flex flex-col md:flex-row items-center justify-between gap-6">
+                                    <div className="text-center md:text-left">
+                                        <p className="text-sm font-bold text-slate-800">Desactivar Producto</p>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            Archiva el producto y sus {producto.variants.length} variantes. Dejarán de estar visibles en el catálogo e inventario.
+                                        </p>
+                                    </div>
+                                    <button 
+                                        onClick={handleDeleteProducto}
+                                        disabled={isDeletingProd}
+                                        className="bg-white border border-red-200 text-red-600 px-8 py-3 rounded-xl font-bold text-[11px] uppercase tracking-wider hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95 whitespace-nowrap disabled:opacity-50"
+                                    >
+                                        {isDeletingProd ? 'PROCESANDO...' : 'DESACTIVAR PRODUCTO'}
+                                    </button>
+                                </div>
+                            </Section>
+                        </div>
+
                     </div>
                 </main>
             </div>
@@ -826,9 +873,11 @@ export default function FichaProductoPage() {
             <FilerModal
                 isOpen={isFilerOpen}
                 onClose={() => setIsFilerOpen(false)}
+                initialSearch={formData.general_code}
                 onSelectImage={(img) => {
                     setSelectedMainImg(img);
                     field('imagen_principal')(img.id);
+                    setIsFilerOpen(false);
                 }}
             />
         </>

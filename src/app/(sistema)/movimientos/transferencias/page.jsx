@@ -4,7 +4,8 @@ import Link from 'next/link';
 import Cookies from 'js-cookie';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import EmptyState from '@/components/ui/EmptyState';
-import { ArrowRightLeft, Eye, ChevronRight, Package, User, Calendar, Plus, MapPin, CheckCircle, Clock } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
+import { ArrowRightLeft, Eye, Package, User, Calendar, Plus, MapPin, CheckCircle, Clock } from 'lucide-react';
 
 export default function TransferenciasPage() {
     const [transferencias, setTransferencias] = useState([]);
@@ -70,24 +71,24 @@ export default function TransferenciasPage() {
     };
 
     return (
-        <div className="p-4 md:p-10 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight text-blue-600">Transferencias Internas</h1>
-                    <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
-                        <Link href="/movimientos" className="hover:text-blue-600 transition-colors">Movimientos</Link>
-                        <ChevronRight size={14} />
-                        <span className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Movimientos entre Depósitos</span>
-                    </div>
-                </div>
+        <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
+            <PageHeader
+                breadcrumbs={[
+                    { label: 'Gestión de Movimientos', href: '/movimientos' },
+                    { label: 'Transferencias Internas' }
+                ]}
+                subtitle="Movilizá stock entre depósitos de forma auditada."
+            >
                 <Link
                     href="/movimientos/transferencias/nuevo"
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-black py-4 px-8 rounded-[24px] shadow-xl shadow-blue-100 transition-all flex items-center gap-2 uppercase text-xs tracking-widest"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 px-6 rounded-xl shadow-lg shadow-blue-100 transition-all flex items-center gap-2 uppercase text-[10px] tracking-widest active:scale-95"
                 >
-                    <Plus size={18} /> Registrar Nueva Transferencia
+                    <Plus size={16} /> Nueva Transferencia
                 </Link>
-            </div>
+            </PageHeader>
+
+            <main className="flex-1 overflow-y-auto p-8 min-w-0">
+                <div className="max-w-[1800px] mx-auto space-y-6">
 
             {loading ? (
                 <LoadingScreen message="Sincronizando transferencias..." />
@@ -151,6 +152,8 @@ export default function TransferenciasPage() {
                     ))}
                 </div>
             )}
+                </div>
+            </main>
         </div>
     );
 }

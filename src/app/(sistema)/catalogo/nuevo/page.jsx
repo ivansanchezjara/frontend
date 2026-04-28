@@ -10,6 +10,7 @@ import TagsInput from '@/components/catalogo/TagsInput';
 import FilerModal from '@/components/ui/FilerModal';
 import AttributesEditor from '@/components/catalogo/AttributesEditor';
 import { getFullImageUrl } from '@/services/api';
+import { FileJson } from 'lucide-react';
 
 // ─── Mini componentes de formulario (idénticos a [slug]/page.jsx) ──
 
@@ -91,6 +92,10 @@ export default function NuevoProductoPage() {
     const [isFilerOpen, setIsFilerOpen] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null); // guardamos el objeto entero para mostrar miniatura
 
+    // Estado para Importación JSON
+    const [isJSONModalOpen, setIsJSONModalOpen] = useState(false);
+    const [jsonInput, setJsonInput] = useState('');
+
     useEffect(() => {
         getCategorias().then(cats => {
             setCategorias(cats || []);
@@ -116,6 +121,22 @@ export default function NuevoProductoPage() {
             alert("Error al crear la categoría. Probá de nuevo.");
         } finally {
             setSavingCat(false);
+        }
+    };
+
+    const handleJSONImport = () => {
+        try {
+            const data = JSON.parse(jsonInput);
+            setFormData({
+                ...FORM_INICIAL,
+                ...data,
+                categoria_id: data.categoria_id?.toString() || ''
+            });
+            setIsJSONModalOpen(false);
+            setJsonInput('');
+            alert("Datos cargados correctamente.");
+        } catch (err) {
+            alert("Error: El formato JSON no es válido.");
         }
     };
 
@@ -161,6 +182,12 @@ export default function NuevoProductoPage() {
                             ✕ {error}
                         </span>
                     )}
+                    <button
+                        onClick={() => setIsJSONModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl font-bold text-xs hover:bg-blue-100 transition-all active:scale-95"
+                    >
+                        <FileJson size={14} /> CARGAR JSON
+                    </button>
                     <Link
                         href="/catalogo"
                         className="px-4 py-2.5 border border-slate-200 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-50 transition-colors"
@@ -400,11 +427,47 @@ export default function NuevoProductoPage() {
             <FilerModal
                 isOpen={isFilerOpen}
                 onClose={() => setIsFilerOpen(false)}
+                initialSearch={formData.general_code}
                 onSelectImage={(img) => {
                     setSelectedImage(img);
                     field('imagen_principal')(img.id);
+                    setIsFilerOpen(false);
                 }}
             />
+
+            {/* Modal de Importación JSON */}
+            {isJSONModalOpen && (
+                <div className="fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white max-w-2xl w-full rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+                        <div className="p-6 border-b border-slate-100 bg-slate-50">
+                            <h3 className="text-lg font-black text-slate-900">Importar desde JSON</h3>
+                            <p className="text-xs text-slate-500 mt-1">Pegá el objeto JSON para rellenar los campos automáticamente.</p>
+                        </div>
+                        <div className="p-6">
+                            <textarea
+                                className="w-full h-64 bg-slate-50 border border-slate-200 rounded-2xl p-4 font-mono text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                                placeholder='{ "nombre_general": "Producto Ejemplo", "brand": "Marca", ... }'
+                                value={jsonInput}
+                                onChange={(e) => setJsonInput(e.target.value)}
+                            />
+                        </div>
+                        <div className="px-6 pb-6 flex gap-3">
+                            <button 
+                                onClick={() => { setIsJSONModalOpen(false); setJsonInput(''); }}
+                                className="flex-1 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                onClick={handleJSONImport}
+                                className="flex-1 py-2.5 bg-slate-900 text-white font-bold rounded-xl text-sm hover:bg-blue-600 transition-colors"
+                            >
+                                Cargar Datos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

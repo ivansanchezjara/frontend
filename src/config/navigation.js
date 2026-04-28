@@ -55,7 +55,7 @@ export const modulosActivos = [
     href: "/catalogo",
     icon: "📖",
     title: "Catálogo Master",
-    desc: "Gestión de productos, fotos y descripciones de Thalys.",
+    desc: "Gestión de productos, fotos y descripciones.",
     color: "emerald",
   },
   {
@@ -71,6 +71,13 @@ export const modulosActivos = [
     title: "Gestión de Movimientos",
     desc: "Carga de ingresos, consignaciones y ajustes comerciales.",
     color: "blue",
+  },
+  {
+    href: "/media-manager",
+    icon: "🖼️",
+    title: "Gestor de Medios",
+    desc: "Almacenamiento y Archivos de la plataforma.",
+    color: "emerald",
   },
 ];
 

@@ -4,7 +4,8 @@ import Link from 'next/link';
 import Cookies from 'js-cookie';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import EmptyState from '@/components/ui/EmptyState';
-import { CheckCircle, Clock, Eye, ChevronRight, Package, User, MapPin, Plus, Calendar } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
+import { CheckCircle, Clock, Eye, Package, User, MapPin, Plus, Calendar } from 'lucide-react';
 
 export default function IngresosPage() {
     const [ingresos, setIngresos] = useState([]);
@@ -70,24 +71,24 @@ export default function IngresosPage() {
     };
 
     return (
-        <div className="p-4 md:p-10 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">Gestión de Ingresos</h1>
-                    <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
-                        <Link href="/movimientos" className="hover:text-emerald-600 transition-colors">Movimientos</Link>
-                        <ChevronRight size={14} />
-                        <span className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Arribos de Mercadería</span>
-                    </div>
-                </div>
+        <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
+            <PageHeader
+                breadcrumbs={[
+                    { label: 'Gestión de Movimientos', href: '/movimientos' },
+                    { label: 'Ingresos de Mercadería' }
+                ]}
+                subtitle="Podés registrar borradores y aprobarlos para cargar stock."
+            >
                 <Link
                     href="/movimientos/ingresos/nuevo"
-                    className="bg-slate-900 hover:bg-slate-800 text-white font-black py-4 px-8 rounded-[24px] shadow-xl shadow-slate-200 transition-all flex items-center gap-2 uppercase text-xs tracking-widest"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 px-6 rounded-xl shadow-lg shadow-blue-100 transition-all flex items-center gap-2 uppercase text-[10px] tracking-widest active:scale-95"
                 >
-                    <Plus size={18} /> Registrar Nuevo Ingreso
+                    <Plus size={16} /> Nuevo Ingreso
                 </Link>
-            </div>
+            </PageHeader>
+
+            <main className="flex-1 overflow-y-auto p-8 min-w-0">
+                <div className="max-w-[1800px] mx-auto space-y-6">
 
             {loading ? (
                 <LoadingScreen message="Sincronizando ingresos..." />
@@ -102,7 +103,7 @@ export default function IngresosPage() {
             ) : (
                 <div className="grid grid-cols-1 gap-4">
                     {ingresos.map((ing) => (
-                        <div key={ing.id} className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm hover:shadow-lg hover:border-emerald-200 transition-all group flex flex-col md:flex-row items-center gap-6">
+                        <div key={ing.id} className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all group flex flex-col md:flex-row items-center gap-6">
                             {/* Icono de Estado */}
                             <div className={`w-16 h-16 rounded-[22px] flex items-center justify-center shrink-0 shadow-sm border ${ing.estado === 'APROBADO' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
                                 {ing.estado === 'APROBADO' ? <CheckCircle size={32} /> : <Clock size={32} className="animate-pulse" />}
@@ -143,7 +144,7 @@ export default function IngresosPage() {
                                         </Link>
                                         <button 
                                             onClick={(e) => handleAprobar(ing.id, e)}
-                                            className="bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition-all border border-emerald-500"
+                                            className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all border border-blue-500"
                                         >
                                             Aprobar Stock
                                         </button>
@@ -154,6 +155,8 @@ export default function IngresosPage() {
                     ))}
                 </div>
             )}
+                </div>
+            </main>
         </div>
     );
 }

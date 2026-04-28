@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Cookies from 'js-cookie';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import EmptyState from '@/components/ui/EmptyState';
+import PageHeader from '@/components/ui/PageHeader';
 import { Truck, Eye, ChevronRight, Package, User, Calendar, Plus, MapPin, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ConsignacionesPage() {
@@ -43,24 +44,24 @@ export default function ConsignacionesPage() {
     }, []);
 
     return (
-        <div className="p-4 md:p-10 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight text-purple-600 uppercase">Consignaciones</h1>
-                    <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
-                        <Link href="/movimientos" className="hover:text-purple-600 transition-colors">Movimientos</Link>
-                        <ChevronRight size={14} />
-                        <span className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Salidas Provisorias</span>
-                    </div>
-                </div>
+        <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
+            <PageHeader
+                breadcrumbs={[
+                    { label: 'Gestión de Movimientos', href: '/movimientos' },
+                    { label: 'Consignaciones' }
+                ]}
+                subtitle="Gestioná mercadería enviada a clientes en calidad de préstamo o consignación."
+            >
                 <Link
                     href="/movimientos/consignaciones/nuevo"
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-black py-4 px-8 rounded-[24px] shadow-xl shadow-purple-100 transition-all flex items-center gap-2 uppercase text-xs tracking-widest"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 px-6 rounded-xl shadow-lg shadow-blue-100 transition-all flex items-center gap-2 uppercase text-[10px] tracking-widest active:scale-95"
                 >
-                    <Plus size={18} /> Nueva Salida
+                    <Plus size={16} /> Registrar Salida
                 </Link>
-            </div>
+            </PageHeader>
+
+            <main className="flex-1 overflow-y-auto p-8 min-w-0">
+                <div className="max-w-[1800px] mx-auto space-y-6">
 
             {loading ? (
                 <LoadingScreen message="Cargando hojas de ruta de consignación..." />
@@ -73,14 +74,14 @@ export default function ConsignacionesPage() {
                     onAction={() => window.location.href = '/movimientos/consignaciones/nuevo'}
                 />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {consignaciones.map((cons) => (
                         <Link 
                             key={cons.id} 
                             href={`/movimientos/consignaciones/${cons.id}`}
                             className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group flex flex-col relative overflow-hidden"
                         >
-                            <div className={`absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-bl-[60px] -z-0 transition-transform group-hover:scale-110`}></div>
+                            <div className={`absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-bl-[60px] -z-0 transition-transform group-hover:scale-110`}></div>
                             
                             <div className="flex items-center justify-between mb-4 relative z-10">
                                 <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${cons.estado === 'APROBADO' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -91,11 +92,11 @@ export default function ConsignacionesPage() {
 
                             <div className="space-y-4 relative z-10">
                                 <div>
-                                    <h3 className="text-lg font-black text-slate-900 group-hover:text-purple-600 transition-colors leading-tight truncate">
+                                    <h3 className="text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-tight truncate">
                                         {cons.responsable}
                                     </h3>
                                     <p className="flex items-center gap-1.5 text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">
-                                        <MapPin size={12} className="text-purple-400" /> {cons.destino}
+                                        <MapPin size={12} className="text-blue-400" /> {cons.destino}
                                     </p>
                                 </div>
 
@@ -122,13 +123,15 @@ export default function ConsignacionesPage() {
                                 </div>
                             </div>
                             
-                            <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between group-hover:text-purple-600 transition-all font-black text-[10px] uppercase tracking-widest">
+                            <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between group-hover:text-blue-600 transition-all font-black text-[10px] uppercase tracking-widest">
                                 Ver Detalles / Gestionar <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
                             </div>
                         </Link>
                     ))}
                 </div>
             )}
+                </div>
+            </main>
         </div>
     );
 }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { Search, Plus, Trash2, Package, Calendar, DollarSign, Calculator, AlertCircle, Check, Download, Upload, Tag, Clock } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 
 export default function NuevoIngresoPage() {
     const router = useRouter();
@@ -38,7 +39,8 @@ export default function NuevoIngresoPage() {
         async function loadData() {
             try {
                 const resDep = await fetch(`${API_BASE}/api/inventario/depositos/`, { headers: { 'Authorization': `Bearer ${token}` } });
-                setDepositos(await resDep.json());
+                const dDep = await resDep.json();
+                setDepositos(dDep.results || dDep);
                 const resVar = await fetch(`${API_BASE}/api/catalogo/variantes/`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const dVar = await resVar.json();
                 setVariantes(dVar.results || dVar);
@@ -154,26 +156,26 @@ export default function NuevoIngresoPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-6 bg-slate-50 min-h-screen">
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4 no-print">
-                <div>
-                    <Link href="/movimientos/ingresos" className="text-emerald-600 font-bold text-xs uppercase tracking-widest hover:text-emerald-700 flex items-center gap-1 mb-2">← Volver</Link>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white"><Plus size={24} /></div>
-                        Nuevo Ingreso
-                    </h1>
+        <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
+            <PageHeader
+                breadcrumbs={[
+                    { label: 'Gestión de Movimientos', href: '/movimientos' },
+                    { label: 'Ingresos de Mercadería', href: '/movimientos/ingresos' },
+                    { label: 'Nuevo Ingreso' }
+                ]}
+                subtitle="Completá los datos del arribo y cargá los ítems para generar un borrador."
+            >
+                <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Inversión (Landed)</p>
+                    <p className={`text-xl font-black leading-none ${errorMsg ? 'text-red-500' : 'text-slate-900'}`}>${items.reduce((s, i) => s + (i.cantidad * (i.costo_landed_unitario || 0)), 0).toLocaleString()}</p>
                 </div>
+                <button disabled={isSubmitting || items.length === 0 || !!errorMsg} onClick={handleSubmit} className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 ${errorMsg || items.length === 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-100'}`}>
+                    {isSubmitting ? 'GUARDANDO...' : 'GUARDAR BORRADOR'}
+                </button>
+            </PageHeader>
 
-                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-6">
-                    <div className="text-right">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Inversión (Landed)</p>
-                        <p className={`text-2xl font-black ${errorMsg ? 'text-red-500' : 'text-slate-900'}`}>${items.reduce((s, i) => s + (i.cantidad * (i.costo_landed_unitario || 0)), 0).toLocaleString()}</p>
-                    </div>
-                    <button disabled={isSubmitting || items.length === 0 || !!errorMsg} onClick={handleSubmit} className={`px-8 py-3 rounded-xl font-black text-sm transition-all active:scale-95 ${errorMsg || items.length === 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-100'}`}>
-                        {isSubmitting ? 'GUARDANDO...' : 'GUARDAR BORRADOR'}
-                    </button>
-                </div>
-            </div>
+            <main className="flex-1 overflow-y-auto p-8 min-w-0">
+                <div className="max-w-[1800px] mx-auto space-y-6">
 
             <div className="space-y-6">
                 {/* SECCION GENERAL - AHORA ARRIBA Y ANCHO COMPLETO */}
@@ -236,7 +238,7 @@ export default function NuevoIngresoPage() {
                                 };
                                 reader.readAsText(file);
                             }} />
-                            <button type="button" onClick={handleDownloadTemplate} className="bg-slate-50 text-slate-500 hover:text-emerald-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-slate-200 transition-all active:scale-95">
+                            <button type="button" onClick={handleDownloadTemplate} className="bg-slate-50 text-slate-500 hover:text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-slate-200 transition-all active:scale-95">
                                 <Download size={14} /> Bajar Plantilla
                             </button>
                             <button type="button" onClick={() => document.getElementById('csvImport').click()} className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95">
@@ -309,7 +311,7 @@ export default function NuevoIngresoPage() {
                                             </td>
                                             <td className="p-1">
                                                 <input type="number" min="0" step="1" value={item.costo_landed_unitario} onChange={(e) => handleItemChange(idx, 'costo_landed_unitario', e.target.value)}
-                                                    className={`w-full text-right border rounded p-1.5 min-w-[90px] ${isLandedChanged ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-black' : 'bg-slate-50 border-slate-100 text-slate-400 font-medium'}`}
+                                                    className={`w-full text-right border rounded p-1.5 min-w-[90px] ${isLandedChanged ? 'bg-blue-50 border-blue-200 text-blue-700 font-black' : 'bg-slate-50 border-slate-100 text-slate-400 font-medium'}`}
                                                 />
                                             </td>
                                             {[0, 1, 2, 3, 4].map(n => {
@@ -369,23 +371,25 @@ export default function NuevoIngresoPage() {
                                     validateItems(totalItems);
                                     alert(`Agregados ${filtered.length} productos.`);
                                 }
-                            }} className="bg-emerald-100 text-emerald-700 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-200 transition-all">
+                            }} className="bg-blue-100 text-blue-700 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-200 transition-all">
                                 Seleccionar Todo
                             </button>
                             <button onClick={() => setIsSearchOpen(false)} className="w-12 h-12 flex items-center justify-center rounded-2xl text-slate-400 hover:bg-slate-200 transition-all">✕</button>
                         </div>
                         <div className="p-2 max-h-[400px] overflow-y-auto">
                             {variantes.filter(v => v.product_code.toLowerCase().includes(searchTerm.toLowerCase()) || (v.producto_padre_nombre || "").toLowerCase().includes(searchTerm.toLowerCase())).map(v => (
-                                <button key={v.id} onClick={() => { addProductToItems(v); setLastAddedId(v.id); setTimeout(() => setLastAddedId(null), 800); }} className={`w-full p-4 flex items-center justify-between rounded-3xl transition-all text-left mb-1 ${lastAddedId === v.id ? 'bg-emerald-100 border-2 border-emerald-300 scale-95' : 'hover:bg-slate-50 border-2 border-transparent'}`}>
-                                    <div><div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{v.product_code}</div><div className="font-bold text-slate-800">{v.producto_padre_nombre || v.nombre_variante}</div></div>
-                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${lastAddedId === v.id ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{lastAddedId === v.id ? <Check size={24} /> : <Plus size={24} />}</div>
+                                <button key={v.id} onClick={() => { addProductToItems(v); setLastAddedId(v.id); setTimeout(() => setLastAddedId(null), 800); }} className={`w-full p-4 flex items-center justify-between rounded-3xl transition-all text-left mb-1 ${lastAddedId === v.id ? 'bg-blue-100 border-2 border-blue-300 scale-95' : 'hover:bg-slate-50 border-2 border-transparent'}`}>
+                                    <div><div className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{v.product_code}</div><div className="font-bold text-slate-800">{v.producto_padre_nombre || v.nombre_variante}</div></div>
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${lastAddedId === v.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{lastAddedId === v.id ? <Check size={24} /> : <Plus size={24} />}</div>
                                 </button>
                             ))}
                         </div>
                         <div className="p-4 bg-slate-100 flex justify-end"><button onClick={() => setIsSearchOpen(false)} className="bg-slate-900 text-white px-10 py-4 rounded-3xl font-black text-sm uppercase tracking-widest">CERRAR</button></div>
                     </div>
                 </div>
-            )}
+                )}
+                </div>
+            </main>
         </div>
     );
 }

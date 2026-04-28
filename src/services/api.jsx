@@ -45,7 +45,8 @@ export const getCategorias = async () => {
             headers: authHeaders(),
         });
         if (!res.ok) return [];
-        return await res.json();
+        const data = await res.json();
+        return data.results || data;
     } catch {
         return [];
     }
@@ -62,14 +63,22 @@ export const crearCategoria = async (nombre) => {
 
 // ─── Productos (lectura) ─────────────────────────────────────────
 
-export async function getProductos() {
+export async function getProductos(params = {}) {
     try {
-        const res = await fetch(`${API_URL}/catalogo/productos/`, {
+        const query = new URLSearchParams();
+        Object.entries(params).forEach(([key, val]) => {
+            if (val !== undefined && val !== null && val !== '') {
+                query.append(key, val);
+            }
+        });
+
+        const res = await fetch(`${API_URL}/catalogo/productos/?${query.toString()}`, {
             method: 'GET',
             headers: authHeaders(),
             cache: 'no-store',
         });
-        return handleResponse(res);
+        const data = await handleResponse(res);
+        return data; // Retornamos el objeto completo (con results, count, etc.)
     } catch {
         throw new Error('No se pudo conectar al servidor.');
     }

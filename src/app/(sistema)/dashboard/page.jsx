@@ -64,7 +64,7 @@ export default function DashboardPage() {
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight">
                     Bienvenido, <span className="text-blue-600">{nombreUsuario}</span>
                 </h3>
-                <p className="text-slate-500 font-medium mt-1">Torre de control para gestión integral.</p>
+                <p className="text-slate-500 font-medium mt-1">Panel de control del sistema.</p>
             </div>
 
             {/* Renderizado dinámico por Familias */}

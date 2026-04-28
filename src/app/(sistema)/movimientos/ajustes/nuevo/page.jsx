@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { Search, Plus, Settings, Package, AlertCircle, Check, Info, TrendingUp, DollarSign, ArrowRight, BarChart3 } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 
 export default function NuevoAjustePage() {
     const router = useRouter();
@@ -129,28 +130,26 @@ export default function NuevoAjustePage() {
     );
 
     return (
-        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 bg-slate-50 min-h-screen">
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                <div>
-                    <Link href="/movimientos/ajustes" className="text-violet-600 font-bold text-xs uppercase tracking-widest hover:text-violet-700 flex items-center gap-1 mb-2">← Volver</Link>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white">
-                            <Settings size={24} />
-                        </div>
-                        Nuevo Ajuste Comercial
-                    </h1>
-                </div>
-
+        <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
+            <PageHeader
+                breadcrumbs={[
+                    { label: 'Gestión de Movimientos', href: '/movimientos' },
+                    { label: 'Ajustes Comerciales', href: '/movimientos/ajustes' },
+                    { label: 'Nuevo Ajuste' }
+                ]}
+                subtitle="Modificá costos y precios de venta de un producto específico."
+            >
                 <button 
                     disabled={isSubmitting || !ajuste.variante} 
                     onClick={handleSubmit} 
-                    className={`px-10 py-4 rounded-2xl font-black text-sm transition-all active:scale-95 shadow-xl ${(!ajuste.variante) ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-violet-600 hover:bg-violet-700 text-white shadow-violet-100'}`}
+                    className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${(!ajuste.variante) ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100'}`}
                 >
                     {isSubmitting ? 'GUARDANDO...' : 'REGISTRAR AJUSTE'}
                 </button>
-            </div>
+            </PageHeader>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <main className="flex-1 overflow-y-auto p-8 min-w-0">
+                <div className="max-w-[1800px] mx-auto space-y-6">
                 {/* Columna Izquierda: Producto */}
                 <div className="md:col-span-1 space-y-6">
                     <div className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm space-y-6">
@@ -322,6 +321,7 @@ export default function NuevoAjustePage() {
                     </div>
                 </div>
             )}
+            </main>
         </div>
     );
 }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { Search, Plus, Trash2, Package, AlertCircle, Check, Info } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 
 export default function NuevaBajaPage() {
     const router = useRouter();
@@ -104,26 +105,26 @@ export default function NuevaBajaPage() {
     );
 
     return (
-        <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6 bg-slate-50 min-h-screen">
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                <div>
-                    <Link href="/movimientos/bajas" className="text-rose-600 font-bold text-xs uppercase tracking-widest hover:text-rose-700 flex items-center gap-1 mb-2">← Volver</Link>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        <div className="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center text-white">
-                            <Trash2 size={24} />
-                        </div>
-                        Nueva Baja de Inventario
-                    </h1>
-                </div>
-
+        <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
+            <PageHeader
+                breadcrumbs={[
+                    { label: 'Gestión de Movimientos', href: '/movimientos' },
+                    { label: 'Bajas de Inventario', href: '/movimientos/bajas' },
+                    { label: 'Nueva Baja' }
+                ]}
+                subtitle="Registrá pérdidas, mermas o productos vencidos para darlos de baja."
+            >
                 <button 
                     disabled={isSubmitting || !baja.lote || !!errorMsg} 
                     onClick={handleSubmit} 
-                    className={`px-8 py-4 rounded-2xl font-black text-sm transition-all active:scale-95 shadow-xl ${(!baja.lote || !!errorMsg) ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-100'}`}
+                    className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${(!baja.lote || !!errorMsg) ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100'}`}
                 >
                     {isSubmitting ? 'GUARDANDO...' : 'GUARDAR BAJA'}
                 </button>
-            </div>
+            </PageHeader>
+
+            <main className="flex-1 overflow-y-auto p-8 min-w-0">
+                <div className="max-w-[1800px] mx-auto space-y-6">
 
             <div className="grid grid-cols-1 gap-6">
                 {/* Selección de Producto/Lote */}
@@ -269,7 +270,9 @@ export default function NuevaBajaPage() {
                         </div>
                     </div>
                 </div>
-            )}
+                )}
+                </div>
+            </main>
         </div>
     );
 }

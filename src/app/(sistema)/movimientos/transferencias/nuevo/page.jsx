@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { Search, Plus, ArrowRightLeft, Package, AlertCircle, Check, Info, MapPin, Trash2 } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 
 export default function NuevaTransferenciaPage() {
     const router = useRouter();
@@ -46,7 +47,8 @@ export default function NuevaTransferenciaPage() {
                 const resDep = await fetch(`${API_BASE}/api/inventario/depositos/`, { 
                     headers: { 'Authorization': `Bearer ${token}` } 
                 });
-                setDepositos(await resDep.json());
+                const dDep = await resDep.json();
+                setDepositos(dDep.results || dDep);
             } catch (err) { console.error(err); }
         }
         loadData();
@@ -150,34 +152,30 @@ export default function NuevaTransferenciaPage() {
     );
 
     return (
-        <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6 bg-slate-50 min-h-screen">
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                <div>
-                    <Link href="/movimientos/transferencias" className="text-blue-600 font-bold text-xs uppercase tracking-widest hover:text-blue-700 flex items-center gap-1 mb-2">← Volver</Link>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
-                            <ArrowRightLeft size={24} />
-                        </div>
-                        Nueva Transferencia de Stock
-                    </h1>
+        <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
+            <PageHeader
+                breadcrumbs={[
+                    { label: 'Gestión de Movimientos', href: '/movimientos' },
+                    { label: 'Transferencias Internas', href: '/movimientos/transferencias' },
+                    { label: 'Nueva Transferencia' }
+                ]}
+                subtitle="Mové stock entre depósitos de forma controlada y auditada."
+            >
+                <div className="text-right hidden md:block">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ítems a mover</p>
+                    <p className="text-2xl font-black text-slate-900">{items.length}</p>
                 </div>
+                <button 
+                    disabled={isSubmitting || !transf.deposito_origen || !transf.deposito_destino || items.length === 0} 
+                    onClick={handleSubmit} 
+                    className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${(!transf.deposito_origen || !transf.deposito_destino || items.length === 0) ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100'}`}
+                >
+                    {isSubmitting ? 'GUARDANDO...' : 'GUARDAR TRANSFERENCIA'}
+                </button>
+            </PageHeader>
 
-                <div className="flex items-center gap-4">
-                    <div className="text-right hidden md:block">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ítems a mover</p>
-                        <p className="text-2xl font-black text-slate-900">{items.length}</p>
-                    </div>
-                    <button 
-                        disabled={isSubmitting || !transf.deposito_origen || !transf.deposito_destino || items.length === 0} 
-                        onClick={handleSubmit} 
-                        className={`px-8 py-4 rounded-2xl font-black text-sm transition-all active:scale-95 shadow-xl ${(!transf.deposito_origen || !transf.deposito_destino || items.length === 0) ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100'}`}
-                    >
-                        {isSubmitting ? 'GUARDANDO...' : 'GUARDAR TRANSFERENCIA'}
-                    </button>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6">
+            <main className="flex-1 overflow-y-auto p-8 min-w-0">
+                <div className="max-w-[1800px] mx-auto space-y-6">
                 {/* Cabecera: Depósitos */}
                 <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
@@ -357,6 +355,8 @@ export default function NuevaTransferenciaPage() {
                     </div>
                 </div>
             )}
+                </div>
+            </main>
         </div>
     );
 }

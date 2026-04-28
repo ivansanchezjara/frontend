@@ -11,11 +11,12 @@ import { Image as ImageIcon } from 'lucide-react';
 import SearchBar from '@/components/ui/SearchBar';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import EmptyState from '@/components/ui/EmptyState';
-import Header from '@/components/ui/Header';
+import PageHeader from '@/components/ui/PageHeader';
 
 // Catálogo Components
 import ProductoCard from '@/components/catalogo/ProductoCard';
 import ProductoRow from '@/components/catalogo/ProductoRow';
+import Pagination from '@/components/ui/Pagination';
 
 // Normalización para búsqueda sin tildes
 const normalizar = (t) => t?.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() || "";
@@ -42,10 +43,13 @@ export default function CatalogoPage() {
     const [productos, setProductos] = useState([]);
     const [categorias, setCategorias] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [count, setCount] = useState(0);
+    const [page, setPage] = useState(1);
+    const pageSize = 24;
 
     // Filtros
     const [busqueda, setBusqueda] = useState('');
-    const busquedaDebounced = useDebounce(busqueda, 350);
+    const busquedaDebounced = useDebounce(busqueda, 400);
     const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('todas');
 
     // Vista
@@ -53,44 +57,39 @@ export default function CatalogoPage() {
 
     const handleError = useErrorHandler();
 
-    // --- CARGA DE DATOS ---
+    // Cargar Categorías (una sola vez)
     useEffect(() => {
-        async function fetchData() {
+        getCategorias().then(setCategorias).catch(handleError);
+    }, [handleError]);
+
+    // Cargar Productos (cuando cambian filtros o página)
+    useEffect(() => {
+        async function fetchProducts() {
+            setLoading(true);
             try {
-                const [prods, cats] = await Promise.all([getProductos(), getCategorias()]);
-                setProductos(prods || []);
-                setCategorias(cats || []);
+                const params = {
+                    page,
+                    search: busquedaDebounced,
+                    categoria: categoriaSeleccionada !== 'todas' ? categoriaSeleccionada : undefined
+                };
+                const data = await getProductos(params);
+                setProductos(data.results || []);
+                setCount(data.count || 0);
             } catch (err) {
                 handleError(err);
             } finally {
                 setLoading(false);
             }
         }
-        fetchData();
-    }, [handleError]);
+        fetchProducts();
+    }, [handleError, busquedaDebounced, categoriaSeleccionada, page]);
 
-    // --- FILTRADO ---
-    const productosFiltrados = useMemo(() => {
-        let resultado = productos;
+    // Resetear a página 1 cuando cambia la búsqueda o categoría
+    useEffect(() => {
+        setPage(1);
+    }, [busquedaDebounced, categoriaSeleccionada]);
 
-        // Filtro por categoría
-        if (categoriaSeleccionada !== 'todas') {
-            resultado = resultado.filter(p => p.categoria?.id === parseInt(categoriaSeleccionada));
-        }
-
-        // Filtro por búsqueda
-        const palabras = normalizar(busquedaDebounced).split(' ').filter(Boolean);
-        if (palabras.length > 0) {
-            resultado = resultado.filter(prod => {
-                const contenido = normalizar(`${prod.nombre_general} ${prod.general_code} ${prod.brand} ${prod.categoria?.nombre || ''}`);
-                return palabras.every(p => contenido.includes(p));
-            });
-        }
-
-        return resultado;
-    }, [productos, busquedaDebounced, categoriaSeleccionada]);
-
-    if (loading) return <LoadingScreen texto="Cargando Catálogo..." />;
+    if (loading && productos.length === 0) return <LoadingScreen texto="Cargando Catálogo..." />;
 
     const hayFiltrosActivos = busqueda !== '' || categoriaSeleccionada !== 'todas';
 
@@ -98,9 +97,9 @@ export default function CatalogoPage() {
         <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
 
             {/* HEADER */}
-            <Header
+            <PageHeader
                 title="Catálogo"
-                subtitle={`Master Data · ${productos.length} productos`}
+                subtitle={`Master Data · ${count} productos en total`}
                 subtitleClassName="text-emerald-600"
             >
                 <Link
@@ -115,7 +114,7 @@ export default function CatalogoPage() {
                 >
                     + NUEVO PRODUCTO
                 </Link>
-            </Header>
+            </PageHeader>
 
             <main className="flex-1 overflow-y-auto p-8 min-w-0">
                 <div className="max-w-7xl mx-auto space-y-4">
@@ -156,18 +155,36 @@ export default function CatalogoPage() {
                             </div>
                         </div>
 
-                        {/* Fila inferior: contador */}
+                        {/* Fila inferior: contador y selector de categoría */}
                         <div className="flex items-center justify-between gap-4 flex-wrap">
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    onClick={() => setCategoriaSeleccionada('todas')}
+                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${categoriaSeleccionada === 'todas' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                                >
+                                    TODAS
+                                </button>
+                                {categorias.map(cat => (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => setCategoriaSeleccionada(cat.id.toString())}
+                                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${categoriaSeleccionada === cat.id.toString() ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                                    >
+                                        {cat.nombre}
+                                    </button>
+                                ))}
+                            </div>
+
                             {/* Contador */}
                             <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 whitespace-nowrap">
-                                <div className={`w-1.5 h-1.5 rounded-full ${productosFiltrados.length > 0 ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]' : 'bg-slate-300'}`} />
-                                {productosFiltrados.length} {productosFiltrados.length === 1 ? 'producto' : 'productos'}
+                                <div className={`w-1.5 h-1.5 rounded-full ${count > 0 ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]' : 'bg-slate-300'}`} />
+                                {count} {count === 1 ? 'producto' : 'productos'} encontrados
                             </div>
                         </div>
                     </div>
 
                     {/* CONTENIDO: VACÍO O VISTA */}
-                    {productosFiltrados.length === 0 ? (
+                    {productos.length === 0 ? (
                         <EmptyState
                             titulo={hayFiltrosActivos ? "Sin resultados" : "Catálogo vacío"}
                             descripcion={hayFiltrosActivos ? "Intentá con otros términos o cambiá el filtro de categoría." : "Creá tu primer producto para empezar a armar el catálogo."}
@@ -178,7 +195,7 @@ export default function CatalogoPage() {
 
                         /* VISTA GRILLA */
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-                            {productosFiltrados.map(p => (
+                            {productos.map(p => (
                                 <ProductoCard key={p.id} producto={p} />
                             ))}
                         </div>
@@ -198,12 +215,22 @@ export default function CatalogoPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {productosFiltrados.map(p => (
+                                    {productos.map(p => (
                                         <ProductoRow key={p.id} producto={p} />
                                     ))}
                                 </tbody>
                             </table>
                         </div>
+                    )}
+
+                    {/* PAGINACIÓN */}
+                    {count > pageSize && (
+                        <Pagination 
+                            count={count}
+                            pageSize={pageSize}
+                            currentPage={page}
+                            onPageChange={setPage}
+                        />
                     )}
                 </div>
             </main>

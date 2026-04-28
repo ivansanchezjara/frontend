@@ -4,7 +4,8 @@ import Link from 'next/link';
 import Cookies from 'js-cookie';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import EmptyState from '@/components/ui/EmptyState';
-import { Settings, Eye, ChevronRight, Package, User, Calendar, Plus, BarChart3, CheckCircle, TrendingUp, DollarSign } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
+import { Settings, Eye, Package, User, Calendar, Plus, BarChart3, CheckCircle, TrendingUp, DollarSign } from 'lucide-react';
 
 export default function AjustesPage() {
     const [ajustes, setAjustes] = useState([]);
@@ -70,24 +71,24 @@ export default function AjustesPage() {
     };
 
     return (
-        <div className="p-4 md:p-10 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight text-violet-600 uppercase">Ajustes Comerciales</h1>
-                    <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
-                        <Link href="/movimientos" className="hover:text-violet-600 transition-colors">Movimientos</Link>
-                        <ChevronRight size={14} />
-                        <span className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Costos & Precios</span>
-                    </div>
-                </div>
+        <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
+            <PageHeader
+                breadcrumbs={[
+                    { label: 'Gestión de Movimientos', href: '/movimientos' },
+                    { label: 'Ajustes Comerciales' }
+                ]}
+                subtitle="Modificá costos y precios de venta de forma masiva."
+            >
                 <Link
                     href="/movimientos/ajustes/nuevo"
-                    className="bg-violet-600 hover:bg-violet-700 text-white font-black py-4 px-8 rounded-[24px] shadow-xl shadow-violet-100 transition-all flex items-center gap-2 uppercase text-xs tracking-widest"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 px-6 rounded-xl shadow-lg shadow-blue-100 transition-all flex items-center gap-2 uppercase text-[10px] tracking-widest active:scale-95"
                 >
-                    <Plus size={18} /> Registrar Ajuste
+                    <Plus size={16} /> Registrar Ajuste
                 </Link>
-            </div>
+            </PageHeader>
+
+            <main className="flex-1 overflow-y-auto p-8 min-w-0">
+                <div className="max-w-[1800px] mx-auto space-y-6">
 
             {loading ? (
                 <LoadingScreen message="Sincronizando ajustes comerciales..." />
@@ -102,9 +103,9 @@ export default function AjustesPage() {
             ) : (
                 <div className="grid grid-cols-1 gap-4">
                     {ajustes.map((ajuste) => (
-                        <div key={ajuste.id} className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm hover:shadow-lg hover:border-violet-200 transition-all group flex flex-col md:flex-row items-center gap-6">
+                        <div key={ajuste.id} className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all group flex flex-col md:flex-row items-center gap-6">
                             {/* Icono de Estado */}
-                            <div className={`w-16 h-16 rounded-[22px] flex items-center justify-center shrink-0 shadow-sm border ${ajuste.estado === 'APROBADO' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-violet-50 text-violet-600 border-violet-100'}`}>
+                            <div className={`w-16 h-16 rounded-[22px] flex items-center justify-center shrink-0 shadow-sm border ${ajuste.estado === 'APROBADO' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
                                 {ajuste.estado === 'APROBADO' ? <CheckCircle size={32} /> : <Settings size={32} className="animate-spin-slow" />}
                             </div>
 
@@ -112,7 +113,7 @@ export default function AjustesPage() {
                             <div className="flex-1 min-w-0 text-center md:text-left">
                                 <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">ID #{ajuste.id}</span>
-                                    <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${ajuste.estado === 'APROBADO' ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-700'}`}>
+                                    <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${ajuste.estado === 'APROBADO' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
                                         {ajuste.estado}
                                     </span>
                                     <span className="text-[9px] font-black px-3 py-1 bg-slate-100 text-slate-500 rounded-full uppercase tracking-widest">
@@ -139,7 +140,7 @@ export default function AjustesPage() {
                                 {ajuste.estado === 'BORRADOR' && (
                                     <button 
                                         onClick={(e) => handleAprobar(ajuste.id, e)}
-                                        className="bg-violet-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-violet-100 hover:bg-violet-700 transition-all border border-violet-500"
+                                        className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all border border-blue-500"
                                     >
                                         Aprobar Ajuste
                                     </button>
@@ -154,6 +155,8 @@ export default function AjustesPage() {
                     ))}
                 </div>
             )}
+                </div>
+            </main>
             <style jsx>{`
                 .animate-spin-slow {
                     animation: spin 6s linear infinite;

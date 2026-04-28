@@ -1,83 +1,99 @@
 import Link from 'next/link';
-import Header from '@/components/ui/Header';
+import PageHeader from '@/components/ui/PageHeader';
+import { 
+    ArrowDownCircle, ArrowUpCircle, 
+    RefreshCcw, BarChart3, Truck, ArrowRight 
+} from 'lucide-react';
 
 export default function MovimientosHubPage() {
-    // Definimos las tarjetas de movimientos
     const movimientos = [
         {
             href: '/movimientos/ingresos',
-            icon: '📥',
+            icon: <ArrowDownCircle size={32} />,
             title: 'Ingresos de Mercadería',
             desc: 'Registrar la entrada de stock, remitos y actualizar costos de compra.',
-            color: 'emerald'
+            color: 'blue'
         },
         {
             href: '/movimientos/bajas',
-            icon: '📤',
+            icon: <ArrowUpCircle size={32} />,
             title: 'Bajas de Inventario',
             desc: 'Registrar pérdidas, mermas, productos vencidos o roturas.',
-            color: 'rose' // rose es un rojo suave
+            color: 'blue'
         },
         {
             href: '/movimientos/transferencias',
-            icon: '🔄',
+            icon: <RefreshCcw size={32} />,
             title: 'Transferencias Internas',
             desc: 'Mover stock entre distintos depósitos o sucursales de la empresa.',
             color: 'blue'
         },
         {
             href: '/movimientos/ajustes',
-            icon: '📊',
+            icon: <BarChart3 size={32} />,
             title: 'Ajustes Comerciales',
             desc: 'Modificar costos de compra y precios de venta de forma auditada.',
-            color: 'violet'
+            color: 'blue'
         },
         {
             href: '/movimientos/consignaciones',
-            icon: '🚚',
+            icon: <Truck size={32} />,
             title: 'Salidas Provisorias (Consignación)',
             desc: 'Mercadería enviada a clientes o vendedores de forma temporal.',
-            color: 'purple'
+            color: 'blue'
         }
     ];
 
     return (
         <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
             {/* HEADER */}
-            <Header
+            <PageHeader
                 title="Gestión de Movimientos"
-                subtitle="📦 Operaciones de Inventario"
-            >
-            </Header>
+                subtitle="Operaciones y Logística de Inventario"
+                subtitleClassName="text-blue-600"
+            />
 
             <main className="flex-1 overflow-y-auto p-8 min-w-0">
-                <div className="max-w-7xl mx-auto space-y-6">
-                    <p className="text-slate-500 font-medium mb-4">Seleccioná el tipo de operación que deseás realizar sobre el stock.</p>
+                <div className="max-w-[1600px] mx-auto">
+                    <div className="mb-10">
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Centro de Operaciones</h2>
+                        <p className="text-slate-500 font-medium">Seleccioná el tipo de operación que deseás realizar sobre el stock.</p>
+                    </div>
 
-                    {/* Grid de opciones */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+                    {/* Lista de operaciones */}
+                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
                         {movimientos.map((mov) => (
-                            <Link key={mov.href} href={mov.href} className="group flex flex-col h-full bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
-
-                                {/* Decoración de fondo */}
-                                <div className={`absolute top-0 right-0 w-32 h-32 bg-${mov.color}-500/5 rounded-bl-[100px] -z-0 transition-transform group-hover:scale-110`}></div>
-
-                                <div className="relative z-10 flex flex-col h-full">
-                                    <div className={`w-14 h-14 flex items-center justify-center text-3xl bg-${mov.color}-50 text-${mov.color}-600 rounded-2xl mb-5 group-hover:scale-110 group-hover:bg-${mov.color}-600 group-hover:text-white transition-all duration-300 shadow-sm`}>
+                            <Link 
+                                key={mov.href} 
+                                href={mov.href} 
+                                className="group block bg-white p-5 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 overflow-hidden relative"
+                            >
+                                <div className="flex items-center gap-6 relative z-10">
+                                    {/* Icono */}
+                                    <div className="w-20 h-20 flex items-center justify-center bg-blue-50 text-blue-600 rounded-[22px] group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm shrink-0">
                                         {mov.icon}
                                     </div>
-                                    <h2 className="text-lg font-black text-slate-900 tracking-tight mb-2 group-hover:text-blue-600 transition-colors">
-                                        {mov.title}
-                                    </h2>
-                                    <p className="text-slate-500 text-sm font-medium leading-relaxed flex-grow">
-                                        {mov.desc}
-                                    </p>
 
-                                    {/* Flecha indicadora */}
-                                    <div className="mt-6 flex items-center text-sm font-bold text-slate-400 group-hover:text-blue-600 transition-colors">
-                                        Iniciar Operación <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                                    {/* Contenido */}
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-xl font-black text-slate-900 tracking-tight mb-1 group-hover:text-blue-600 transition-colors">
+                                            {mov.title}
+                                        </h3>
+                                        <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-2xl">
+                                            {mov.desc}
+                                        </p>
+                                    </div>
+
+                                    {/* Acción */}
+                                    <div className="pr-4 shrink-0">
+                                        <div className="flex items-center gap-2 px-6 py-3 bg-slate-50 text-slate-400 rounded-2xl text-xs font-black uppercase tracking-widest group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                                            Gestionar <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                        </div>
                                     </div>
                                 </div>
+
+                                {/* Decoración sutil */}
+                                <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all"></div>
                             </Link>
                         ))}
                     </div>

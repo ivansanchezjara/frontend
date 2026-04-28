@@ -57,7 +57,7 @@ export default function LoginPage() {
               <input
                 type="text"
                 className="w-full bg-slate-50 p-4 rounded-2xl border border-transparent focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-medium text-slate-900"
-                placeholder="Ej: ivan_sanchez"
+                placeholder="Ej: juan_fleitas"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required

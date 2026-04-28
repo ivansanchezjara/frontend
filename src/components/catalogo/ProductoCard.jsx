@@ -7,11 +7,11 @@ export default function ProductoCard({ producto }) {
     const imagenUrl = getFullImageUrl(imagen_principal_url);
 
     return (
-        <Link href={`/catalogo/${slug}`} className="group block">
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+        <Link href={`/catalogo/${slug}`} className="group block h-full">
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col">
 
                 {/* Imagen */}
-                <div className="relative h-44 bg-slate-100 overflow-hidden">
+                <div className="relative h-44 bg-slate-100 overflow-hidden shrink-0">
                     {imagenUrl ? (
                         <img
                             src={imagenUrl}
@@ -40,16 +40,16 @@ export default function ProductoCard({ producto }) {
                 </div>
 
                 {/* Info */}
-                <div className="p-4 space-y-3">
-                    <div>
+                <div className="p-4 flex flex-col flex-1">
+                    <div className="flex-1">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{general_code}</p>
-                        <h3 className="text-sm font-black text-slate-900 leading-tight mt-0.5 group-hover:text-emerald-600 transition-colors line-clamp-2">
+                        <h3 className="text-sm font-black text-slate-900 leading-tight mt-0.5 group-hover:text-emerald-600 transition-colors line-clamp-2 h-9">
                             {nombre_general}
                         </h3>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">{brand}</p>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <div className="flex items-center justify-between pt-3 mt-4 border-t border-slate-100">
                         <span className="text-[11px] font-bold text-slate-500">
                             {cantidadVariantes} {cantidadVariantes === 1 ? 'variante' : 'variantes'}
                         </span>

@@ -51,7 +51,7 @@ export default function DetalleConsignacionPage({ params }) {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
-            setDepositos(data);
+            setDepositos(data.results || data);
         } catch (err) { console.error(err); }
     };
 
@@ -80,55 +80,46 @@ export default function DetalleConsignacionPage({ params }) {
     const resumen = consignacion.resumen_stock || {};
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 bg-slate-50 min-h-screen pb-24">
-            {/* Header & Acciones */}
-            <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
-                <div>
-                    <Link href="/movimientos/consignaciones" className="text-purple-600 font-bold text-xs uppercase tracking-widest hover:text-purple-700 flex items-center gap-1 mb-2">← Listado de Consignaciones</Link>
-                    <div className="flex items-center gap-4">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg ${consignacion.estado === 'APROBADO' ? 'bg-emerald-500' : 'bg-purple-600'}`}>
-                            <Truck size={32} />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Salida #{consignacion.id}</h1>
-                                <span className={`text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-sm ${consignacion.estado === 'APROBADO' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-amber-100 text-amber-700 border border-amber-200'}`}>
-                                    {consignacion.estado}
-                                </span>
-                            </div>
-                            <p className="text-slate-500 font-bold text-sm tracking-tight">{consignacion.responsable} • {consignacion.destino}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                    {consignacion.estado === 'BORRADOR' && (
+        <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
+            <MovimientoHeader
+                breadcrumbs={[
+                    { label: 'Gestión de Movimientos', href: '/movimientos' },
+                    { label: 'Consignaciones', href: '/movimientos/consignaciones' },
+                    { label: `Salida #${consignacion.id}` }
+                ]}
+                subtitle={`${consignacion.responsable} • ${consignacion.destino}`}
+            >
+                {consignacion.estado === 'BORRADOR' && (
+                    <button 
+                        onClick={handleAprobarSalida}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-100 transition-all flex items-center gap-2 active:scale-95"
+                    >
+                        <CheckCircle size={18} /> Aprobar Salida
+                    </button>
+                )}
+                {consignacion.estado === 'APROBADO' && !resumen.completado && (
+                    <>
                         <button 
-                            onClick={handleAprobarSalida}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-100 transition-all flex items-center gap-2 active:scale-95"
+                            onClick={() => setShowDevolucionModal(true)}
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95 border border-slate-200"
                         >
-                            <CheckCircle size={18} /> Aprobar Salida
+                            <RotateCcw size={16} /> Devolución
                         </button>
-                    )}
-                    
-                    {consignacion.estado === 'APROBADO' && !resumen.completado && (
-                        <>
-                            <button 
-                                onClick={() => setShowDevolucionModal(true)}
-                                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-purple-100 transition-all flex items-center gap-2 active:scale-95"
-                            >
-                                <RotateCcw size={18} /> Registrar Devolución
-                            </button>
-                            <button 
-                                onClick={() => setShowLiquidacionModal(true)}
-                                className="bg-slate-900 hover:bg-black text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 transition-all flex items-center gap-2 active:scale-95 border border-slate-700"
-                            >
-                                <DollarSign size={18} /> Liquidar / Venta
-                            </button>
-                        </>
-                    )}
-                </div>
-            </div>
+                        <button 
+                            onClick={() => setShowLiquidacionModal(true)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-100 transition-all flex items-center gap-2 active:scale-95"
+                        >
+                            <DollarSign size={16} /> Liquidar
+                        </button>
+                    </>
+                )}
+                <span className={`text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest ${consignacion.estado === 'APROBADO' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-amber-100 text-amber-700 border border-amber-200'}`}>
+                    {consignacion.estado}
+                </span>
+            </MovimientoHeader>
+
+            <main className="flex-1 overflow-y-auto p-8 min-w-0">
+                <div className="max-w-[1800px] mx-auto space-y-6">
 
             {/* Grid de Resumen de Stock */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -247,6 +238,8 @@ export default function DetalleConsignacionPage({ params }) {
                     </div>
                 </div>
             )}
+                </div>
+            </main>
         </div>
     );
 }

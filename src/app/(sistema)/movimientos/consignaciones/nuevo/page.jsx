@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
-import { Truck, Plus, Package, MapPin, User, Calendar, Trash2, Search, AlertCircle, Info, ChevronRight, LayoutGrid } from 'lucide-react';
-import LoadingScreen from '@/components/ui/LoadingScreen';
+import { Truck, Plus, Package, MapPin, User, Calendar, Trash2, Search, AlertCircle, Info, LayoutGrid } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 
 export default function NuevaConsignacionPage() {
     const router = useRouter();
@@ -136,29 +136,26 @@ export default function NuevaConsignacionPage() {
     );
 
     return (
-        <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6 bg-slate-50 min-h-screen pb-24">
-            {/* Header de página */}
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                <div>
-                    <Link href="/movimientos/consignaciones" className="text-purple-600 font-bold text-xs uppercase tracking-widest hover:text-purple-700 flex items-center gap-1 mb-2">← Volver</Link>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center text-white">
-                            <Truck size={24} />
-                        </div>
-                        Nueva Consignación
-                    </h1>
-                </div>
-
+        <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
+            <PageHeader
+                breadcrumbs={[
+                    { label: 'Gestión de Movimientos', href: '/movimientos' },
+                    { label: 'Consignaciones', href: '/movimientos/consignaciones' },
+                    { label: 'Nueva Consignación' }
+                ]}
+                subtitle="Registrá mercadería enviada a clientes o vendedores en calidad de préstamo."
+            >
                 <button 
                     onClick={handleSubmit}
                     disabled={isSubmitting || items.length === 0 || !header.responsable}
-                    className="px-10 py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-purple-100 transition-all active:scale-95"
+                    className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${(items.length === 0 || !header.responsable) ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100'}`}
                 >
                     {isSubmitting ? 'PROCESANDO...' : 'REGISTRAR SALIDA'}
                 </button>
-            </div>
+            </PageHeader>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <main className="flex-1 overflow-y-auto p-8 min-w-0">
+                <div className="max-w-[1800px] mx-auto space-y-6">
                 {/* Panel lateral: Datos de Cabecera */}
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm space-y-6">
@@ -327,6 +324,7 @@ export default function NuevaConsignacionPage() {
                     </div>
                 </div>
             )}
+            </main>
         </div>
     );
 }
