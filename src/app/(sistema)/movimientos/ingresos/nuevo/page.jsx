@@ -87,12 +87,21 @@ export default function NuevoIngresoPage() {
         return `${date}-AUTO-${random}`;
     };
 
+    const getVariantDisplayName = (v) => {
+        const parentName = (v.producto_padre_nombre || '').trim();
+        const variantName = (v.nombre_variante || '').trim();
+
+        if (!parentName) return variantName;
+        if (!variantName || parentName.toLowerCase() === variantName.toLowerCase()) return parentName;
+        return `${parentName} · ${variantName}`;
+    };
+
     const addProductToItems = (v) => {
         setLastAddedId(v.id);
         setTimeout(() => setLastAddedId(null), 800);
         const newItem = {
             variante: v.id,
-            variante_label: `${v.product_code} - ${v.producto_padre_nombre || v.nombre_variante}`,
+            variante_label: `${v.product_code} - ${getVariantDisplayName(v)}`,
             cantidad: 0,
             costo_fob_unitario: v.costo_fob || 0,
             costo_landed_unitario: v.costo_landed || 0,
@@ -349,12 +358,13 @@ export default function NuevoIngresoPage() {
                             <button onClick={() => {
                                 const filtered = variantes.filter(v =>
                                     v.product_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                    (v.producto_padre_nombre || "").toLowerCase().includes(searchTerm.toLowerCase())
+                                    (v.producto_padre_nombre || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                    (v.nombre_variante || "").toLowerCase().includes(searchTerm.toLowerCase())
                                 );
                                 if (filtered.length > 0) {
                                     const newItemsAdd = filtered.map(v => ({
                                         variante: v.id,
-                                        variante_label: `${v.product_code} - ${v.producto_padre_nombre || v.nombre_variante}`,
+                                        variante_label: `${v.product_code} - ${getVariantDisplayName(v)}`,
                                         cantidad: 0,
                                         costo_fob_unitario: v.costo_fob || 0,
                                         costo_landed_unitario: v.costo_landed || 0,
@@ -377,9 +387,13 @@ export default function NuevoIngresoPage() {
                             <button onClick={() => setIsSearchOpen(false)} className="w-12 h-12 flex items-center justify-center rounded-2xl text-slate-400 hover:bg-slate-200 transition-all">✕</button>
                         </div>
                         <div className="p-2 max-h-[400px] overflow-y-auto">
-                            {variantes.filter(v => v.product_code.toLowerCase().includes(searchTerm.toLowerCase()) || (v.producto_padre_nombre || "").toLowerCase().includes(searchTerm.toLowerCase())).map(v => (
+                            {variantes.filter(v =>
+                                v.product_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                (v.producto_padre_nombre || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                (v.nombre_variante || "").toLowerCase().includes(searchTerm.toLowerCase())
+                            ).map(v => (
                                 <button key={v.id} onClick={() => { addProductToItems(v); setLastAddedId(v.id); setTimeout(() => setLastAddedId(null), 800); }} className={`w-full p-4 flex items-center justify-between rounded-3xl transition-all text-left mb-1 ${lastAddedId === v.id ? 'bg-blue-100 border-2 border-blue-300 scale-95' : 'hover:bg-slate-50 border-2 border-transparent'}`}>
-                                    <div><div className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{v.product_code}</div><div className="font-bold text-slate-800">{v.producto_padre_nombre || v.nombre_variante}</div></div>
+                                    <div><div className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{v.product_code}</div><div className="font-bold text-slate-800">{getVariantDisplayName(v)}</div></div>
                                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${lastAddedId === v.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{lastAddedId === v.id ? <Check size={24} /> : <Plus size={24} />}</div>
                                 </button>
                             ))}
