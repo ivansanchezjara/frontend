@@ -101,6 +101,8 @@ export default function EditarIngresoPage() {
             const [dayRaw, monthRaw, year] = raw.split('/');
             const day = dayRaw.padStart(2, '0');
             const month = monthRaw.padStart(2, '0');
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+            const [day, month, year] = raw.split('/');
             return `${year}-${month}-${day}`;
         }
 
