@@ -90,6 +90,48 @@ export default function EditarIngresoPage() {
         return `${parentName} · ${variantName}`;
     };
 
+    const normalizeText = (text) => (text || '').toString().trim().toLowerCase();
+
+    const parseSpreadsheetDate = (value) => {
+        if (value == null) return '';
+        const raw = value.toString().trim();
+        if (!raw) return '';
+
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+            const [day, month, year] = raw.split('/');
+            return `${year}-${month}-${day}`;
+        }
+
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+            return raw;
+        }
+
+        return '';
+    };
+
+    const formatDateForSpreadsheet = (value) => {
+        if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
+        const [year, month, day] = value.split('-');
+        return `${day}/${month}/${year}`;
+    };
+
+    const resolveVariantFromCell = (cellValue) => {
+        const raw = (cellValue || '').toString().trim();
+        if (!raw) return null;
+
+        const possibleCode = raw.split(' - ')[0].trim();
+        const normalizedRaw = normalizeText(raw);
+        const normalizedCode = normalizeText(possibleCode);
+
+        return variantes.find(v =>
+            normalizeText(v.product_code) === normalizedCode ||
+            normalizeText(v.product_code) === normalizedRaw ||
+            normalizeText(getVariantDisplayName(v)) === normalizedRaw ||
+            normalizeText(v.nombre_variante) === normalizedRaw ||
+            normalizeText(v.producto_padre_nombre) === normalizedRaw
+        ) || null;
+    };
+
     const addProductToItems = (v) => {
         const newItem = {
             variante: v.id,
@@ -144,7 +186,7 @@ export default function EditarIngresoPage() {
         const rows = items.map(it => {
             const code = it.variante_label.split(' - ')[0];
             return [
-                code, it.cantidad, it.lote_codigo, it.vencimiento,
+                code, it.cantidad, it.lote_codigo, formatDateForSpreadsheet(it.vencimiento),
                 it.costo_fob_unitario, it.costo_landed_unitario,
                 it.nuevo_precio_0_publico, it.nuevo_precio_1_estudiante,
                 it.nuevo_precio_2_reventa, it.nuevo_precio_3_mayorista,
@@ -240,21 +282,20 @@ export default function EditarIngresoPage() {
                         <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-20">
                             <h2 className="text-slate-800 font-black">Ítems ({items.length})</h2>
                             <div className="flex gap-2">
-                                <input type="file" id="csvImportEdit" className="hidden" accept=".csv" onChange={(e) => {
+                                <input type="file" id="csvImportEdit" className="hidden" accept=".csv,.txt" onChange={(e) => {
                                     const file = e.target.files[0];
                                     if (!file) return;
                                     const reader = new FileReader();
                                     reader.onload = (ev) => {
-                                        const lines = ev.target.result.split("\n");
+                                        const lines = ev.target.result.split(/\r?\n/);
                                         const loaded = [];
                                         lines.slice(1).forEach(l => {
                                             const p = l.split(/[;,]/).map(val => val.trim());
                                             if (p.length < 2) return;
-                                            const code = p[0];
-                                            const v = variantes.find(x => x.product_code === code);
+                                            const v = resolveVariantFromCell(p[0]);
                                             if (v) loaded.push({
-                                                variante: v.id, variante_label: `${v.product_code} - ${v.producto_padre_nombre || v.nombre_variante}`,
-                                                cantidad: p[1] || 1, lote_codigo: p[2] || generateAutoLote(), vencimiento: p[3] || '',
+                                                variante: v.id, variante_label: `${v.product_code} - ${getVariantDisplayName(v)}`,
+                                                cantidad: p[1] || 1, lote_codigo: p[2] || generateAutoLote(), vencimiento: parseSpreadsheetDate(p[3]),
                                                 costo_fob_unitario: p[4] || v.costo_fob || 0, costo_landed_unitario: p[5] || v.costo_landed || 0,
                                                 nuevo_precio_0_publico: p[6] || v.precio_0_publico || 0, nuevo_precio_1_estudiante: p[7] || v.precio_1_estudiante || 0,
                                                 nuevo_precio_2_reventa: p[8] || v.precio_2_reventa || 0, nuevo_precio_3_mayorista: p[9] || v.precio_3_mayorista || 0, nuevo_precio_4_intercompany: p[10] || v.precio_4_intercompany || 0

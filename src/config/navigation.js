@@ -168,6 +168,14 @@ export const navItems = [
     color: "blue",
   },
   {
+    category: "Comercial",
+    href: "/media-manager",
+    icon: "🖼️",
+    label: "Gestor de Medios",
+    type: "active",
+    color: "emerald",
+  },
+  {
     category: "Operaciones",
     label: "Asistencia Técnica",
     icon: "🔧",
