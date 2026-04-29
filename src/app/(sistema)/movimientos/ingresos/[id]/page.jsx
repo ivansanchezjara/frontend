@@ -81,10 +81,63 @@ export default function EditarIngresoPage() {
         return `${date}-AUTO-${random}`;
     };
 
+    const getVariantDisplayName = (v) => {
+        const parentName = (v.producto_padre_nombre || '').trim();
+        const variantName = (v.nombre_variante || '').trim();
+
+        if (!parentName) return variantName;
+        if (!variantName || parentName.toLowerCase() === variantName.toLowerCase()) return parentName;
+        return `${parentName} · ${variantName}`;
+    };
+
+    const normalizeText = (text) => (text || '').toString().trim().toLowerCase();
+
+    const parseSpreadsheetDate = (value) => {
+        if (value == null) return '';
+        const raw = value.toString().trim();
+        if (!raw) return '';
+
+        if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(raw)) {
+            const [dayRaw, monthRaw, year] = raw.split('/');
+            const day = dayRaw.padStart(2, '0');
+            const month = monthRaw.padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+            return raw;
+        }
+
+        return '';
+    };
+
+    const formatDateForSpreadsheet = (value) => {
+        if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
+        const [year, month, day] = value.split('-');
+        return `${day}/${month}/${year}`;
+    };
+
+    const resolveVariantFromCell = (cellValue) => {
+        const raw = (cellValue || '').toString().trim();
+        if (!raw) return null;
+
+        const possibleCode = raw.split(' - ')[0].trim();
+        const normalizedRaw = normalizeText(raw);
+        const normalizedCode = normalizeText(possibleCode);
+
+        return variantes.find(v =>
+            normalizeText(v.product_code) === normalizedCode ||
+            normalizeText(v.product_code) === normalizedRaw ||
+            normalizeText(getVariantDisplayName(v)) === normalizedRaw ||
+            normalizeText(v.nombre_variante) === normalizedRaw ||
+            normalizeText(v.producto_padre_nombre) === normalizedRaw
+        ) || null;
+    };
+
     const addProductToItems = (v) => {
         const newItem = {
             variante: v.id,
-            variante_label: `${v.product_code} - ${v.producto_padre_nombre || v.nombre_variante}`,
+            variante_label: `${v.product_code} - ${getVariantDisplayName(v)}`,
             cantidad: 0,
             costo_fob_unitario: v.costo_fob || 0,
             costo_landed_unitario: v.costo_landed || 0,
@@ -135,7 +188,7 @@ export default function EditarIngresoPage() {
         const rows = items.map(it => {
             const code = it.variante_label.split(' - ')[0];
             return [
-                code, it.cantidad, it.lote_codigo, it.vencimiento,
+                code, it.cantidad, it.lote_codigo, formatDateForSpreadsheet(it.vencimiento),
                 it.costo_fob_unitario, it.costo_landed_unitario,
                 it.nuevo_precio_0_publico, it.nuevo_precio_1_estudiante,
                 it.nuevo_precio_2_reventa, it.nuevo_precio_3_mayorista,
@@ -231,21 +284,20 @@ export default function EditarIngresoPage() {
                         <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-20">
                             <h2 className="text-slate-800 font-black">Ítems ({items.length})</h2>
                             <div className="flex gap-2">
-                                <input type="file" id="csvImportEdit" className="hidden" accept=".csv" onChange={(e) => {
+                                <input type="file" id="csvImportEdit" className="hidden" accept=".csv,.txt" onChange={(e) => {
                                     const file = e.target.files[0];
                                     if (!file) return;
                                     const reader = new FileReader();
                                     reader.onload = (ev) => {
-                                        const lines = ev.target.result.split("\n");
+                                        const lines = ev.target.result.split(/\r?\n/);
                                         const loaded = [];
                                         lines.slice(1).forEach(l => {
                                             const p = l.split(/[;,]/).map(val => val.trim());
                                             if (p.length < 2) return;
-                                            const code = p[0];
-                                            const v = variantes.find(x => x.product_code === code);
+                                            const v = resolveVariantFromCell(p[0]);
                                             if (v) loaded.push({
-                                                variante: v.id, variante_label: `${v.product_code} - ${v.producto_padre_nombre || v.nombre_variante}`,
-                                                cantidad: p[1] || 1, lote_codigo: p[2] || generateAutoLote(), vencimiento: p[3] || '',
+                                                variante: v.id, variante_label: `${v.product_code} - ${getVariantDisplayName(v)}`,
+                                                cantidad: p[1] || 1, lote_codigo: p[2] || generateAutoLote(), vencimiento: parseSpreadsheetDate(p[3]),
                                                 costo_fob_unitario: p[4] || v.costo_fob || 0, costo_landed_unitario: p[5] || v.costo_landed || 0,
                                                 nuevo_precio_0_publico: p[6] || v.precio_0_publico || 0, nuevo_precio_1_estudiante: p[7] || v.precio_1_estudiante || 0,
                                                 nuevo_precio_2_reventa: p[8] || v.precio_2_reventa || 0, nuevo_precio_3_mayorista: p[9] || v.precio_3_mayorista || 0, nuevo_precio_4_intercompany: p[10] || v.precio_4_intercompany || 0
@@ -368,12 +420,13 @@ export default function EditarIngresoPage() {
                             <button onClick={() => {
                                 const filtered = variantes.filter(v => 
                                     v.product_code.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                    (v.producto_padre_nombre || "").toLowerCase().includes(searchTerm.toLowerCase())
+                                    (v.producto_padre_nombre || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                    (v.nombre_variante || "").toLowerCase().includes(searchTerm.toLowerCase())
                                 );
                                 if (filtered.length > 0) {
                                     const newItemsAdd = filtered.map(v => ({
                                         variante: v.id,
-                                        variante_label: `${v.product_code} - ${v.producto_padre_nombre || v.nombre_variante}`,
+                                        variante_label: `${v.product_code} - ${getVariantDisplayName(v)}`,
                                         cantidad: 0,
                                         costo_fob_unitario: v.costo_fob || 0,
                                         costo_landed_unitario: v.costo_landed || 0,
@@ -396,9 +449,13 @@ export default function EditarIngresoPage() {
                             <button onClick={() => setIsSearchOpen(false)} className="w-12 h-12 flex items-center justify-center rounded-2xl text-slate-400 hover:bg-slate-200 transition-all">✕</button>
                         </div>
                         <div className="p-2 max-h-[400px] overflow-y-auto">
-                            {variantes.filter(v => v.product_code.toLowerCase().includes(searchTerm.toLowerCase()) || (v.producto_padre_nombre || "").toLowerCase().includes(searchTerm.toLowerCase())).map(v => (
+                            {variantes.filter(v =>
+                                v.product_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                (v.producto_padre_nombre || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                (v.nombre_variante || "").toLowerCase().includes(searchTerm.toLowerCase())
+                            ).map(v => (
                                 <button key={v.id} onClick={() => { addProductToItems(v); setLastAddedId(v.id); setTimeout(()=>setLastAddedId(null),500); }} className={`w-full p-4 flex items-center justify-between rounded-3xl transition-all text-left mb-1 ${lastAddedId === v.id ? 'bg-blue-100 border-2 border-blue-300 scale-95' : 'hover:bg-slate-50 border-2 border-transparent'}`}>
-                                    <div><div className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{v.product_code}</div><div className="font-bold text-slate-800">{v.producto_padre_nombre || v.nombre_variante}</div></div>
+                                    <div><div className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{v.product_code}</div><div className="font-bold text-slate-800">{getVariantDisplayName(v)}</div></div>
                                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${lastAddedId === v.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{lastAddedId === v.id ? <Check size={24} /> : <Plus size={24} />}</div>
                                 </button>
                             ))}
