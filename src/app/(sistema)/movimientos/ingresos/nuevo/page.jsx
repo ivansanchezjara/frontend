@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
-import { Search, Plus, Trash2, Package, Calendar, DollarSign, Calculator, AlertCircle, Check, Download, Upload, Tag, Clock } from 'lucide-react';
+import { Search, Plus, Trash2, Check, Download, Upload, Tag, Clock } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 
 export default function NuevoIngresoPage() {

@@ -8,21 +8,21 @@ import { Package, Calendar, MapPin, User, FileText, ChevronLeft, Printer, CheckC
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
 // Usamos lucide-react para los iconos
-import { 
-    Package as PackageIcon, 
-    Calendar as CalendarIcon, 
-    MapPin as MapPinIcon, 
-    User as UserIcon, 
-    FileText as FileTextIcon, 
-    ChevronLeft as ChevronLeftIcon, 
-    Printer as PrinterIcon, 
-    CheckCircle2 as CheckCircle2Icon, 
-    Clock as ClockIcon, 
-    Tag as TagIcon, 
-    Settings2 as Settings2Icon, 
-    Check as CheckIcon, 
-    Inbox as InboxIcon, 
-    Download as DownloadIcon 
+import {
+    Package as PackageIcon,
+    Calendar as CalendarIcon,
+    MapPin as MapPinIcon,
+    User as UserIcon,
+    FileText as FileTextIcon,
+    ChevronLeft as ChevronLeftIcon,
+    Printer as PrinterIcon,
+    CheckCircle2 as CheckCircle2Icon,
+    Clock as ClockIcon,
+    Tag as TagIcon,
+    Settings2 as Settings2Icon,
+    Check as CheckIcon,
+    Inbox as InboxIcon,
+    Download as DownloadIcon
 } from 'lucide-react';
 
 const COLUMNAS_CONFIG = [
@@ -71,7 +71,7 @@ export default function DetalleIngresoPage() {
 
     const handleExportExcel = () => {
         if (!ingreso) return;
-        
+
         let headers = ["Codigo", "Producto", "Cantidad"];
         if (colsVisibles.includes('lote')) headers.push("Lote");
         if (colsVisibles.includes('vencimiento')) headers.push("Vencimiento");
@@ -119,7 +119,7 @@ export default function DetalleIngresoPage() {
                 </div>
 
                 <div className="flex gap-3 relative">
-                    <button 
+                    <button
                         onClick={() => setShowConfig(!showConfig)}
                         className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all shadow-sm border ${showConfig ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
                     >
@@ -141,7 +141,7 @@ export default function DetalleIngresoPage() {
                     <button onClick={handleExportExcel} className="bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-700 shadow-xl shadow-emerald-100 transition-all flex items-center gap-3">
                         <DownloadIcon size={18} /> Descargar Excel
                     </button>
-                    
+
                     {ingreso.estado === 'BORRADOR' && (
                         <Link href={`/movimientos/ingresos/${id}`} className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all">
                             Editar
@@ -193,12 +193,12 @@ export default function DetalleIngresoPage() {
                                         </div>
                                     </td>
                                     <td className="px-4 py-4 text-center"><span className="inline-flex min-w-[32px] px-2 h-8 items-center justify-center bg-slate-900 text-white rounded-lg text-xs font-black">{item.cantidad}</span></td>
-                                    {colsVisibles.includes('lote') && <td className="px-6 py-4 text-[10px] font-bold text-slate-700 uppercase whitespace-nowrap"><InboxIcon size={12} className="inline mr-1 text-slate-300"/> {item.lote_codigo || 'S/L'}</td>}
+                                    {colsVisibles.includes('lote') && <td className="px-6 py-4 text-[10px] font-bold text-slate-700 uppercase whitespace-nowrap"><InboxIcon size={12} className="inline mr-1 text-slate-300" /> {item.lote_codigo || 'S/L'}</td>}
                                     {colsVisibles.includes('vencimiento') && (
                                         <td className="px-6 py-4">
                                             {item.vencimiento ? (
                                                 <div className="text-[9px] font-black text-amber-600 uppercase flex items-center gap-1.5 whitespace-nowrap bg-amber-50 px-2 py-1 rounded-lg">
-                                                    <ClockIcon size={12}/> {new Date(item.vencimiento).toLocaleDateString()}
+                                                    <ClockIcon size={12} /> {new Date(item.vencimiento).toLocaleDateString()}
                                                 </div>
                                             ) : <span className="text-[9px] font-bold text-slate-300 italic uppercase">Sin Venc.</span>}
                                         </td>
@@ -223,15 +223,32 @@ export default function DetalleIngresoPage() {
                         </tbody>
                     </table>
                 </div>
-                
-                <div className="p-8 bg-slate-900 text-white flex justify-between items-center no-print">
+
+                <div className="p-8 bg-slate-900 text-white flex justify-between items-center no-print rounded-b-[40px]">
                     <div className="flex items-center gap-3">
                         <CheckCircle2Icon size={24} className="text-emerald-400" />
                         <span className="text-sm font-medium italic text-slate-300">"{ingreso.descripcion || 'Sin observaciones'}"</span>
                     </div>
-                    <div className="text-right">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Costo Total Arribo (Landed)</p>
-                        <p className="text-4xl font-black text-emerald-400">{formatCurrency(ingreso.items?.reduce((s,i)=>s+(i.cantidad*i.costo_landed_unitario),0))}</p>
+
+                    <div className="flex items-center gap-8">
+                        {/* TOTAL FOB */}
+                        <div className="text-right">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total FOB</p>
+                            <p className="text-2xl font-black text-slate-300">
+                                {formatCurrency(ingreso.items?.reduce((s, i) => s + (i.cantidad * (i.costo_fob_unitario || 0)), 0))}
+                            </p>
+                        </div>
+
+                        {/* SEPARADOR VERTICAL */}
+                        <div className="w-px h-12 bg-slate-700"></div>
+
+                        {/* TOTAL LANDED */}
+                        <div className="text-right">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Costo Total Arribo (Landed)</p>
+                            <p className="text-4xl font-black text-emerald-400">
+                                {formatCurrency(ingreso.items?.reduce((s, i) => s + (i.cantidad * (i.costo_landed_unitario || 0)), 0))}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
