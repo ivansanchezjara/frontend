@@ -1,22 +1,22 @@
 import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
-import { 
-    ArrowDownCircle, ArrowUpCircle, 
-    RefreshCcw, BarChart3, Truck, ArrowRight 
+import {
+    ArrowDownCircle, ArrowUpCircle,
+    RefreshCcw, Settings2, Truck, ArrowRight
 } from 'lucide-react';
 
 export default function MovimientosHubPage() {
     const movimientos = [
         {
             href: '/movimientos/ingresos',
-            icon: <ArrowDownCircle size={32} />,
+            icon: <ArrowUpCircle size={32} />,
             title: 'Ingresos de Mercadería',
             desc: 'Registrar la entrada de stock, remitos y actualizar costos de compra.',
             color: 'blue'
         },
         {
             href: '/movimientos/bajas',
-            icon: <ArrowUpCircle size={32} />,
+            icon: <ArrowDownCircle size={32} />,
             title: 'Bajas de Inventario',
             desc: 'Registrar pérdidas, mermas, productos vencidos o roturas.',
             color: 'blue'
@@ -30,9 +30,9 @@ export default function MovimientosHubPage() {
         },
         {
             href: '/movimientos/ajustes',
-            icon: <BarChart3 size={32} />,
-            title: 'Ajustes Comerciales',
-            desc: 'Modificar costos de compra y precios de venta de forma auditada.',
+            icon: <Settings2 size={32} />, // <-- Cambiado
+            title: 'Ajustes de Inventario',
+            desc: 'Corregir discrepancias de stock, lotes y fechas de vencimiento de forma auditada.',
             color: 'blue'
         },
         {
@@ -63,9 +63,9 @@ export default function MovimientosHubPage() {
                     {/* Lista de operaciones */}
                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
                         {movimientos.map((mov) => (
-                            <Link 
-                                key={mov.href} 
-                                href={mov.href} 
+                            <Link
+                                key={mov.href}
+                                href={mov.href}
                                 className="group block bg-white p-5 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 overflow-hidden relative"
                             >
                                 <div className="flex items-center gap-6 relative z-10">

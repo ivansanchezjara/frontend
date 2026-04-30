@@ -170,3 +170,24 @@ export async function eliminarImagenProducto(id) {
     });
     return handleResponse(res);
 }
+
+// ─── Inventario & Lotes ─────────────────────────────────────────
+
+export async function getLotesPorVariante(varianteId) {
+    try {
+        // Asumiendo que en Django tu app se llama 'inventario' y la ruta es algo así
+        const res = await fetch(`${API_URL}/inventario/lotes/?variante=${varianteId}`, {
+            method: 'GET',
+            headers: authHeaders(),
+            cache: 'no-store', // Fundamental para que Next.js no guarde en caché el stock viejo
+        });
+
+        // Usamos tu propio helper para manejar errores o el 401 (deslogueo)
+        const data = await handleResponse(res);
+
+        // Dependiendo de cómo pagines en Django, puede que devuelvas data o data.results
+        return data.results || data;
+    } catch {
+        throw new Error('No se pudo conectar al servidor para cargar los lotes.');
+    }
+}

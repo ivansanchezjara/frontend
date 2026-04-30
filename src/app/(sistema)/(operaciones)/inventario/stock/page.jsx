@@ -16,8 +16,6 @@ import {
   AlertTriangle,
   Calendar,
   Info,
-  Edit3,
-  Check,
   LayoutGrid,
   AlertCircle,
 } from "lucide-react";
@@ -34,8 +32,6 @@ export default function StockPage() {
 
   const [selectedSKU, setSelectedSKU] = useState(null);
   const [lotes, setLotes] = useState([]);
-  const [editingLote, setEditingLote] = useState(null); // ID del lote que se está editando
-  const [editData, setEditData] = useState({});
 
   const [columnasVisibles, setColumnasVisibles] = useState(
     COLUMNAS_VISIBLES_POR_DEFECTO,
@@ -163,49 +159,6 @@ export default function StockPage() {
       label: "Al día",
     };
   };
-
-  const startEditing = (lote) => {
-    setEditingLote(lote.id);
-    setEditData({
-      lote_codigo: lote.lote_codigo,
-      vencimiento: lote.vencimiento || "",
-    });
-  };
-
-  const handleSaveLote = async (loteId) => {
-    try {
-      const token = Cookies.get("token");
-      const API_BASE = getApiUrl();
-      const response = await fetch(
-        `${API_BASE}/api/inventario/stock-lotes/${loteId}/`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            lote_codigo: editData.lote_codigo,
-            vencimiento: editData.vencimiento || null,
-          }),
-        },
-      );
-
-      if (response.ok) {
-        // Actualizar localmente
-        setLotes(
-          lotes.map((l) => (l.id === loteId ? { ...l, ...editData } : l)),
-        );
-        setEditingLote(null);
-      } else {
-        alert("Error al guardar cambios del lote.");
-      }
-    } catch (error) {
-      alert("Error de conexión.");
-    }
-  };
-
-  // handleProcesarVencimientos removed as it's handled completely automatically in the backend.
 
   const stats = serverStats || {
     totalPiezas: 0,
@@ -381,7 +334,6 @@ export default function StockPage() {
                   <button
                     onClick={() => {
                       setSelectedSKU(null);
-                      setEditingLote(null);
                     }}
                     className="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl font-bold text-slate-400 hover:text-slate-800 transition-all shadow-sm"
                   >
@@ -436,7 +388,7 @@ export default function StockPage() {
                       {lotes.map((lote) => (
                         <div
                           key={lote.id}
-                          className={`p-5 rounded-3xl border transition-all ${editingLote === lote.id ? "bg-blue-50/50 border-blue-200 ring-2 ring-blue-100" : "bg-white border-slate-100 hover:border-slate-300"}`}
+                          className="p-5 rounded-3xl border transition-all bg-white border-slate-100 hover:border-slate-300"
                         >
                           <div className="flex justify-between items-start mb-4">
                             <div className="flex flex-col gap-1">
@@ -458,85 +410,38 @@ export default function StockPage() {
                           </div>
 
                           <div className="space-y-3">
-                            {/* Campo Lote */}
+                            {/* Campo Lote (Solo Lectura) */}
                             <div>
                               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">
                                 Código de Lote
                               </label>
-                              {editingLote === lote.id ? (
-                                <input
-                                  type="text"
-                                  value={editData.lote_codigo}
-                                  onChange={(e) =>
-                                    setEditData({
-                                      ...editData,
-                                      lote_codigo: e.target.value,
-                                    })
-                                  }
-                                  className="w-full bg-white border border-blue-200 rounded-xl p-2 text-sm font-bold focus:ring-2 focus:ring-blue-500"
-                                />
-                              ) : (
-                                <div className="flex items-center justify-between group">
-                                  <span className="text-sm font-bold text-slate-700 ml-1">
-                                    {lote.lote_codigo}
-                                  </span>
-                                  <button
-                                    onClick={() => startEditing(lote)}
-                                    className="opacity-0 group-hover:opacity-100 p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
-                                  >
-                                    <Edit3 size={14} />
-                                  </button>
-                                </div>
-                              )}
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-bold text-slate-700 ml-1">
+                                  {lote.lote_codigo}
+                                </span>
+                              </div>
                             </div>
 
-                            {/* Campo Vencimiento */}
+                            {/* Campo Vencimiento (Solo Lectura) */}
                             <div>
                               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">
                                 Vencimiento
                               </label>
-                              {editingLote === lote.id ? (
-                                <div className="flex gap-2">
-                                  <input
-                                    type="date"
-                                    value={editData.vencimiento}
-                                    onChange={(e) =>
-                                      setEditData({
-                                        ...editData,
-                                        vencimiento: e.target.value,
-                                      })
-                                    }
-                                    className="flex-1 bg-white border border-blue-200 rounded-xl p-2 text-sm font-bold"
-                                  />
-                                  <button
-                                    onClick={() => handleSaveLote(lote.id)}
-                                    className="bg-emerald-600 text-white p-2.5 rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-100"
-                                  >
-                                    <Check size={20} />
-                                  </button>
-                                  <button
-                                    onClick={() => setEditingLote(null)}
-                                    className="bg-slate-200 text-slate-600 p-2.5 rounded-xl"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2 ml-1">
-                                  <div
-                                    className={`w-2 h-2 rounded-full ${getSemaforoVencimiento(lote.vencimiento).dot}`}
-                                  ></div>
-                                  <span
-                                    className={`text-[11px] font-black uppercase tracking-tight ${getSemaforoVencimiento(lote.vencimiento).color}`}
-                                  >
-                                    {lote.vencimiento || "Sin fecha"}
-                                  </span>
-                                </div>
-                              )}
+                              <div className="flex items-center gap-2 ml-1">
+                                <div
+                                  className={`w-2 h-2 rounded-full ${getSemaforoVencimiento(lote.vencimiento).dot}`}
+                                ></div>
+                                <span
+                                  className={`text-[11px] font-black uppercase tracking-tight ${getSemaforoVencimiento(lote.vencimiento).color}`}
+                                >
+                                  {lote.vencimiento || "Sin fecha"}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       ))}
+
                       {lotes.length === 0 && (
                         <div className="col-span-2 py-10 text-center text-slate-400 font-bold uppercase tracking-widest text-xs italic bg-slate-50 rounded-[30px] border border-dashed border-slate-200">
                           No hay lotes con stock para este SKU.
@@ -550,8 +455,7 @@ export default function StockPage() {
                   <div className="flex items-start gap-3 max-w-md">
                     <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
                     <p className="text-[10px] font-medium text-blue-700 leading-normal">
-                      Los cambios en el lote o fecha se aplican instantáneamente
-                      al stock físico.
+                      Para realizar correcciones o mover unidades entre lotes, dirígete al módulo de <strong>Ajustes de Inventario</strong>.
                     </p>
                   </div>
                   <button
