@@ -33,34 +33,41 @@ export default function PageHeader({ title, breadcrumbs = [], subtitle, subtitle
                 {/* Breadcrumbs */}
                 {hasBreadcrumbs && (
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-400 flex-wrap">
-                        {breadcrumbs.map((crumb, i) => {
-                            const isLast = i === breadcrumbs.length - 1;
-                            const isFirst = i === 0;
-                            // Truncar intermedios si hay más de 3 breadcrumbs
-                            const shouldTruncate = breadcrumbs.length > 3 && i > 0 && i < breadcrumbs.length - 1;
-                            
-                            if (shouldTruncate) return null;
-                            
-                            return (
-                                <span key={i} className="flex items-center gap-2">
-                                    {i > 0 && (i === breadcrumbs.length - 2 ? (
-                                        <span className="text-slate-300">...</span>
-                                    ) : (
-                                        <ChevronRight size={12} className="text-slate-300" />
-                                    ))}
-                                    {isLast || !crumb.href ? (
-                                        <span className={isLast ? 'text-slate-700' : ''}>{crumb.label}</span>
-                                    ) : (
-                                        <Link
-                                            href={crumb.href}
-                                            className="hover:text-blue-600 transition-colors"
-                                        >
-                                            {crumb.label}
-                                        </Link>
-                                    )}
+                        {breadcrumbs.length > 2 ? (
+                            <>
+                                <span className="flex items-center gap-2">
+                                    <span className="text-slate-300">...</span>
+                                    <ChevronRight size={12} className="text-slate-300" />
                                 </span>
-                            );
-                        })}
+                                <span className="flex items-center gap-2">
+                                    {breadcrumbs[breadcrumbs.length - 2].href ? (
+                                        <Link href={breadcrumbs[breadcrumbs.length - 2].href} className="hover:text-blue-600 transition-colors">
+                                            {breadcrumbs[breadcrumbs.length - 2].label}
+                                        </Link>
+                                    ) : (
+                                        <span>{breadcrumbs[breadcrumbs.length - 2].label}</span>
+                                    )}
+                                    <ChevronRight size={12} className="text-slate-300" />
+                                </span>
+                                <span className="flex items-center gap-2">
+                                    <span className="text-slate-700">{breadcrumbs[breadcrumbs.length - 1].label}</span>
+                                </span>
+                            </>
+                        ) : (
+                            breadcrumbs.map((crumb, i) => {
+                                const isLast = i === breadcrumbs.length - 1;
+                                return (
+                                    <span key={i} className="flex items-center gap-2">
+                                        {i > 0 && <ChevronRight size={12} className="text-slate-300" />}
+                                        {isLast || !crumb.href ? (
+                                            <span className={isLast ? 'text-slate-700' : ''}>{crumb.label}</span>
+                                        ) : (
+                                            <Link href={crumb.href} className="hover:text-blue-600 transition-colors">{crumb.label}</Link>
+                                        )}
+                                    </span>
+                                );
+                            })
+                        )}
                     </div>
                 )}
 

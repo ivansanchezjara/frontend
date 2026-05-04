@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { Search, Plus, Trash2, Check, Download, Upload, Tag, Clock } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
+import { getApiUrl } from '@/services/api';
 
 export default function NuevoIngresoPage() {
     const router = useRouter();
@@ -23,14 +24,6 @@ export default function NuevoIngresoPage() {
     });
 
     const [items, setItems] = useState([]);
-
-    const getApiUrl = () => {
-        if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-        if (typeof window !== 'undefined') {
-            return `${window.location.protocol}//${window.location.hostname}:8000`;
-        }
-        return 'http://127.0.0.1:8000';
-    };
 
     useEffect(() => {
         const token = Cookies.get('token');

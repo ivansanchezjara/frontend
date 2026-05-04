@@ -6,6 +6,7 @@ import Cookies from 'js-cookie';
 import { getFullImageUrl } from '@/services/api';
 import { Package, Calendar, MapPin, User, FileText, ChevronLeft, Printer, CheckCircle2, Clock, Tag, Settings2, Check, Inbox, Download } from 'lucide-react';
 import LoadingScreen from '@/components/ui/LoadingScreen';
+import { getApiUrl } from '@/services/api';
 
 // Usamos lucide-react para los iconos
 import {
@@ -41,14 +42,6 @@ export default function DetalleIngresoPage() {
     const [loading, setLoading] = useState(true);
     const [colsVisibles, setColsVisibles] = useState(['foto', 'lote', 'vencimiento', 'costos', 'p0', 'p_otros']);
     const [showConfig, setShowConfig] = useState(false);
-
-    const getApiUrl = () => {
-        if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-        if (typeof window !== 'undefined') {
-            return `${window.location.protocol}//${window.location.hostname}:8000`;
-        }
-        return 'http://127.0.0.1:8000';
-    };
 
     useEffect(() => {
         const token = Cookies.get('token');

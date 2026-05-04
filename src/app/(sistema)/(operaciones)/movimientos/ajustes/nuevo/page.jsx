@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { Search, Package, AlertCircle, Settings2, Boxes, ArrowRight } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
+import { getApiUrl } from "@/services/api";
 
 export default function NuevoAjusteInventarioPage() {
     const router = useRouter();
@@ -22,14 +23,6 @@ export default function NuevoAjusteInventarioPage() {
     const [selectedVarianteInfo, setSelectedVarianteInfo] = useState(null);
     const [lotes, setLotes] = useState([]); // Aquí guardaremos los lotes del producto
 
-    const getApiUrl = () => {
-        if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-        if (typeof window !== 'undefined') {
-            return `${window.location.protocol}//${window.location.hostname}:8000`;
-        }
-        return 'http://127.0.0.1:8000';
-    };
-
     useEffect(() => {
         const token = Cookies.get('token');
         const API_BASE = getApiUrl();
@@ -41,9 +34,10 @@ export default function NuevoAjusteInventarioPage() {
                 });
                 const data = await res.json();
 
+                const rawData = Array.isArray(data) ? data : (data.results || []);
                 const allVariantes = [];
-                data.results?.forEach(p => {
-                    p.variantes?.forEach(v => {
+                rawData.forEach(p => {
+                    p.variants?.forEach(v => {
                         allVariantes.push({
                             id: v.id,
                             product_code: v.product_code, // Asegúrate de que Django envíe este campo
@@ -54,7 +48,7 @@ export default function NuevoAjusteInventarioPage() {
                     });
                 });
                 setProductos(allVariantes);
-            } catch (err) { console.error(err); }
+            } catch (err) { console.error("Error fetching productos:", err); }
         }
         loadProductos();
     }, []);
@@ -76,12 +70,27 @@ export default function NuevoAjusteInventarioPage() {
         setAjuste(prev => ({ ...prev, variante: v.id }));
         setIsSearchOpen(false);
 
-        // TODO: Aquí deberías hacer un fetch real a tu backend para traer los lotes de esta variante.
-        // Simulamos la respuesta de la base de datos para la UI:
-        setLotes([
-            { id: 1, lote_codigo: "L-2026A", vencimiento_actual: "2026-12-01", cantidad_actual: 50, nueva_cantidad: '', nuevo_vencimiento: '' },
-            { id: 2, lote_codigo: "L-2025B", vencimiento_actual: "2025-08-15", cantidad_actual: 15, nueva_cantidad: '', nuevo_vencimiento: '' }
-        ]);
+        const token = Cookies.get('token');
+        const API_BASE = getApiUrl();
+        try {
+            const res = await fetch(`${API_BASE}/api/inventario/stock-lotes/?variante=${v.id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            const lotesFetch = Array.isArray(data) ? data : (data.results || []);
+
+            setLotes(lotesFetch.map(l => ({
+                id: l.id,
+                lote_codigo: l.lote_codigo,
+                vencimiento_actual: l.vencimiento || '',
+                cantidad_actual: l.cantidad,
+                nueva_cantidad: '',
+                nuevo_vencimiento: ''
+            })));
+        } catch (err) {
+            console.error("Error fetching lotes", err);
+            setLotes([]);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -96,10 +105,14 @@ export default function NuevoAjusteInventarioPage() {
         const lotesModificados = lotes.filter(l => l.nueva_cantidad !== '' || l.nuevo_vencimiento !== '');
 
         const payload = {
-            variante_id: ajuste.variante,
+            variante: ajuste.variante,
             motivo: ajuste.motivo,
             observaciones: ajuste.observaciones,
-            lotes_ajustados: lotesModificados // Mandamos los cambios al backend
+            lotes_ajustados: lotesModificados.map(l => ({
+                lote: l.id,
+                nueva_cantidad: l.nueva_cantidad !== '' ? parseInt(l.nueva_cantidad, 10) : undefined,
+                nuevo_vencimiento: l.nuevo_vencimiento !== '' ? l.nuevo_vencimiento : undefined
+            }))
         };
 
         try {

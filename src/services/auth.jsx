@@ -13,7 +13,6 @@ export const login = async (username, password) => {
             body: JSON.stringify({ username, password }),
         });
     } catch (error) {
-        // Si entra aquí, es porque fetch falló por completo (No hay internet o Django está apagado)
         throw new Error('No se pudo conectar al servidor. Verificá tu internet o si el backend está encendido.');
     }
 
@@ -22,7 +21,6 @@ export const login = async (username, password) => {
         if (res.status === 401) {
             throw new Error('Usuario o contraseña incorrectos.');
         } else {
-            // Atrapa errores 500 (tu código falló) o 404 (ruta no existe)
             throw new Error(`Error en el servidor (Código: ${res.status}). Intentá de nuevo más tarde.`);
         }
     }
@@ -30,8 +28,6 @@ export const login = async (username, password) => {
     // 3. ÉXITO: Todo salió bien, procesamos los datos
     const data = await res.json();
 
-    // 🔍 DEBUG: Esto es vital. Abrí la consola (F12) al loguearte 
-    // y mirá qué imprime "Respuesta completa".
     console.log("Respuesta completa de Django:", data);
 
     // Guardamos los tokens en Cookies
@@ -39,14 +35,14 @@ export const login = async (username, password) => {
     Cookies.set('refresh', data.refresh, { expires: 1, secure: false });
 
     // --- LÓGICA DE GUARDADO DEL USUARIO ---
-    // Intentamos capturar el objeto user, si no viene, lo armamos con lo que hay
     const usuarioParaGuardar = data.user || {
         username: username,
         first_name: data.first_name || data.user?.first_name || username,
         last_name: data.last_name || data.user?.last_name || ""
     };
 
-    localStorage.setItem('user', JSON.stringify(usuarioParaGuardar));
+    // 🚀 CAMBIO: Guardamos el usuario también en Cookies usando JSON.stringify
+    Cookies.set('user', JSON.stringify(usuarioParaGuardar), { expires: 1 / 24, secure: false });
 
     return data;
 };
@@ -54,8 +50,8 @@ export const login = async (username, password) => {
 export const logout = () => {
     Cookies.remove('token');
     Cookies.remove('refresh');
-    // Limpiamos los datos del usuario al salir para que no quede el nombre de otro
-    localStorage.removeItem('user');
+    // 🚀 CAMBIO: Limpiamos la Cookie del usuario
+    Cookies.remove('user');
 };
 
 export const getToken = () => Cookies.get('token');
@@ -81,17 +77,13 @@ export const updateProfile = async (profileData) => {
     });
     if (!res.ok) throw new Error('No se pudo actualizar el perfil.');
     const updatedUser = await res.json();
-    
-    // Sincronizar con localStorage
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+
+    // 🚀 CAMBIO: Actualizamos la Cookie del usuario
+    Cookies.set('user', JSON.stringify(updatedUser), { expires: 1 / 24, secure: false });
     return updatedUser;
 };
 
-// Función auxiliar para obtener el usuario en cualquier componente
 export const getUser = () => {
-    if (typeof window !== 'undefined') {
-        const user = localStorage.getItem('user');
-        return user ? JSON.parse(user) : null;
-    }
-    return null;
-};
+    const userCookie = Cookies.get('user');
+    return userCookie ? JSON.parse(userCookie) : null;
+};
