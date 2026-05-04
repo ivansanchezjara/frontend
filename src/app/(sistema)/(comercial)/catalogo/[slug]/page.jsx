@@ -12,9 +12,9 @@ import {
 } from '@/services/api';
 import { useRouter } from 'next/navigation';
 import LoadingScreen from '@/components/ui/LoadingScreen';
-import TagsInput from '@/components/catalogo/TagsInput';
+import TagsInput from '@/components/comercial/catalogo/TagsInput';
 import FilerModal from '@/components/ui/FilerModal';
-import AttributesEditor from '@/components/catalogo/AttributesEditor';
+import AttributesEditor from '@/components/comercial/catalogo/AttributesEditor';
 import { getFullImageUrl } from '@/services/api';
 
 // ─── Mini componentes de formulario ──────────────────────────────
@@ -513,7 +513,7 @@ export default function FichaProductoPage() {
 
     const handleDeleteProducto = async () => {
         const confirmMsg = `¿Estás seguro de que deseas desactivar el producto "${producto.nombre_general}"?\n\nEsto archivará el producto y todas sus variantes. Dejará de ser visible en el catálogo e inventario.`;
-        
+
         if (!window.confirm(confirmMsg)) return;
 
         setIsDeletingProd(true);
@@ -844,8 +844,8 @@ export default function FichaProductoPage() {
 
                         {/* ── Zona de Peligro ── */}
                         <div className="pt-10 pb-20">
-                            <Section 
-                                title="Zona de Peligro" 
+                            <Section
+                                title="Zona de Peligro"
                                 subtitle="Acciones críticas que afectan la visibilidad del producto en el sistema."
                             >
                                 <div className="p-6 bg-red-50/30 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -855,7 +855,7 @@ export default function FichaProductoPage() {
                                             Archiva el producto y sus {producto.variants.length} variantes. Dejarán de estar visibles en el catálogo e inventario.
                                         </p>
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={handleDeleteProducto}
                                         disabled={isDeletingProd}
                                         className="bg-white border border-red-200 text-red-600 px-8 py-3 rounded-xl font-bold text-[11px] uppercase tracking-wider hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95 whitespace-nowrap disabled:opacity-50"

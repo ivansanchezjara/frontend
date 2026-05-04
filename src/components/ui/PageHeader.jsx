@@ -73,7 +73,7 @@ export default function PageHeader({ title, breadcrumbs = [], subtitle, subtitle
 
                 {/* Subtítulo */}
                 {subtitle && (
-                    <p className={`text-[10px] font-bold uppercase flex items-center gap-1.5 mt-0.5 ${subtitleClassName}`}>
+                    <p className={`text-[10px] font-bold uppercase flex items-center gap-1.5 mt-1 ${subtitleClassName}`}>
                         {subtitle}
                     </p>
                 )}

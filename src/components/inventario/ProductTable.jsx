@@ -5,12 +5,12 @@ import { ArrowRight } from 'lucide-react';
 export const COLUMNAS_INVENTARIO = [
     { id: 'foto', label: 'Foto' }, { id: 'codigo', label: 'Código SKU' },
     { id: 'producto', label: 'Producto / Variante' },
-    { id: 'categoria', label: 'Categoría' }, 
+    { id: 'categoria', label: 'Categoría' },
     { id: 'stock', label: 'Disp.' },
     { id: 'consignacion', label: 'Consig.' },
     { id: 'reserva', label: 'Reservado' },
     { id: 'vencido', label: 'Vencido' },
-    { id: 'vencimiento', label: 'Vence' }, 
+    { id: 'vencimiento', label: 'Vence' },
     { id: 'precio', label: 'Precio USD' },
 ];
 
@@ -29,7 +29,7 @@ export default function ProductTable({ productos, columnasVisibles, onSelectSKU 
     };
 
     // Aplanamos el array de productos para mostrar cada variante (SKU) como una fila
-    const skus = productos.flatMap(prod => 
+    const skus = productos.flatMap(prod =>
         (prod.variants || []).map(v => ({
             ...v,
             producto_nombre_general: prod.nombre_general,
@@ -67,36 +67,35 @@ export default function ProductTable({ productos, columnasVisibles, onSelectSKU 
                                 </ResizableHeader>
                             )}
                             {columnasVisibles.includes('stock') && (
-                                <ResizableHeader defaultWidth={80} minWidth={60} className="px-3 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                <ResizableHeader defaultWidth={60} minWidth={50} className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">
                                     Disp.
                                 </ResizableHeader>
                             )}
                             {columnasVisibles.includes('consignacion') && (
-                                <ResizableHeader defaultWidth={90} minWidth={70} className="px-3 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                                    En Consig.
+                                <ResizableHeader defaultWidth={70} minWidth={60} className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                    Consig.
                                 </ResizableHeader>
                             )}
                             {columnasVisibles.includes('reserva') && (
-                                <ResizableHeader defaultWidth={100} minWidth={70} className="px-3 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                                    Reservado
+                                <ResizableHeader defaultWidth={70} minWidth={60} className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                    Res.
                                 </ResizableHeader>
                             )}
                             {columnasVisibles.includes('vencido') && (
-                                <ResizableHeader defaultWidth={90} minWidth={60} className="px-3 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                                    Vencido
+                                <ResizableHeader defaultWidth={70} minWidth={60} className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                    Venc.
                                 </ResizableHeader>
                             )}
                             {columnasVisibles.includes('vencimiento') && (
-                                <ResizableHeader defaultWidth={100} minWidth={80} className="px-3 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                <ResizableHeader defaultWidth={90} minWidth={70} className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">
                                     Vence
                                 </ResizableHeader>
                             )}
                             {columnasVisibles.includes('precio') && (
-                                <ResizableHeader defaultWidth={110} minWidth={80} className="px-3 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                <ResizableHeader defaultWidth={90} minWidth={70} className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">
                                     Precio USD
                                 </ResizableHeader>
                             )}
-                            <th className="min-w-[60px] px-3 py-4"></th>
                         </tr>
                     </thead>
 
@@ -144,30 +143,30 @@ export default function ProductTable({ productos, columnasVisibles, onSelectSKU 
                                         </td>
                                     )}
                                     {columnasVisibles.includes('stock') && (
-                                        <td className="px-3 py-2 text-left">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap shadow-sm ${stock === 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : stock <= 5 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
-                                                {stock} u.
+                                        <td className="px-3 py-1.5 text-left">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap shadow-sm ${stock === 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : stock <= 5 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+                                                {stock}
                                             </span>
                                         </td>
                                     )}
                                     {columnasVisibles.includes('consignacion') && (
-                                        <td className="px-3 py-2 text-left">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap ${sku.stock_en_consignacion > 0 ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-slate-50 text-slate-300 border-slate-100 opacity-40'}`}>
-                                                {sku.stock_en_consignacion || 0} u.
+                                        <td className="px-3 py-1.5 text-left">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap ${sku.stock_en_consignacion > 0 ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-slate-50 text-slate-300 border-slate-100 opacity-40'}`}>
+                                                {sku.stock_en_consignacion || 0}
                                             </span>
                                         </td>
                                     )}
                                     {columnasVisibles.includes('reserva') && (
-                                        <td className="px-3 py-2 text-left">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap ${sku.stock_reservado > 0 ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-50 text-slate-300 border-slate-100 opacity-40'}`}>
-                                                {sku.stock_reservado || 0} u.
+                                        <td className="px-3 py-1.5 text-left">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap ${sku.stock_reservado > 0 ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-50 text-slate-300 border-slate-100 opacity-40'}`}>
+                                                {sku.stock_reservado || 0}
                                             </span>
                                         </td>
                                     )}
                                     {columnasVisibles.includes('vencido') && (
-                                        <td className="px-3 py-2 text-left">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border whitespace-nowrap ${sku.stock_vencido > 0 ? 'bg-red-50 text-red-600 border-red-100 font-bold' : 'bg-slate-50 text-slate-300 border-slate-100 opacity-40'}`}>
-                                                {sku.stock_vencido || 0} u.
+                                        <td className="px-3 py-1.5 text-left">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap ${sku.stock_vencido > 0 ? 'bg-red-50 text-red-600 border-red-100 font-bold' : 'bg-slate-50 text-slate-300 border-slate-100 opacity-40'}`}>
+                                                {sku.stock_vencido || 0}
                                             </span>
                                         </td>
                                     )}
@@ -180,15 +179,10 @@ export default function ProductTable({ productos, columnasVisibles, onSelectSKU 
                                         </td>
                                     )}
                                     {columnasVisibles.includes('precio') && (
-                                        <td className="px-3 py-2 text-left font-black text-slate-800 text-xs truncate max-w-0 whitespace-nowrap">
+                                        <td className="px-3 py-1.5 text-left font-black text-slate-800 text-xs truncate max-w-0 whitespace-nowrap">
                                             {formatCurrency(precio)}
                                         </td>
                                     )}
-                                    <td className="px-2 py-2 text-right">
-                                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                            <ArrowRight size={14} />
-                                        </div>
-                                    </td>
                                 </tr>
                             );
                         })}

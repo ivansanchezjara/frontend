@@ -2,46 +2,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getUser } from '@/services/auth';
-import { modulosActivos, modulosFuturos } from '@/config/navigation';
-
-// 1. DICCIONARIO DE FAMILIAS (Colores, etiquetas y divisorias)
-const colorStyles = {
-    emerald: {
-        label: 'Comercial y Ventas',
-        borderHover: 'hover:border-emerald-500',
-        bg: 'bg-emerald-50',
-        text: 'text-emerald-600',
-        groupHoverBg: 'group-hover:bg-emerald-600',
-        line: 'bg-emerald-200'
-    },
-    blue: {
-        label: 'Operaciones y Logística',
-        borderHover: 'hover:border-blue-500',
-        bg: 'bg-blue-50',
-        text: 'text-blue-600',
-        groupHoverBg: 'group-hover:bg-blue-600',
-        line: 'bg-blue-200'
-    },
-    purple: {
-        label: 'Finanzas y Control',
-        borderHover: 'hover:border-purple-500',
-        bg: 'bg-purple-50',
-        text: 'text-purple-600',
-        groupHoverBg: 'group-hover:bg-purple-600',
-        line: 'bg-purple-200'
-    },
-    amber: {
-        label: 'Equipo y Administración',
-        borderHover: 'hover:border-amber-500',
-        bg: 'bg-amber-50',
-        text: 'text-amber-600',
-        groupHoverBg: 'group-hover:bg-amber-600',
-        line: 'bg-amber-200'
-    }
-};
-
-// Array para forzar el orden en el que queremos que aparezcan las familias
-const ordenFamilias = ['emerald', 'blue', 'purple', 'amber'];
+// 👇 1. Importamos todo desde tu única fuente de la verdad
+import { modulosActivos, modulosFuturos, familyStyles, ordenFamilias } from '@/config/navigation';
 
 export default function DashboardPage() {
     const [nombreUsuario, setNombreUsuario] = useState('Usuario');
@@ -70,7 +32,8 @@ export default function DashboardPage() {
             {/* Renderizado dinámico por Familias */}
             <div className="space-y-12">
                 {ordenFamilias.map((colorKey) => {
-                    const style = colorStyles[colorKey];
+                    // 👇 2. Usamos familyStyles que importamos arriba
+                    const style = familyStyles[colorKey];
 
                     // Filtramos qué módulos pertenecen a esta familia
                     const activos = modulosActivos.filter(m => m.color === colorKey);

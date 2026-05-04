@@ -93,8 +93,13 @@ export const deleteImage = async (id) => {
     return handleResponse(res);
 };
 
-export const getOrphans = async () => {
-    const res = await fetch(`${API_URL}/filer/images/orphans/`, {
+export const getOrphans = async (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, val]) => {
+        if (val !== undefined && val !== null && val !== '') query.append(key, val);
+    });
+
+    const res = await fetch(`${API_URL}/filer/images/orphans/?${query.toString()}`, {
         headers: authHeaders(),
     });
     return handleResponse(res);

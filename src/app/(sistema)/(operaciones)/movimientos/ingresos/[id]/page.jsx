@@ -2,9 +2,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Cookies from 'js-cookie';
-import { Search, Plus, Trash2, Check, Download, Upload, Tag, Clock } from 'lucide-react';
+import { Search, Plus, Trash2, Check, CheckCircle2, Download, Upload, Tag, Clock } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import { getApiUrl } from '@/services/api';
+import ResizableHeader from '@/components/ui/ResizableHeader';
 
 export default function EditarIngresoPage() {
     const router = useRouter();
@@ -227,31 +228,12 @@ export default function EditarIngresoPage() {
         <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
             <PageHeader
                 breadcrumbs={[
-                    { label: 'Gestión de Movimientos', href: '/movimientos' },
                     { label: 'Ingresos de Mercadería', href: '/movimientos/ingresos' },
                     { label: `Editar Borrador #${id}` }
                 ]}
                 subtitle="Modificá los datos del arribo o los ítems antes de la aprobación definitiva."
             >
                 <div className="flex items-center gap-6 mr-4">
-                    {/* TOTAL FOB */}
-                    <div className="text-right">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total FOB</p>
-                        <p className="text-lg font-black text-slate-500 leading-none">
-                            ${items.reduce((s, i) => s + (i.cantidad * (i.costo_fob_unitario || 0)), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                    </div>
-
-                    {/* SEPARADOR VERTICAL */}
-                    <div className="w-px h-8 bg-slate-200"></div>
-
-                    {/* TOTAL LANDED */}
-                    <div className="text-right">
-                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest leading-none mb-1">Inversión (Landed)</p>
-                        <p className={`text-xl font-black leading-none ${errorMsg ? 'text-red-500' : 'text-slate-900'}`}>
-                            ${items.reduce((s, i) => s + (i.cantidad * (i.costo_landed_unitario || 0)), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                    </div>
                 </div>
 
                 <button disabled={isSubmitting || !!errorMsg} onClick={handleSubmit} className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 ${errorMsg ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-100'}`}>
@@ -289,7 +271,7 @@ export default function EditarIngresoPage() {
                         </div>
 
                         {/* TABLA DE ITEMS - ANCHO COMPLETO */}
-                        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+                        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-20">
                                 <h2 className="text-slate-800 font-black">Ítems ({items.length})</h2>
                                 <div className="flex gap-2">
@@ -334,15 +316,15 @@ export default function EditarIngresoPage() {
                                 <table className="w-full border-collapse text-[11px]">
                                     <thead className="sticky top-0 bg-slate-50 z-10 border-b border-slate-100 uppercase text-slate-400 font-black">
                                         <tr>
-                                            <th className="p-3 text-left min-w-[300px]">Producto</th>
-                                            <th className="p-3 text-center w-20">Cant.</th>
-                                            <th className="p-3 text-right min-w-[100px]">FOB</th>
-                                            <th className="p-3 text-right min-w-[110px]">LANDED</th>
-                                            <th className="p-3 text-center min-w-[110px] bg-blue-50/20 text-blue-600 border-x border-white">Precio P0</th>
-                                            <th className="p-3 text-center min-w-[100px] bg-blue-50/20 text-blue-500 font-bold">P1</th>
-                                            <th className="p-3 text-center min-w-[100px] bg-blue-50/20 text-blue-500 font-bold">P2</th>
-                                            <th className="p-3 text-center min-w-[100px] bg-blue-50/20 text-blue-500 font-bold">P3</th>
-                                            <th className="p-3 text-center min-w-[100px] bg-blue-50/20 text-blue-500 font-bold">P4</th>
+                                            <ResizableHeader defaultWidth={300} minWidth={200} className="p-3 text-left">Producto</ResizableHeader>
+                                            <ResizableHeader defaultWidth={80} minWidth={60} className="p-3 text-center">Cant.</ResizableHeader>
+                                            <ResizableHeader defaultWidth={100} minWidth={80} className="p-3 text-right">FOB</ResizableHeader>
+                                            <ResizableHeader defaultWidth={110} minWidth={90} className="p-3 text-right">LANDED</ResizableHeader>
+                                            <ResizableHeader defaultWidth={110} minWidth={90} className="p-3 text-center bg-blue-50/20 text-blue-600 border-x border-white">Precio P0</ResizableHeader>
+                                            <ResizableHeader defaultWidth={100} minWidth={80} className="p-3 text-center bg-blue-50/20 text-blue-500 font-bold">P1</ResizableHeader>
+                                            <ResizableHeader defaultWidth={100} minWidth={80} className="p-3 text-center bg-blue-50/20 text-blue-500 font-bold">P2</ResizableHeader>
+                                            <ResizableHeader defaultWidth={100} minWidth={80} className="p-3 text-center bg-blue-50/20 text-blue-500 font-bold">P3</ResizableHeader>
+                                            <ResizableHeader defaultWidth={100} minWidth={80} className="p-3 text-center bg-blue-50/20 text-blue-500 font-bold">P4</ResizableHeader>
                                             <th className="p-3 w-10"></th>
                                         </tr>
                                     </thead>
@@ -414,6 +396,35 @@ export default function EditarIngresoPage() {
                                         })}
                                     </tbody>
                                 </table>
+                            </div>
+
+                            {/* TOTALS FOOTER (Compacto igual que detalle) */}
+                            <div className="p-8 bg-slate-900 text-white flex justify-between items-center no-print">
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle2 size={24} className="text-emerald-400" />
+                                    <span className="text-sm font-medium italic text-slate-300">Resumen de Inversión</span>
+                                </div>
+
+                                <div className="flex items-center gap-6">
+                                    {/* TOTAL FOB */}
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Total FOB</p>
+                                        <p className="text-xl font-black text-slate-300">
+                                            ${items.reduce((s, i) => s + (i.cantidad * (i.costo_fob_unitario || 0)), 0).toLocaleString()}
+                                        </p>
+                                    </div>
+
+                                    {/* SEPARADOR VERTICAL */}
+                                    <div className="w-px h-8 bg-slate-700"></div>
+
+                                    {/* TOTAL LANDED */}
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Costo Total Arribo (Landed)</p>
+                                        <p className="text-2xl font-black text-emerald-400">
+                                            ${items.reduce((s, i) => s + (i.cantidad * (i.costo_landed_unitario || 0)), 0).toLocaleString()}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

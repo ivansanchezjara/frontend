@@ -1,0 +1,118 @@
+"use client";
+import { useState, useEffect } from 'react';
+import { Folder, Trash2, AlertCircle, Plus } from 'lucide-react';
+import { getFolders, createFolder, deleteFolder } from '@/services/media';
+
+export default function DirectoriesPanel({
+    carpetaActual,
+    navigateToFolder,
+    handleAuditOrphans,
+    isAuditing,
+    handleDrop,
+    handleDragOver
+}) {
+    const [carpetas, setCarpetas] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    const loadFolders = async () => {
+        setLoading(true);
+        try {
+            // Si estamos auditando, mostramos la raíz para poder salir
+            const id = isAuditing ? 'root' : (carpetaActual === 'root' ? 'root' : carpetaActual);
+            const data = await getFolders(id === 'root' ? null : id);
+            setCarpetas(data.results || data);
+        } catch (error) {
+            console.error("Error al cargar carpetas:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadFolders();
+    }, [carpetaActual, isAuditing]);
+
+    const onCreateFolder = async () => {
+        const name = prompt("Nombre de la nueva carpeta:");
+        if (!name) return;
+        try {
+            await createFolder(name, carpetaActual === 'root' ? null : carpetaActual);
+            loadFolders();
+        } catch (error) {
+            alert("Error al crear carpeta");
+        }
+    };
+
+    const onDeleteFolder = async (e, id) => {
+        e.stopPropagation();
+        if (!confirm("¿Estás seguro de eliminar esta carpeta? Solo se eliminará si está vacía.")) return;
+        try {
+            await deleteFolder(id);
+            loadFolders();
+        } catch (error) {
+            alert("Error al eliminar carpeta. Asegúrate de que esté vacía.");
+        }
+    };
+
+    return (
+        <div className="w-64 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden shrink-0">
+            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-500">Directorios</h3>
+                {!isAuditing && (
+                    <button 
+                        onClick={onCreateFolder}
+                        className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-all"
+                        title="Nueva Carpeta"
+                    >
+                        <Plus size={14} />
+                    </button>
+                )}
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+                {loading && carpetas.length === 0 ? (
+                    <div className="p-4 text-center text-slate-400 text-xs font-bold animate-pulse">Cargando...</div>
+                ) : (
+                    <div className={`space-y-1 transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
+                        {carpetas.map(c => (
+                            <div
+                                key={c.id}
+                                onClick={() => navigateToFolder(c)}
+                                onDragOver={handleDragOver}
+                                onDrop={(e) => handleDrop(e, c.id)}
+                                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all text-left group cursor-pointer ${carpetaActual === c.id ? 'bg-emerald-50 border border-emerald-200 shadow-sm' : 'hover:bg-slate-50 border border-transparent'}`}
+                            >
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <Folder size={18} className={carpetaActual === c.id ? 'text-emerald-500 fill-emerald-500/20' : 'text-slate-400'} />
+                                    <div className="min-w-0">
+                                        <p className={`text-sm font-bold capitalize truncate ${carpetaActual === c.id ? 'text-emerald-700' : 'text-slate-700'}`}>{c.name}</p>
+                                        <p className="text-[10px] font-bold text-slate-400">{c.modified_at ? new Date(c.modified_at).toLocaleDateString() : 'Directorio'}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={(e) => onDeleteFolder(e, c.id)}
+                                    className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                >
+                                    <Trash2 size={12} />
+                                </button>
+                            </div>
+                        ))}
+                        {carpetas.length === 0 && (
+                            <div className="p-8 text-center">
+                                <p className="text-xs font-bold text-slate-400 italic">No hay subcarpetas</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+                <button
+                    onClick={handleAuditOrphans}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 border ${isAuditing ? 'bg-amber-500 text-white border-amber-600' : 'bg-white border-slate-200 text-slate-600 hover:border-amber-300 hover:text-amber-600 hover:bg-amber-50'}`}
+                >
+                    <AlertCircle size={14} /> AUDITAR HUÉRFANAS
+                </button>
+            </div>
+        </div>
+    );
+}

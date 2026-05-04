@@ -70,7 +70,13 @@ export default function IngresosPage() {
                     { label: 'Gestión de Movimientos', href: '/movimientos' },
                     { label: 'Ingresos de Mercadería' }
                 ]}
-                subtitle="Podés registrar borradores y aprobarlos para cargar stock."
+                subtitle={
+                    <>
+                        <Package size={12} />
+                        <span>Podés registrar borradores y aprobarlos para cargar stock.</span>
+
+                    </>
+                }
             >
                 <Link
                     href="/movimientos/ingresos/nuevo"

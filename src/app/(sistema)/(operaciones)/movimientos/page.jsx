@@ -2,7 +2,7 @@ import Link from 'next/link';
 import PageHeader from '@/components/ui/PageHeader';
 import {
     ArrowDownCircle, ArrowUpCircle,
-    RefreshCcw, Settings2, Truck, ArrowRight
+    RefreshCcw, Settings2, Truck, ArrowRight, Package
 } from 'lucide-react';
 
 export default function MovimientosHubPage() {
@@ -49,7 +49,13 @@ export default function MovimientosHubPage() {
             {/* HEADER */}
             <PageHeader
                 title="Gestión de Movimientos"
-                subtitle="Operaciones y Logística de Inventario"
+                subtitle={
+                    <>
+                        <Package size={12} />
+                        <span>Operaciones y Logística de Inventario</span>
+
+                    </>
+                }
                 subtitleClassName="text-blue-600"
             />
 

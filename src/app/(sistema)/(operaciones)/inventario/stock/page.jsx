@@ -173,80 +173,75 @@ export default function StockPage() {
         }
       />
 
-      <main className="flex-1 overflow-y-auto p-8 min-w-0">
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 min-w-0">
         <div className="max-w-[1600px] mx-auto space-y-6">
           {/* Metric Cards */}
-          {/* Metric Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3 group hover:border-blue-200 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                <Package size={20} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-2.5 group hover:border-blue-200 transition-all">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center transition-all group-hover:scale-110">
+                <Package size={16} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
                   Total Piezas
                 </p>
-                <h4 className="text-xl font-black text-slate-900 leading-none">
-                  {(
-                    stats.total_piezas ||
-                    stats.totalPiezas ||
-                    0
-                  ).toLocaleString()}
+                <h4 className="text-lg font-black text-slate-800 leading-none">
+                  {(stats.total_piezas || stats.totalPiezas || 0).toLocaleString()}
                 </h4>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3 group hover:border-amber-200 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-all shadow-sm">
-                <Calendar size={20} />
+            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-2.5 group hover:border-amber-200 transition-all">
+              <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center transition-all group-hover:scale-110">
+                <Calendar size={16} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">
-                  Próximos Vencimientos
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+                  Próximos Venc.
                 </p>
-                <h4 className="text-xl font-black text-slate-900 leading-none">
+                <h4 className="text-lg font-black text-slate-800 leading-none">
                   {stats.alertas_vencimiento}
                 </h4>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3 group hover:border-rose-200 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center group-hover:bg-rose-600 group-hover:text-white transition-all shadow-sm">
-                <AlertTriangle size={20} />
+            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-2.5 group hover:border-rose-200 transition-all">
+              <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center transition-all group-hover:scale-110">
+                <AlertTriangle size={16} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">
-                  SKUs Agotados
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+                  Agotados
                 </p>
-                <h4 className="text-xl font-black text-slate-900 leading-none">
+                <h4 className="text-lg font-black text-slate-800 leading-none">
                   {stats.skus_agotados}
                 </h4>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3 group hover:border-red-200 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-all shadow-sm">
-                <AlertCircle size={20} />
+            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-2.5 group hover:border-red-200 transition-all">
+              <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center transition-all group-hover:scale-110">
+                <AlertCircle size={16} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">
-                  Unid. Vencidos
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+                  Vencidos
                 </p>
-                <h4 className="text-xl font-black text-slate-900 leading-none">
+                <h4 className="text-lg font-black text-slate-800 leading-none">
                   {stats.unidades_vencidas}
                 </h4>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3 group hover:border-emerald-200 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
-                <LayoutGrid size={20} />
+            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-2.5 group hover:border-emerald-200 transition-all">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center transition-all group-hover:scale-110">
+                <LayoutGrid size={16} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">
-                  SKUs Totales
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+                  Total SKUs
                 </p>
-                <h4 className="text-xl font-black text-slate-900 leading-none">
+                <h4 className="text-lg font-black text-slate-800 leading-none">
                   {stats.total_skus}
                 </h4>
               </div>
@@ -451,18 +446,13 @@ export default function StockPage() {
                       Para realizar correcciones o mover unidades entre lotes, dirígete al módulo de <strong>Ajustes de Inventario</strong>.
                     </p>
                   </div>
-                  <button
-                    onClick={() => setSelectedSKU(null)}
-                    className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-slate-200 active:scale-95 transition-all"
-                  >
-                    Cerrar Auditoría
-                  </button>
+
                 </div>
               </div>
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

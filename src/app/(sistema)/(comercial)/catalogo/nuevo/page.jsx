@@ -6,9 +6,9 @@ import Link from 'next/link';
 
 import { crearProducto, getCategorias, crearCategoria } from '@/services/api';
 import LoadingScreen from '@/components/ui/LoadingScreen';
-import TagsInput from '@/components/catalogo/TagsInput';
+import TagsInput from '@/components/comercial/catalogo/TagsInput';
 import FilerModal from '@/components/ui/FilerModal';
-import AttributesEditor from '@/components/catalogo/AttributesEditor';
+import AttributesEditor from '@/components/comercial/catalogo/AttributesEditor';
 import { getFullImageUrl } from '@/services/api';
 import { FileJson } from 'lucide-react';
 
@@ -452,13 +452,13 @@ export default function NuevoProductoPage() {
                             />
                         </div>
                         <div className="px-6 pb-6 flex gap-3">
-                            <button 
+                            <button
                                 onClick={() => { setIsJSONModalOpen(false); setJsonInput(''); }}
                                 className="flex-1 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-colors"
                             >
                                 Cancelar
                             </button>
-                            <button 
+                            <button
                                 onClick={handleJSONImport}
                                 className="flex-1 py-2.5 bg-slate-900 text-white font-bold rounded-xl text-sm hover:bg-blue-600 transition-colors"
                             >

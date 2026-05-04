@@ -14,8 +14,8 @@ import EmptyState from '@/components/ui/EmptyState';
 import PageHeader from '@/components/ui/PageHeader';
 
 // Catálogo Components
-import ProductoCard from '@/components/catalogo/ProductoCard';
-import ProductoRow from '@/components/catalogo/ProductoRow';
+import ProductoCard from '@/components/comercial/catalogo/ProductoCard';
+import ProductoRow from '@/components/comercial/catalogo/ProductoRow';
 import Pagination from '@/components/ui/Pagination';
 
 // Normalización para búsqueda sin tildes
@@ -225,7 +225,7 @@ export default function CatalogoPage() {
 
                     {/* PAGINACIÓN */}
                     {count > pageSize && (
-                        <Pagination 
+                        <Pagination
                             count={count}
                             pageSize={pageSize}
                             currentPage={page}
