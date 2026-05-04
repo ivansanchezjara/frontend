@@ -43,7 +43,12 @@ export default function ConsignacionesPage() {
                     { label: 'Gestión de Movimientos', href: '/movimientos' },
                     { label: 'Consignaciones' }
                 ]}
-                subtitle="Gestioná mercadería enviada a clientes en calidad de préstamo o consignación."
+                subtitle={
+                    <>
+                        <Package size={12} />
+                        <span>Gestioná mercadería enviada a clientes en calidad de préstamo o consignación.</span>
+                    </>
+                }
             >
                 <Link
                     href="/movimientos/consignaciones/nuevo"

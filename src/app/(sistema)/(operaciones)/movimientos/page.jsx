@@ -67,33 +67,33 @@ export default function MovimientosHubPage() {
                     </div>
 
                     {/* Lista de operaciones */}
-                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="space-y-2 md:space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700">
                         {movimientos.map((mov) => (
                             <Link
                                 key={mov.href}
                                 href={mov.href}
-                                className="group block bg-white p-5 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 overflow-hidden relative"
+                                className="group block bg-white p-3 md:p-4 rounded-xl md:rounded-[28px] border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 overflow-hidden relative"
                             >
-                                <div className="flex items-center gap-6 relative z-10">
+                                <div className="flex items-center gap-3 md:gap-6 relative z-10">
                                     {/* Icono */}
-                                    <div className="w-20 h-20 flex items-center justify-center bg-blue-50 text-blue-600 rounded-[22px] group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm shrink-0">
+                                    <div className="w-14 h-14 md:w-20 md:h-20 flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg md:rounded-[22px] group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm shrink-0">
                                         {mov.icon}
                                     </div>
 
                                     {/* Contenido */}
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="text-xl font-black text-slate-900 tracking-tight mb-1 group-hover:text-blue-600 transition-colors">
+                                        <h3 className="text-base md:text-xl font-black text-slate-900 tracking-tight mb-0.5 md:mb-1 group-hover:text-blue-600 transition-colors">
                                             {mov.title}
                                         </h3>
-                                        <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-2xl">
+                                        <p className="text-slate-500 text-xs md:text-sm font-medium leading-relaxed max-w-2xl hidden md:block">
                                             {mov.desc}
                                         </p>
                                     </div>
 
                                     {/* Acción */}
-                                    <div className="pr-4 shrink-0">
-                                        <div className="flex items-center gap-2 px-6 py-3 bg-slate-50 text-slate-400 rounded-2xl text-xs font-black uppercase tracking-widest group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                                            Gestionar <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                    <div className="shrink-0">
+                                        <div className="flex items-center gap-1 px-3 md:px-6 py-1.5 md:py-3 bg-slate-50 text-slate-400 rounded-lg md:rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm whitespace-nowrap">
+                                            Gestionar <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform hidden md:block" />
                                         </div>
                                     </div>
                                 </div>

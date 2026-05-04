@@ -73,7 +73,12 @@ export default function AjustesInventarioPage() {
                     { label: 'Gestión de Movimientos', href: '/movimientos' },
                     { label: 'Ajustes de Inventario' }
                 ]}
-                subtitle="Corregir discrepancias de stock, lotes y fechas de vencimiento de forma auditada."
+                subtitle={
+                    <>
+                        <Package size={12} />
+                        <span>Corregir discrepancias de stock, lotes y fechas de vencimiento de forma auditada.</span>
+                    </>
+                }
             >
                 <Link
                     href="/movimientos/ajustes/nuevo"

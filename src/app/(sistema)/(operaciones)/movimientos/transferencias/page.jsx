@@ -70,7 +70,12 @@ export default function TransferenciasPage() {
                     { label: 'Gestión de Movimientos', href: '/movimientos' },
                     { label: 'Transferencias Internas' }
                 ]}
-                subtitle="Movilizá stock entre depósitos de forma auditada."
+                subtitle={
+                    <>
+                        <Package size={12} />
+                        <span>Movilizá stock entre depósitos de forma auditada.</span>
+                    </>
+                }
             >
                 <Link
                     href="/movimientos/transferencias/nuevo"

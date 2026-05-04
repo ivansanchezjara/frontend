@@ -80,7 +80,12 @@ export default function BajasPage() {
                     { label: 'Gestión de Movimientos', href: '/movimientos' },
                     { label: 'Bajas de Inventario' }
                 ]}
-                subtitle="Registrá pérdidas, mermas o productos vencidos para darlos de baja."
+                subtitle={
+                    <>
+                        <Package size={12} />
+                        <span>Registrá pérdidas, mermas o productos vencidos para darlos de baja.</span>
+                    </>
+                }
             >
                 <Link
                     href="/movimientos/bajas/nuevo"
@@ -106,49 +111,49 @@ export default function BajasPage() {
                     ) : (
                         <div className="grid grid-cols-1 gap-4">
                             {bajas.map((baja) => (
-                                <div key={baja.id} className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm hover:shadow-lg hover:border-rose-200 transition-all group flex flex-col md:flex-row items-center gap-6">
+                                <div key={baja.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-rose-200 transition-all group flex flex-col md:flex-row items-center gap-4">
                                     {/* Icono de Estado */}
-                                    <div className={`w-16 h-16 rounded-[22px] flex items-center justify-center shrink-0 shadow-sm border ${baja.estado === 'APROBADO' ? 'bg-slate-50 text-slate-400 border-slate-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
-                                        <Trash2 size={32} />
+                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border ${baja.estado === 'APROBADO' ? 'bg-slate-50 text-slate-400 border-slate-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                        <Trash2 size={24} />
                                     </div>
 
                                     {/* Info Principal */}
                                     <div className="flex-1 min-w-0 text-center md:text-left">
-                                        <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">ID #{baja.id}</span>
-                                            <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${baja.estado === 'APROBADO' ? 'bg-slate-100 text-slate-600' : 'bg-rose-100 text-rose-700'}`}>
+                                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2">
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">ID #{baja.id}</span>
+                                            <span className={`text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-widest ${baja.estado === 'APROBADO' ? 'bg-slate-100 text-slate-600' : 'bg-rose-100 text-rose-700'}`}>
                                                 {baja.estado}
                                             </span>
-                                            <span className="text-[9px] font-black px-3 py-1 bg-amber-100 text-amber-700 rounded-full uppercase tracking-widest">
+                                            <span className="text-[8px] font-black px-2 py-1 bg-amber-100 text-amber-700 rounded-full uppercase tracking-widest">
                                                 {getMotivoLabel(baja.motivo)}
                                             </span>
                                         </div>
-                                        <h3 className="text-xl font-black text-slate-900 truncate tracking-tight">
+                                        <h3 className="text-lg md:text-xl font-black text-slate-900 truncate tracking-tight">
                                             {baja.cantidad} x {baja.variante_nombre}
                                         </h3>
-                                        <p className="text-slate-500 text-xs font-medium mt-1 italic">
+                                        <p className="text-slate-500 text-[11px] font-medium mt-1 italic">
                                             "{baja.observaciones || 'Sin observaciones'}"
                                         </p>
-                                        <div className="flex flex-wrap justify-center md:justify-start gap-6 mt-3 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
-                                            <span className="flex items-center gap-2"><Calendar size={14} /> {new Date(baja.fecha).toLocaleDateString()}</span>
-                                            <span className="flex items-center gap-2"><Clock size={14} /> {baja.deposito_nombre}</span>
-                                            <span className="flex items-center gap-2"><User size={14} /> {baja.usuario_nombre}</span>
+                                        <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-3 text-slate-400 font-bold text-[9px] uppercase tracking-widest">
+                                            <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(baja.fecha).toLocaleDateString()}</span>
+                                            <span className="flex items-center gap-1"><Clock size={12} /> {baja.deposito_nombre}</span>
+                                            <span className="flex items-center gap-1"><User size={12} /> {baja.usuario_nombre}</span>
                                         </div>
                                     </div>
 
                                     {/* Acciones */}
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2">
                                         {baja.estado === 'BORRADOR' && (
                                             <button
                                                 onClick={(e) => handleAprobar(baja.id, e)}
-                                                className="bg-rose-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-rose-100 hover:bg-rose-700 transition-all border border-rose-500"
+                                                className="bg-rose-600 text-white px-4 py-2 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-md shadow-rose-100 hover:bg-rose-700 transition-all border border-rose-500"
                                             >
-                                                Aprobar Baja
+                                                Aprobar
                                             </button>
                                         )}
                                         {baja.estado === 'APROBADO' && (
-                                            <div className="flex items-center gap-2 text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50 px-4 py-2 rounded-xl">
-                                                <Package size={14} /> Stock Descontado
+                                            <div className="flex items-center gap-1 text-emerald-600 font-black text-[9px] uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-xl">
+                                                <Package size={12} /> Stock Descontado
                                             </div>
                                         )}
                                     </div>

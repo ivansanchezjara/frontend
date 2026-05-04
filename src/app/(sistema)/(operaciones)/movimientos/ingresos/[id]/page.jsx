@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Cookies from 'js-cookie';
-import { Search, Plus, Trash2, Check, CheckCircle2, Download, Upload, Tag, Clock } from 'lucide-react';
+import { Search, Plus, Trash2, Check, CheckCircle2, Download, Upload, Tag, Clock, Package } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import { getApiUrl } from '@/services/api';
 import ResizableHeader from '@/components/ui/ResizableHeader';
@@ -231,7 +231,12 @@ export default function EditarIngresoPage() {
                     { label: 'Ingresos de Mercadería', href: '/movimientos/ingresos' },
                     { label: `Editar Borrador #${id}` }
                 ]}
-                subtitle="Modificá los datos del arribo o los ítems antes de la aprobación definitiva."
+                subtitle={
+                    <>
+                        <Package size={12} />
+                        <span>Modificá los datos del arribo o los ítems antes de la aprobación definitiva.</span>
+                    </>
+                }
             >
                 <div className="flex items-center gap-6 mr-4">
                 </div>
