@@ -90,6 +90,9 @@ export default function AjustesInventarioPage() {
 
             <main className="flex-1 overflow-y-auto p-8 min-w-0">
                 <div className="max-w-[1800px] mx-auto space-y-6">
+                    <div className="rounded-[32px] border border-amber-200 bg-amber-50 p-5 text-amber-700 text-sm font-bold">
+                        Este módulo es para corrección, mantenimiento y recategorización de lotes. Las bajas de stock por merma, pérdida o consumo deben gestionarse desde el módulo de Bajas.
+                    </div>
 
                     {loading ? (
                         <LoadingScreen message="Cargando historial de ajustes de inventario..." />
@@ -133,6 +136,25 @@ export default function AjustesInventarioPage() {
                                             <p className="text-slate-500 font-medium text-sm mt-1 truncate">
                                                 "{ajuste.observaciones}"
                                             </p>
+                                        )}
+
+                                        {ajuste.lotes_ajustados?.length > 0 && (
+                                            <div className="mt-4 text-slate-500 text-sm space-y-1">
+                                                <div className="text-slate-400 uppercase tracking-[0.3em] text-[10px] font-black">
+                                                    Lotes modificados
+                                                </div>
+                                                {ajuste.lotes_ajustados.slice(0, 2).map((item) => (
+                                                    <p key={item.id} className="truncate">
+                                                        <span className="font-black text-slate-700">{item.lote_codigo}</span>: {item.cantidad_anterior}u → {item.nueva_cantidad ?? item.cantidad_anterior}u
+                                                        {item.nuevo_vencimiento ? (
+                                                            <span className="text-slate-400"> | Vence {item.vencimiento_anterior || 'N/A'} → {item.nuevo_vencimiento}</span>
+                                                        ) : null}
+                                                    </p>
+                                                ))}
+                                                {ajuste.lotes_ajustados.length > 2 && (
+                                                    <p className="text-slate-400 text-xs">+ {ajuste.lotes_ajustados.length - 2} lote(s) más</p>
+                                                )}
+                                            </div>
                                         )}
 
                                         <div className="flex flex-wrap justify-center md:justify-start gap-6 mt-4 text-slate-400 font-bold text-[10px] uppercase tracking-widest">

@@ -23,7 +23,7 @@ export default function NuevoAjusteInventarioPage() {
   // ESTADO REFACTORIZADO: Ahora orientado a Logística
   const [ajuste, setAjuste] = useState({
     variante: "",
-    motivo: "ERROR_TIPEO", // Motivos logísticos
+    motivo: "",
     observaciones: "",
   });
 
@@ -76,6 +76,29 @@ export default function NuevoAjusteInventarioPage() {
     );
   };
 
+  const totalStockActual = lotes.reduce(
+    (sum, lote) => sum + Number(lote.cantidad_actual || 0),
+    0,
+  );
+
+  const allowQuantityChanges = ["ERROR_TIPEO", "CONTEO_FISICO", "REUBICACION"].includes(ajuste.motivo);
+  
+  const totalStockPropuesto = lotes.reduce(
+    (sum, lote) => {
+      const cantidadActual = Number(lote.cantidad_actual || 0);
+      const nuevaCantidad = allowQuantityChanges && lote.nueva_cantidad !== ""
+        ? parseInt(lote.nueva_cantidad, 10)
+        : cantidadActual;
+      const splitDiff = allowQuantityChanges && lote.nuevo_lote_codigo && lote.nueva_cantidad !== ""
+        ? Math.max(cantidadActual - parseInt(lote.nueva_cantidad, 10), 0)
+        : 0;
+      return sum + nuevaCantidad + splitDiff;
+    },
+    0,
+  );
+
+  const totalsMatch = totalStockActual === totalStockPropuesto;
+
   const selectVariante = async (v) => {
     setSelectedVarianteInfo(v);
     setAjuste((prev) => ({ ...prev, variante: v.id }));
@@ -101,6 +124,7 @@ export default function NuevoAjusteInventarioPage() {
           cantidad_actual: l.cantidad,
           nueva_cantidad: "",
           nuevo_vencimiento: "",
+          nuevo_lote_codigo: "",
         })),
       );
     } catch (err) {
@@ -113,14 +137,82 @@ export default function NuevoAjusteInventarioPage() {
     e.preventDefault();
     if (!ajuste.variante || isSubmitting) return;
 
+    if (!ajuste.motivo) {
+      alert("Debes seleccionar un motivo de ajuste antes de continuar.");
+      return;
+    }
+
+    // Validar lotes modificados según el motivo
+    const allowQuantityChanges = ["ERROR_TIPEO", "CONTEO_FISICO", "REUBICACION"].includes(ajuste.motivo);
+    
+    let lotesModificados = [];
+    
+    if (ajuste.motivo === "VENCIMIENTO") {
+      // Solo cambios de vencimiento
+      lotesModificados = lotes.filter((l) => l.nuevo_vencimiento !== "");
+    } else if (ajuste.motivo === "RENOMBRAR_LOTE") {
+      // Solo cambios de código de lote
+      lotesModificados = lotes.filter((l) => l.nuevo_lote_codigo !== "");
+      
+      // Validar que todos tengan nuevo código
+      const sinCodigo = lotesModificados.filter((l) => !l.nuevo_lote_codigo || l.nuevo_lote_codigo.trim() === "");
+      if (sinCodigo.length > 0) {
+        alert("Debes especificar el nuevo código para cada lote a renombrar.");
+        return;
+      }
+    } else {
+      // ERROR_TIPEO, CONTEO_FISICO, REUBICACION
+      lotesModificados = lotes.filter((l) => {
+        const hasVencimientoChange = l.nuevo_vencimiento !== "";
+        const hasCantidadChange = l.nueva_cantidad !== "";
+        return hasVencimientoChange || hasCantidadChange;
+      });
+    }
+
+    if (lotesModificados.length === 0) {
+      alert("Debes modificar al menos un lote antes de enviar el ajuste.");
+      return;
+    }
+
+    // Validar split: si hay nuevo_lote_codigo, debe haber reducción de cantidad
+    const invalidSplit = lotesModificados.some((l) => {
+      const nuevaCantidad = l.nueva_cantidad !== "" ? parseInt(l.nueva_cantidad, 10) : null;
+      if (l.nuevo_lote_codigo && ajuste.motivo !== "RENOMBRAR_LOTE") {
+        if (!nuevaCantidad || nuevaCantidad >= l.cantidad_actual) {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    if (invalidSplit) {
+      alert("Para crear un nuevo lote, debes reducir la cantidad del lote original.");
+      return;
+    }
+
+    // Validar que no cambien cantidades si el motivo no lo permite
+    if (!allowQuantityChanges && ajuste.motivo !== "RENOMBRAR_LOTE") {
+      const conCambiosCantidad = lotesModificados.some((l) => l.nueva_cantidad !== "");
+      if (conCambiosCantidad) {
+        alert("Este motivo no permite cambios de cantidad.");
+        return;
+      }
+    }
+
+    if (
+      !allowQuantityChanges &&
+      ajuste.motivo !== "RENOMBRAR_LOTE" &&
+      totalStockActual !== totalStockPropuesto
+    ) {
+      alert(
+        "Para este motivo, el ajuste no puede cambiar el stock total del producto."
+      );
+      return;
+    }
+
     setIsSubmitting(true);
     const token = Cookies.get("token");
     const API_BASE = getApiUrl();
-
-    // Filtramos solo los lotes que realmente fueron modificados por el usuario
-    const lotesModificados = lotes.filter(
-      (l) => l.nueva_cantidad !== "" || l.nuevo_vencimiento !== "",
-    );
 
     const payload = {
       variante: ajuste.variante,
@@ -128,10 +220,13 @@ export default function NuevoAjusteInventarioPage() {
       observaciones: ajuste.observaciones,
       lotes_ajustados: lotesModificados.map((l) => ({
         lote: l.id,
-        nueva_cantidad:
-          l.nueva_cantidad !== "" ? parseInt(l.nueva_cantidad, 10) : undefined,
+        nueva_cantidad: allowQuantityChanges && l.nueva_cantidad !== "" 
+          ? parseInt(l.nueva_cantidad, 10) 
+          : undefined,
         nuevo_vencimiento:
           l.nuevo_vencimiento !== "" ? l.nuevo_vencimiento : undefined,
+        nuevo_lote_codigo:
+          l.nuevo_lote_codigo !== "" ? l.nuevo_lote_codigo : undefined,
       })),
     };
 
@@ -183,9 +278,9 @@ export default function NuevoAjusteInventarioPage() {
         }
       >
         <button
-          disabled={isSubmitting || !ajuste.variante}
+          disabled={isSubmitting || !ajuste.variante || !ajuste.motivo || !totalsMatch}
           onClick={handleSubmit}
-          className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${!ajuste.variante ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100"}`}
+          className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${!ajuste.variante || !ajuste.motivo || !totalsMatch ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100"}`}
         >
           {isSubmitting ? "GUARDANDO..." : "REGISTRAR AJUSTE"}
         </button>
@@ -239,17 +334,25 @@ export default function NuevoAjusteInventarioPage() {
                       name="motivo"
                       value={ajuste.motivo}
                       onChange={handleAjusteChange}
-                      className="w-full bg-white/10 border border-white/10 rounded-xl p-3 font-bold text-xs outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                      className="w-full bg-white/10 border border-white/10 rounded-xl p-3 font-bold text-xs text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
                     >
+                      <option value="" disabled hidden>
+                        Selecciona motivo del ajuste
+                      </option>
                       <option value="ERROR_TIPEO">
-                        Error de tipeo original
+                        Error de tipeo en cantidad
                       </option>
                       <option value="CONTEO_FISICO">
                         Discrepancia en conteo físico
                       </option>
-                      <option value="REUBICACION">Reubicación de lotes</option>
                       <option value="VENCIMIENTO">
-                        Actualización de Vencimiento
+                        Actualización de vencimiento
+                      </option>
+                      <option value="RENOMBRAR_LOTE">
+                        Renombrar código de lote
+                      </option>
+                      <option value="REUBICACION">
+                        Reorganizar/dividir stock entre lotes
                       </option>
                       <option value="OTROS">Otros motivos</option>
                     </select>
@@ -283,6 +386,29 @@ export default function NuevoAjusteInventarioPage() {
                 Vencimientos
               </h3>
 
+              <div className="grid gap-4 mb-6 md:grid-cols-2">
+                <div className="rounded-3xl bg-slate-50 border border-slate-200 p-5">
+                  <p className="text-[10px] uppercase tracking-[0.24em] text-slate-400 font-black mb-2">
+                    Stock total actual
+                  </p>
+                  <p className="text-3xl font-black text-slate-900">{totalStockActual}u</p>
+                </div>
+                <div className="rounded-3xl bg-slate-50 border border-slate-200 p-5">
+                  <p className="text-[10px] uppercase tracking-[0.24em] text-slate-400 font-black mb-2">
+                    Stock total propuesto
+                  </p>
+                  <p className="text-3xl font-black text-slate-900">{totalStockPropuesto}u</p>
+                </div>
+              </div>
+
+              <div className={`rounded-3xl p-4 text-sm font-black ${totalsMatch ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
+                {totalsMatch ? (
+                  <p>El stock total es consistente. No hay creación ni destrucción mágica de unidades.</p>
+                ) : (
+                  <p>Atención: el total de stock no coincide. Ajustá cantidades o splits para igualar el stock antes y después.</p>
+                )}
+              </div>
+
               <div className="space-y-4">
                 {lotes.map((lote) => (
                   <div
@@ -297,18 +423,15 @@ export default function NuevoAjusteInventarioPage() {
                       <span className="text-lg font-black text-slate-800">
                         {lote.lote_codigo}
                       </span>
-                      <div className="flex gap-4 mt-2">
-                        <span className="text-xs font-bold text-slate-500">
-                          Stock:{" "}
-                          <span className="text-slate-900">
-                            {lote.cantidad_actual}u.
-                          </span>
+                      <div className="flex flex-col gap-2 mt-3 text-slate-500 text-xs font-bold">
+                        <span>
+                          Stock anterior: <span className="text-slate-900">{lote.cantidad_actual}u.</span>
                         </span>
-                        <span className="text-xs font-bold text-slate-500">
-                          Vence:{" "}
-                          <span className="text-slate-900">
-                            {lote.vencimiento_actual || "N/A"}
-                          </span>
+                        <span>
+                          Stock nuevo: <span className="text-slate-900">{lote.nueva_cantidad !== "" ? lote.nueva_cantidad : lote.cantidad_actual}u.</span>
+                        </span>
+                        <span>
+                          Vence actual: <span className="text-slate-900">{lote.vencimiento_actual || "N/A"}</span>
                         </span>
                       </div>
                     </div>
@@ -318,43 +441,101 @@ export default function NuevoAjusteInventarioPage() {
                       size={24}
                     />
 
-                    {/* Campos de Ajuste */}
+                    {/* Campos de Ajuste - Dinámicos según motivo */}
                     <div className="xl:flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-1">
-                          Corregir Cantidad
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="Ej: 45"
-                          value={lote.nueva_cantidad}
-                          onChange={(e) =>
-                            handleLoteChange(
-                              lote.id,
-                              "nueva_cantidad",
-                              e.target.value,
-                            )
-                          }
-                          className="w-full bg-white border border-blue-200 rounded-xl p-3 font-black text-sm focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-1">
-                          Corregir Vencimiento
-                        </label>
-                        <input
-                          type="date"
-                          value={lote.nuevo_vencimiento}
-                          onChange={(e) =>
-                            handleLoteChange(
-                              lote.id,
-                              "nuevo_vencimiento",
-                              e.target.value,
-                            )
-                          }
-                          className="w-full bg-white border border-blue-200 rounded-xl p-3 font-black text-sm text-slate-600 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
-                        />
-                      </div>
+                      {/* VENCIMIENTO: Solo permite cambiar fecha de vencimiento */}
+                      {ajuste.motivo === "VENCIMIENTO" && (
+                        <div className="md:col-span-2 space-y-1">
+                          <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-1">
+                            Nuevo Vencimiento
+                          </label>
+                          <input
+                            type="date"
+                            value={lote.nuevo_vencimiento}
+                            onChange={(e) =>
+                              handleLoteChange(lote.id, "nuevo_vencimiento", e.target.value)
+                            }
+                            className="w-full bg-white border border-blue-200 rounded-xl p-3 font-black text-sm text-slate-600 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                          />
+                        </div>
+                      )}
+
+                      {/* RENOMBRAR_LOTE: Solo permite cambiar código del lote */}
+                      {ajuste.motivo === "RENOMBRAR_LOTE" && (
+                        <div className="md:col-span-2 space-y-1 bg-purple-50 p-4 rounded-xl border border-purple-200">
+                          <label className="text-[10px] font-black text-purple-700 uppercase tracking-widest ml-1">
+                            Nuevo Código del Lote
+                          </label>
+                          <p className="text-[9px] text-purple-600 mb-2">
+                            Cambiar código de <strong>{lote.lote_codigo}</strong> a:
+                          </p>
+                          <input
+                            type="text"
+                            placeholder="Ej: LOTE-CORRECTO-001"
+                            value={lote.nuevo_lote_codigo}
+                            onChange={(e) =>
+                              handleLoteChange(lote.id, "nuevo_lote_codigo", e.target.value)
+                            }
+                            className="w-full bg-white border border-purple-300 rounded-xl p-3 font-black text-sm text-slate-600 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all placeholder:text-slate-300"
+                          />
+                        </div>
+                      )}
+
+                      {/* ERROR_TIPEO, CONTEO_FISICO, REUBICACION: Permiten cambiar cantidad y crear split */}
+                      {["ERROR_TIPEO", "CONTEO_FISICO", "REUBICACION"].includes(ajuste.motivo) && (
+                        <>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-1">
+                              Vencimiento (Si cambió)
+                            </label>
+                            <input
+                              type="date"
+                              value={lote.nuevo_vencimiento}
+                              onChange={(e) =>
+                                handleLoteChange(lote.id, "nuevo_vencimiento", e.target.value)
+                              }
+                              className="w-full bg-white border border-blue-200 rounded-xl p-3 font-black text-sm text-slate-600 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                            />
+                          </div>
+                          <div className="md:col-span-2 space-y-1">
+                            <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-1">
+                              Nueva Cantidad
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="Ej: 45"
+                              value={lote.nueva_cantidad}
+                              onChange={(e) =>
+                                handleLoteChange(lote.id, "nueva_cantidad", e.target.value)
+                              }
+                              className="w-full bg-white border border-blue-200 rounded-xl p-3 font-black text-sm text-slate-600 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
+                            />
+                          </div>
+
+                          {/* Split lote: Solo si se reduce cantidad */}
+                          {lote.nueva_cantidad !== "" &&
+                            parseInt(lote.nueva_cantidad, 10) < lote.cantidad_actual && (
+                              <div className="md:col-span-2 space-y-1 bg-amber-50 p-4 rounded-xl border border-amber-200">
+                                <label className="text-[10px] font-black text-amber-700 uppercase tracking-widest ml-1">
+                                  Crear Nuevo Lote Con La Diferencia
+                                </label>
+                                <p className="text-[9px] text-amber-600 mb-2">
+                                  Se creará un nuevo lote con {lote.cantidad_actual - parseInt(lote.nueva_cantidad, 10)}u
+                                </p>
+                                <input
+                                  type="text"
+                                  placeholder="Ej: LOTE-ALT-001"
+                                  value={lote.nuevo_lote_codigo}
+                                  onChange={(e) =>
+                                    handleLoteChange(lote.id, "nuevo_lote_codigo", e.target.value)
+                                  }
+                                  className="w-full bg-white border border-amber-300 rounded-xl p-3 font-black text-sm text-slate-600 focus:ring-4 focus:ring-amber-500/10 outline-none transition-all placeholder:text-slate-300"
+                                />
+                              </div>
+                            )}
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -378,6 +559,9 @@ export default function NuevoAjusteInventarioPage() {
                   completá los campos que necesiten ser modificados. Si dejás un
                   campo vacío, el sistema mantendrá el valor actual del lote.
                   Estas modificaciones alteran el stock físico inmediatamente.
+                  Para bajas por merma, pérdida o consumo, usa el módulo de
+                  Bajas; este módulo es exclusivo para corrección y
+                  recategorización.
                 </p>
               </div>
             </div>
