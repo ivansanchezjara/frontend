@@ -58,17 +58,46 @@ export default function NuevaConsignacionPage() {
     setHeader({ ...header, [e.target.name]: e.target.value });
   };
 
-  const addItem = (lote) => {
-    if (items.find((i) => i.lote === lote.id)) return;
+  const addItem = (selection) => {
+    let targetLote = selection;
+
+    // Si viene de modo variante, buscamos el "mejor" lote automáticamente
+    if (selection.isVariante) {
+      const variantLotes = stockItems.filter(
+        (l) => l.variante === selection.id && l.cantidad > 0,
+      );
+
+      if (variantLotes.length === 0) return;
+
+      // Ordenar por FEFO (Vencimiento más próximo) y luego FIFO (Entrada más antigua)
+      targetLote = [...variantLotes].sort((a, b) => {
+        // 1. Vencimiento (Nulls al final)
+        if (a.vencimiento && b.vencimiento) {
+          const dateA = new Date(a.vencimiento);
+          const dateB = new Date(b.vencimiento);
+          if (dateA !== dateB) return dateA - dateB;
+        } else if (a.vencimiento) {
+          return -1;
+        } else if (b.vencimiento) {
+          return 1;
+        }
+
+        // 2. Fecha de entrada (Más antigua primero)
+        return new Date(a.fecha_entrada) - new Date(b.fecha_entrada);
+      })[0];
+    }
+
+    if (!targetLote || items.find((i) => i.lote === targetLote.id)) return;
+
     setItems([
       ...items,
       {
-        lote: lote.id,
-        variante_nombre: lote.variante_nombre || "Producto",
-        nombre_variante: lote.nombre_variante,
-        lote_codigo: lote.lote_codigo,
-        deposito_nombre: lote.deposito_nombre,
-        stock_max: lote.cantidad,
+        lote: targetLote.id,
+        variante_nombre: targetLote.variante_nombre || "Producto",
+        nombre_variante: targetLote.nombre_variante,
+        lote_codigo: targetLote.lote_codigo,
+        deposito_nombre: targetLote.deposito_nombre,
+        stock_max: targetLote.cantidad,
         cantidad: 1,
       },
     ]);
@@ -364,11 +393,12 @@ export default function NuevaConsignacionPage() {
             onClose={() => setIsSearchOpen(false)}
             onSelect={addItem}
             lotes={stockItems}
-            placeholder="Buscar por código de lote o producto..."
+            mode="variante"
+            placeholder="Buscar por nombre de producto o variante..."
             emptyMessage={
               stockItems.length === 0
                 ? "No hay stock físico disponible en ningún depósito. Primero debes registrar un ingreso de mercadería."
-                : "No se encontraron lotes que coincidan con la búsqueda."
+                : "No se encontraron variantes que coincidan con la búsqueda."
             }
           />
         </div>

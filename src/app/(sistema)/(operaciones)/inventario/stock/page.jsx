@@ -25,7 +25,7 @@ export default function StockPage() {
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState("TODO");
+  const [filtroStatus, setFiltroStatus] = useState("STOCK");
   const [page, setPage] = useState(1);
   const [count, setCount] = useState(0);
   const pageSize = 24;
@@ -373,68 +373,97 @@ export default function StockPage() {
                   {/* Desglose por Lotes */}
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {lotes.map((lote) => (
-                        <div
-                          key={lote.id}
-                          className="p-5 rounded-3xl border transition-all bg-white border-slate-100 hover:border-slate-300"
-                        >
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-2">
-                                <MapPin size={14} className="text-slate-400" />
-                                <span className="text-xs font-black text-slate-600 uppercase tracking-tight">
-                                  {lote.deposito_nombre || "Depósito"}
+                      {(() => {
+                        const validLotes = lotes.filter(l => l.cantidad > 0 || l.cantidad_vencida > 0);
+                        
+                        if (validLotes.length === 0) {
+                          return (
+                            <div className="col-span-2 py-10 text-center text-slate-400 font-bold uppercase tracking-widest text-xs italic bg-slate-50 rounded-[30px] border border-dashed border-slate-200">
+                              No hay lotes con stock para este SKU.
+                            </div>
+                          );
+                        }
+
+                        // Agrupar por código de lote
+                        const lotesAgrupados = validLotes.reduce((acc, lote) => {
+                          const code = lote.lote_codigo;
+                          if (!acc[code]) {
+                            acc[code] = {
+                              lote_codigo: code,
+                              vencimiento: lote.vencimiento,
+                              total_cantidad: 0,
+                              total_vencida: 0,
+                              ubicaciones: []
+                            };
+                          }
+                          acc[code].total_cantidad += lote.cantidad;
+                          acc[code].total_vencida += lote.cantidad_vencida;
+                          acc[code].ubicaciones.push({
+                            id: lote.id,
+                            deposito_nombre: lote.deposito_nombre,
+                            cantidad: lote.cantidad,
+                            cantidad_vencida: lote.cantidad_vencida
+                          });
+                          return acc;
+                        }, {});
+
+                        return Object.values(lotesAgrupados).map((grupo, idx) => (
+                          <div
+                            key={idx}
+                            className="p-5 rounded-3xl border transition-all bg-white border-slate-100 hover:border-slate-300 flex flex-col"
+                          >
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">
+                                  Código de Lote
+                                </label>
+                                <span className="text-lg font-black text-slate-800 ml-1">
+                                  {grupo.lote_codigo}
                                 </span>
                               </div>
-                              {lote.cantidad_vencida > 0 && (
-                                <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full inline-block mt-1 self-start">
-                                  {lote.cantidad_vencida} u. Vencidas
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-lg font-black text-slate-900">
-                              {lote.cantidad} u.
-                            </div>
-                          </div>
-
-                          <div className="space-y-3">
-                            {/* Campo Lote (Solo Lectura) */}
-                            <div>
-                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">
-                                Código de Lote
-                              </label>
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-bold text-slate-700 ml-1">
-                                  {lote.lote_codigo}
-                                </span>
+                              <div className="text-right">
+                                <div className="text-xl font-black text-slate-900">
+                                  {grupo.total_cantidad} <span className="text-xs">u.</span>
+                                </div>
+                                {grupo.total_vencida > 0 && (
+                                  <div className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full mt-1">
+                                    {grupo.total_vencida} u. Vencidas
+                                  </div>
+                                )}
                               </div>
                             </div>
 
-                            {/* Campo Vencimiento (Solo Lectura) */}
-                            <div>
+                            <div className="mb-4">
                               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">
                                 Vencimiento
                               </label>
                               <div className="flex items-center gap-2 ml-1">
-                                <div
-                                  className={`w-2 h-2 rounded-full ${getSemaforoVencimiento(lote.vencimiento).dot}`}
-                                ></div>
-                                <span
-                                  className={`text-[11px] font-black uppercase tracking-tight ${getSemaforoVencimiento(lote.vencimiento).color}`}
-                                >
-                                  {lote.vencimiento || "Sin fecha"}
+                                <div className={`w-2 h-2 rounded-full ${getSemaforoVencimiento(grupo.vencimiento).dot}`}></div>
+                                <span className={`text-[11px] font-black uppercase tracking-tight ${getSemaforoVencimiento(grupo.vencimiento).color}`}>
+                                  {grupo.vencimiento || "Sin fecha"}
                                 </span>
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      ))}
 
-                      {lotes.length === 0 && (
-                        <div className="col-span-2 py-10 text-center text-slate-400 font-bold uppercase tracking-widest text-xs italic bg-slate-50 rounded-[30px] border border-dashed border-slate-200">
-                          No hay lotes con stock para este SKU.
-                        </div>
-                      )}
+                            <div className="mt-auto bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                <MapPin size={10} /> Ubicaciones
+                              </label>
+                              <div className="space-y-2">
+                                {grupo.ubicaciones.map((ubi) => (
+                                  <div key={ubi.id} className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-slate-600">{ubi.deposito_nombre || "Depósito"}</span>
+                                    <div className="flex items-center gap-2">
+                                      {ubi.cantidad > 0 && <span className="font-black text-slate-800">{ubi.cantidad} u.</span>}
+                                      {ubi.cantidad_vencida > 0 && <span className="font-bold text-red-500 bg-white px-1.5 rounded-md border border-red-100">{ubi.cantidad_vencida} u. vencidas</span>}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        ));
+                      })()}
                     </div>
                   </div>
                 </div>

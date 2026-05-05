@@ -6,8 +6,10 @@ export default function ProductSearchModal({
   onClose,
   onSelect,
   lotes = [],
-  placeholder = "Buscar por lote, código o nombre...",
+  placeholder = "Buscar por código o nombre...",
   emptyMessage = "No se encontraron productos con stock.",
+  mode = "lote", // "lote" o "variante"
+  showEmptyStock = false,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [lastAddedId, setLastAddedId] = useState(null);
@@ -21,18 +23,54 @@ export default function ProductSearchModal({
 
   if (!isOpen) return null;
 
-  const filteredLotes = lotes.filter(
-    (l) =>
-      l.lote_codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      l.variante_nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      l.variante_codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      l.nombre_variante?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  // Procesar datos según el modo
+  let displayData = [];
 
-  const handleSelect = (lote) => {
-    setLastAddedId(lote.id);
+  if (mode === "variante") {
+    // Agrupar por variante
+    const groups = {};
+    lotes.forEach((l) => {
+      const vid = l.variante;
+      if (!groups[vid]) {
+        groups[vid] = {
+          id: vid,
+          variante: vid,
+          variante_nombre: l.variante_nombre,
+          variante_codigo: l.variante_codigo,
+          nombre_variante: l.nombre_variante,
+          cantidad: 0,
+          vencimiento: null,
+          isVariante: true,
+        };
+      }
+      groups[vid].cantidad += l.cantidad;
+    });
+    displayData = Object.values(groups);
+  } else {
+    displayData = lotes;
+  }
+
+  // Filtrar stock vacío si corresponde
+  if (!showEmptyStock) {
+    displayData = displayData.filter((item) => item.cantidad > 0);
+  }
+
+  const filteredData = displayData.filter((l) => {
+    const search = searchTerm.toLowerCase();
+    const matchesVariante =
+      l.variante_nombre?.toLowerCase().includes(search) ||
+      l.variante_codigo?.toLowerCase().includes(search) ||
+      l.nombre_variante?.toLowerCase().includes(search);
+
+    if (mode === "variante") return matchesVariante;
+
+    return matchesVariante || l.lote_codigo?.toLowerCase().includes(search);
+  });
+
+  const handleSelect = (item) => {
+    setLastAddedId(item.id);
     setTimeout(() => setLastAddedId(null), 800);
-    onSelect(lote);
+    onSelect(item);
   };
 
   return (
@@ -62,7 +100,7 @@ export default function ProductSearchModal({
         </div>
 
         <div className="p-4 overflow-y-auto flex-1 min-h-[300px]">
-          {filteredLotes.length === 0 ? (
+          {filteredData.length === 0 ? (
             <div className="p-20 text-center">
               <Package size={40} className="mx-auto text-slate-200 mb-4" />
               <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">
@@ -70,7 +108,7 @@ export default function ProductSearchModal({
               </p>
             </div>
           ) : (
-            filteredLotes.map((l) => (
+            filteredData.map((l) => (
               <button
                 key={l.id}
                 onClick={() => handleSelect(l)}
@@ -85,19 +123,28 @@ export default function ProductSearchModal({
                     )}
                   </div>
                   <div className="flex-1">
-                    <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest">
-                      {l.lote_codigo}
-                    </div>
+                    {mode === "lote" && (
+                      <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest">
+                        {l.lote_codigo}
+                      </div>
+                    )}
                     <div className="font-black text-slate-900">
                       {l.variante_nombre}{" "}
                       <span className="text-slate-400 text-sm">
                         | {l.nombre_variante}
                       </span>
                     </div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
-                      {l.deposito_nombre}
-                    </div>
-                    {l.vencimiento && (
+                    {mode === "lote" && (
+                      <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                        {l.deposito_nombre}
+                      </div>
+                    )}
+                    {mode === "variante" && (
+                      <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest">
+                        {l.variante_codigo}
+                      </div>
+                    )}
+                    {l.vencimiento && mode === "lote" && (
                       <div
                         className={`text-[10px] font-black uppercase tracking-widest ${
                           new Date(l.vencimiento) < new Date()
@@ -115,16 +162,14 @@ export default function ProductSearchModal({
                             ? "⏰ PRÓXIMO A VENCER"
                             : "✓ VIGENTE"}{" "}
                         •{" "}
-                        {new Date(l.vencimiento).toLocaleDateString(
-                          "es-AR",
-                        )}
+                        {new Date(l.vencimiento).toLocaleDateString("es-AR")}
                       </div>
                     )}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    STOCK
+                    {mode === "variante" ? "STOCK TOTAL" : "STOCK"}
                   </div>
                   <div className="text-xl font-black text-slate-900">
                     {l.cantidad}

@@ -5,7 +5,7 @@ import Cookies from 'js-cookie';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import EmptyState from '@/components/ui/EmptyState';
 import PageHeader from '@/components/ui/PageHeader';
-import { Truck, Eye, ChevronRight, Package, User, Calendar, Plus, MapPin, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { ChevronRight, Package, User, Calendar, Plus, MapPin, Clock } from 'lucide-react';
 import { getApiUrl } from '@/services/api';
 
 export default function ConsignacionesPage() {
@@ -113,12 +113,15 @@ export default function ConsignacionesPage() {
 
                                         <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                             <span className="flex items-center gap-1.5"><Calendar size={14} /> {new Date(cons.fecha_salida).toLocaleDateString()}</span>
-                                            {cons.fecha_esperada_devolucion && (
-                                                <span className={`flex items-center gap-1.5 ${new Date(cons.fecha_esperada_devolucion) < new Date() ? 'text-rose-500' : ''}`}>
-                                                    <Clock size={14} /> {new Date(cons.fecha_esperada_devolucion).toLocaleDateString()}
-                                                </span>
-                                            )}
+                                            <span className="flex items-center gap-1.5 text-blue-500 font-black"><User size={14} /> {cons.usuario_nombre}</span>
                                         </div>
+                                        {cons.fecha_esperada_devolucion && (
+                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                <span className={`flex items-center gap-1.5 ${new Date(cons.fecha_esperada_devolucion) < new Date() ? 'text-rose-500' : ''}`}>
+                                                    <Clock size={14} /> Retorno: {new Date(cons.fecha_esperada_devolucion).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between group-hover:text-blue-600 transition-all font-black text-[10px] uppercase tracking-widest">
