@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { Folder, Trash2, AlertCircle, Plus } from 'lucide-react';
-import { getFolders, createFolder, deleteFolder } from '@/services/media';
+import { getFolders, createFolder, deleteFolder } from '@/services/apis/media.js';
 
 export default function DirectoriesPanel({
     carpetaActual,
@@ -59,7 +59,7 @@ export default function DirectoriesPanel({
             <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-500">Directorios</h3>
                 {!isAuditing && (
-                    <button 
+                    <button
                         onClick={onCreateFolder}
                         className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-all"
                         title="Nueva Carpeta"

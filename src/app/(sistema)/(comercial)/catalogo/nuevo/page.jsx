@@ -9,7 +9,7 @@ import LoadingScreen from '@/components/ui/LoadingScreen';
 import TagsInput from '@/components/comercial/catalogo/TagsInput';
 import FilerModal from '@/components/ui/FilerModal';
 import AttributesEditor from '@/components/comercial/catalogo/AttributesEditor';
-import { getFullImageUrl } from '@/services/api';
+import { getFullImageUrl } from '@/services/apis/media.js';
 import { FileJson } from 'lucide-react';
 
 // ─── Mini componentes de formulario (idénticos a [slug]/page.jsx) ──

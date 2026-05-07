@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { getProfile, updateProfile } from '@/services/auth';
+import { getProfile, updateProfile } from '@/services/apis/auth.js';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import { User, Mail, Shield, Check, Save, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -72,7 +72,7 @@ export default function ProfilePage() {
                             {profile?.first_name} {profile?.last_name}
                         </h2>
                         <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-2">@{profile?.username}</p>
-                        
+
                         <div className="mt-8 w-full border-t border-slate-50 pt-8 space-y-4">
                             <div className="flex flex-col items-center gap-1">
                                 <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Estado</span>
@@ -108,10 +108,10 @@ export default function ProfilePage() {
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre</label>
                                 <div className="relative">
                                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         name="first_name"
-                                        value={profile?.first_name || ''} 
+                                        value={profile?.first_name || ''}
                                         onChange={handleChange}
                                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 font-bold text-slate-800 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
                                         placeholder="Tu nombre..."
@@ -123,10 +123,10 @@ export default function ProfilePage() {
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Apellido</label>
                                 <div className="relative">
                                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         name="last_name"
-                                        value={profile?.last_name || ''} 
+                                        value={profile?.last_name || ''}
                                         onChange={handleChange}
                                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 font-bold text-slate-800 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
                                         placeholder="Tu apellido..."
@@ -138,10 +138,10 @@ export default function ProfilePage() {
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Correo Electrónico</label>
                                 <div className="relative">
                                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                    <input 
-                                        type="email" 
+                                    <input
+                                        type="email"
                                         name="email"
-                                        value={profile?.email || ''} 
+                                        value={profile?.email || ''}
                                         onChange={handleChange}
                                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 font-bold text-slate-800 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-slate-300"
                                         placeholder="tu@email.com"
@@ -165,7 +165,7 @@ export default function ProfilePage() {
                         )}
 
                         <div className="pt-4">
-                            <button 
+                            <button
                                 type="submit"
                                 disabled={saving}
                                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white py-5 rounded-[24px] font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-100 transition-all flex items-center justify-center gap-3 active:scale-95"

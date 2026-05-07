@@ -1,4 +1,4 @@
-import { getFullImageUrl } from '@/services/api';
+import { getFullImageUrl } from '@/services/apis/catalogo';
 import Link from 'next/link';
 
 export default function ProductoCard({ producto }) {

@@ -9,7 +9,7 @@ import LoadingScreen from "@/components/ui/LoadingScreen";
 import EmptyState from "@/components/ui/EmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import Pagination from "@/components/ui/Pagination";
-import { getProductos } from "@/services/api";
+import { getProductos } from "@/services/apis/catalogo.js";
 import {
   Package,
   MapPin,
@@ -375,7 +375,7 @@ export default function StockPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {(() => {
                         const validLotes = lotes.filter(l => l.cantidad > 0 || l.cantidad_vencida > 0);
-                        
+
                         if (validLotes.length === 0) {
                           return (
                             <div className="col-span-2 py-10 text-center text-slate-400 font-bold uppercase tracking-widest text-xs italic bg-slate-50 rounded-[30px] border border-dashed border-slate-200">

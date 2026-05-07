@@ -9,8 +9,8 @@ import { useDebounce } from '@/hooks/useDebounce';
 import {
     getImages, uploadImage, deleteImage,
     getOrphans, bulkAssignImages, updateImage
-} from '@/services/media';
-import { getFullImageUrl } from '@/services/api';
+} from '@/services/apis/media.js';
+import { getFullImageUrl } from '@/services/apis/catalogo.js';
 import DirectoriesPanel from '@/components/comercial/media-manager/DirectoriesPanel';
 import ExplorerPanel from '@/components/comercial/media-manager/ExplorerPanel';
 

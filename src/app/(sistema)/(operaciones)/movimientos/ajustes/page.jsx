@@ -1,8 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import EmptyState from "@/components/ui/EmptyState";
 import PageHeader from "@/components/ui/PageHeader";
@@ -15,39 +14,25 @@ import {
   CheckCircle,
   Clock,
 } from "lucide-react";
-import { getApiUrl } from "@/services/api";
+import { useApi } from "@/hooks/useApi";
+import { getAjustes, aprobarAjuste } from "@/services/apis/movimientos";
 import AjusteDetailModal from "@/components/movimientos/AjusteDetailModal";
 
 export default function AjustesInventarioPage() {
-  const [ajustes, setAjustes] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
   const [selectedAjuste, setSelectedAjuste] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const router = useRouter();
 
-  const fetchAjustes = async () => {
-    setLoading(true);
-    try {
-      const token = Cookies.get("token");
-      const API_BASE = getApiUrl();
-      const response = await fetch(`${API_BASE}/api/inventario/ajustes/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+  // --- API & DATA ---
+  const { 
+    data: ajustesData, 
+    loading, 
+    refresh: fetchAjustes 
+  } = useApi(getAjustes, { auto: true, initialData: [] });
 
-      if (response.ok) {
-        const data = await response.json();
-        setAjustes(data.results || data);
-      }
-    } catch (error) {
-      console.error("Error cargando ajustes:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const ajustes = ajustesData?.results || ajustesData || [];
 
-  useEffect(() => {
-    fetchAjustes();
-  }, []);
+  const { execute: executeAprobar } = useApi(aprobarAjuste);
 
   // RESTAURAMOS LA FUNCIÓN DE APROBACIÓN
   const handleAprobar = async (id, e) => {
@@ -61,29 +46,10 @@ export default function AjustesInventarioPage() {
       return;
 
     try {
-      const token = Cookies.get("token");
-      const API_BASE = getApiUrl();
-      const response = await fetch(
-        `${API_BASE}/api/inventario/ajustes/${id}/aprobar/`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (response.ok) {
-        fetchAjustes(); // Recargamos la lista para ver el cambio de estado
-      } else {
-        const errorData = await response.json();
-        alert(
-          `Error al aprobar: ${errorData.error || errorData.detail || "Desconocido"}`,
-        );
-      }
+      await executeAprobar(id);
+      fetchAjustes(); // Recargamos la lista para ver el cambio de estado
     } catch (error) {
-      alert("Error de conexión al intentar aprobar.");
+      // useErrorHandler ya muestra el mensaje
     }
   };
 

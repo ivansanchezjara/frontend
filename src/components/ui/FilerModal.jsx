@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
-import { getFolders, getImages, uploadImage, createFolder } from '@/services/media';
-import { getFullImageUrl } from '@/services/api';
+import { getFolders, getImages, uploadImage, createFolder } from '@/services/apis/media.js';
+import { getFullImageUrl } from '@/services/apis/catalogo.js';
 import { Folder, Image as ImageIcon, Upload, ChevronRight, Home, Link as LinkIcon, Plus, Search } from 'lucide-react';
 import Pagination from '@/components/ui/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -60,17 +60,17 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
     const handleCreateFolder = async () => {
         const name = prompt("Nombre de nueva carpeta:");
         if (!name) return;
-        
+
         try {
             await createFolder(name, currentFolder === 'root' ? null : currentFolder);
             loadContents(currentFolder);
-        } catch(e) {
+        } catch (e) {
             alert("Error creando carpeta");
         }
     };
 
     const handleUploadClick = () => {
-        if(fileInputRef.current) fileInputRef.current.click();
+        if (fileInputRef.current) fileInputRef.current.click();
     };
 
     const handleFileChange = async (e) => {
@@ -81,7 +81,7 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
         try {
             await uploadImage(file, currentFolder);
             loadContents(currentFolder);
-        } catch(e) {
+        } catch (e) {
             alert("Error subiendo imagen");
         } finally {
             setUploading(false);
@@ -112,7 +112,7 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
                         <div className="flex gap-2 items-center text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest">
                             {breadcrumbs.map((b, idx) => (
                                 <div key={b.id} className="flex gap-2 items-center">
-                                    <button 
+                                    <button
                                         className="hover:text-emerald-600 transition-colors cursor-pointer"
                                         onClick={() => navigateToFolder(b)}
                                     >
@@ -132,17 +132,17 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
                 <div className="px-6 py-3 flex gap-3 border-b border-slate-100 shrink-0 bg-white items-center">
                     <div className="relative w-64 mr-2">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input 
-                            type="text" 
-                            placeholder="Buscar en esta carpeta..." 
+                        <input
+                            type="text"
+                            placeholder="Buscar en esta carpeta..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-emerald-500 focus:bg-white transition-all"
                         />
                     </div>
 
-                    <button 
-                        onClick={handleCreateFolder} 
+                    <button
+                        onClick={handleCreateFolder}
                         className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 active:scale-95 transition-all shadow-sm"
                     >
                         + Nueva Carpeta
@@ -152,9 +152,9 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
                         {count} imágenes · {folders.length} carpetas
                     </p>
 
-                    <button 
-                        onClick={handleUploadClick} 
-                        disabled={uploading} 
+                    <button
+                        onClick={handleUploadClick}
+                        disabled={uploading}
                         className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-slate-900/10 hover:bg-slate-800 ml-auto disabled:opacity-50 active:scale-95 transition-all flex items-center gap-2"
                     >
                         {uploading ? 'Subiendo...' : <><Upload size={14} /> Subir Archivo</>}
@@ -172,8 +172,8 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
                     ) : (
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
                             {folders.map(f => (
-                                <button 
-                                    key={f.id} 
+                                <button
+                                    key={f.id}
                                     onClick={() => navigateToFolder(f)}
                                     className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 hover:bg-emerald-50 hover:border-emerald-300 transition-all cursor-pointer aspect-square shadow-sm group"
                                 >
@@ -183,8 +183,8 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
                             ))}
 
                             {images.map(img => (
-                                <div 
-                                    key={img.id} 
+                                <div
+                                    key={img.id}
                                     className="group relative bg-white border border-slate-200 rounded-2xl overflow-hidden aspect-square cursor-pointer flex flex-col items-center justify-between hover:ring-4 hover:ring-emerald-500/20 hover:border-emerald-500 transition-all shadow-sm"
                                     onClick={() => {
                                         onSelectImage(img);
@@ -204,7 +204,7 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="w-full p-2.5 bg-white border-t border-slate-100">
                                         <p className="text-[10px] font-bold text-slate-700 truncate w-full text-center leading-tight">
                                             {img.name}
@@ -227,7 +227,7 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
                 {/* Footer Pagination */}
                 {count > pageSize && (
                     <div className="px-6 py-2 border-t border-slate-100 bg-white">
-                        <Pagination 
+                        <Pagination
                             count={count}
                             pageSize={pageSize}
                             currentPage={page}

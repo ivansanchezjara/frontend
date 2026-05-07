@@ -1,4 +1,4 @@
-import { getFullImageUrl } from '@/services/api';
+import { getFullImageUrl } from '@/services/apis/catalogo';
 import { useRouter } from 'next/navigation';
 
 export default function ProductoRow({ producto }) {

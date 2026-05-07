@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { getProductos } from '@/services/api';
+import { getProductos } from '@/services/apis/catalogo.js';
 import { Search, Package, ChevronRight, Check } from 'lucide-react';
 
 export default function BulkAssignModal({ isOpen, onClose, onAssign, selectedCount }) {
@@ -45,7 +45,7 @@ export default function BulkAssignModal({ isOpen, onClose, onAssign, selectedCou
         }
     };
 
-    const filteredProductos = productos.filter(p => 
+    const filteredProductos = productos.filter(p =>
         p.nombre_general.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.variants.some(v => v.nombre_variante.toLowerCase().includes(searchTerm.toLowerCase()) || v.product_code.toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -80,9 +80,9 @@ export default function BulkAssignModal({ isOpen, onClose, onAssign, selectedCou
                 <div className="p-4 border-b border-slate-100">
                     <div className="relative">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input 
-                            type="text" 
-                            placeholder="Buscar producto o SKU..." 
+                        <input
+                            type="text"
+                            placeholder="Buscar producto o SKU..."
                             className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -148,7 +148,7 @@ export default function BulkAssignModal({ isOpen, onClose, onAssign, selectedCou
                     <button onClick={onClose} className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-100 transition-colors">
                         Cancelar
                     </button>
-                    <button 
+                    <button
                         disabled={selectedIds.length === 0}
                         onClick={handleAssignClick}
                         className="flex-1 py-2.5 bg-slate-900 text-white font-bold rounded-xl text-sm hover:bg-blue-600 transition-colors disabled:opacity-50"

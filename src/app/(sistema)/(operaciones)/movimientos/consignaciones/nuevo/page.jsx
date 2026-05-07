@@ -14,13 +14,15 @@ import {
 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
-import { getApiUrl } from "@/services/api";
+import { useApi } from "@/hooks/useApi";
+import { getStockLotes } from "@/services/apis/inventario";
 
 export default function NuevaConsignacionPage() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [stockItems, setStockItems] = useState([]);
+
+  // --- API & DATA ---
+  const { execute: fetchLotes } = useApi(getStockLotes);
 
   const [header, setHeader] = useState({
     responsable: "",
@@ -31,60 +33,40 @@ export default function NuevaConsignacionPage() {
 
   const [items, setItems] = useState([]);
 
-  const fetchStock = async () => {
-    try {
-      const token = Cookies.get("token");
-      const API_BASE = getApiUrl();
-      const res = await fetch(`${API_BASE}/api/inventario/stock-lotes/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-
-      // Manejar tanto respuestas paginadas (.results) como listas directas
-      const rawItems = Array.isArray(data) ? data : data.results || [];
-
-      // Filtrar lotes con stock > 0
-      setStockItems(rawItems.filter((l) => l.cantidad > 0));
-    } catch (err) {
-      console.error("Error fetching stock for consignments:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchStock();
-  }, []);
+  const isSubmitting = false; // TODO: Implementar con useApi para el POST
 
   const handleChangeHeader = (e) => {
     setHeader({ ...header, [e.target.name]: e.target.value });
   };
 
-  const addItem = (selection) => {
+  const addItem = async (selection) => {
     let targetLote = selection;
 
-    // Si viene de modo variante, buscamos el "mejor" lote automáticamente
+    // Si viene de modo variante, buscamos el "mejor" lote automáticamente del servidor
     if (selection.isVariante) {
-      const variantLotes = stockItems.filter(
-        (l) => l.variante === selection.id && l.cantidad > 0,
-      );
+      try {
+        const data = await fetchLotes({ variante: selection.id, limit: 100 });
+        const variantLotes = (data?.results || data || []).filter(l => l.cantidad > 0);
 
-      if (variantLotes.length === 0) return;
-
-      // Ordenar por FEFO (Vencimiento más próximo) y luego FIFO (Entrada más antigua)
-      targetLote = [...variantLotes].sort((a, b) => {
-        // 1. Vencimiento (Nulls al final)
-        if (a.vencimiento && b.vencimiento) {
-          const dateA = new Date(a.vencimiento);
-          const dateB = new Date(b.vencimiento);
-          if (dateA !== dateB) return dateA - dateB;
-        } else if (a.vencimiento) {
-          return -1;
-        } else if (b.vencimiento) {
-          return 1;
+        if (variantLotes.length === 0) {
+          alert("No hay stock disponible para esta variante.");
+          return;
         }
 
-        // 2. Fecha de entrada (Más antigua primero)
-        return new Date(a.fecha_entrada) - new Date(b.fecha_entrada);
-      })[0];
+        // Ordenar por FEFO (Vencimiento más próximo) y luego FIFO (Entrada más antigua)
+        targetLote = [...variantLotes].sort((a, b) => {
+          if (a.vencimiento && b.vencimiento) {
+            const dateA = new Date(a.vencimiento);
+            const dateB = new Date(b.vencimiento);
+            if (dateA.getTime() !== dateB.getTime()) return dateA - dateB;
+          } else if (a.vencimiento) return -1;
+          else if (b.vencimiento) return 1;
+
+          return new Date(a.fecha_entrada) - new Date(b.fecha_entrada);
+        })[0];
+      } catch (err) {
+        return;
+      }
     }
 
     if (!targetLote || items.find((i) => i.lote === targetLote.id)) return;
@@ -392,14 +374,10 @@ export default function NuevaConsignacionPage() {
             isOpen={isSearchOpen}
             onClose={() => setIsSearchOpen(false)}
             onSelect={addItem}
-            lotes={stockItems}
+            apiFunc={getStockLotes}
             mode="variante"
             placeholder="Buscar por nombre de producto o variante..."
-            emptyMessage={
-              stockItems.length === 0
-                ? "No hay stock físico disponible en ningún depósito. Primero debes registrar un ingreso de mercadería."
-                : "No se encontraron variantes que coincidan con la búsqueda."
-            }
+            emptyMessage="No se encontraron productos con stock disponible."
           />
         </div>
       </main>

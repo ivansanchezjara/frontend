@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
-import { getFullImageUrl } from '@/services/api';
+import { getFullImageUrl } from '@/services/apis/media.js';
 import {
     Package, CheckCircle2 as CheckCircle2Icon,
     Clock as ClockIcon,

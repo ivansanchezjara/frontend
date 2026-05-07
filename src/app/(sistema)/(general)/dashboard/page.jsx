@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getUser } from '@/services/auth';
+import { getUser } from '@/services/apis/auth.js';
 // 👇 1. Importamos todo desde tu única fuente de la verdad
 import { modulosActivos, modulosFuturos, familyStyles, ordenFamilias } from '@/config/navigation';
 

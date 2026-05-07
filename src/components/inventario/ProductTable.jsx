@@ -1,6 +1,5 @@
-import { getFullImageUrl } from '@/services/api';
+import { getFullImageUrl } from '@/services/apis/catalogo.js';
 import ResizableHeader from '../ui/ResizableHeader';
-import { ArrowRight } from 'lucide-react';
 
 export const COLUMNAS_INVENTARIO = [
     { id: 'foto', label: 'Foto' }, { id: 'codigo', label: 'Código SKU' },

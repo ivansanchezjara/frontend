@@ -1,26 +1,26 @@
 "use client";
 import { useCallback } from 'react';
+import { useToast } from '@/components/ui/ToastContext';
+import { ApiError } from '@/services/api';
 
 export function useErrorHandler() {
+    const { showToast } = useToast();
+
     return useCallback((err) => {
-        // 1. Registramos el error en consola para que los desarrolladores puedan investigar
-        console.error("🔴 API Error capturado por useErrorHandler:", err);
+        console.error("🔴 Error capturado:", err);
 
-        // 2. Extraemos el mensaje de error de forma inteligente
-        let mensaje = "Ocurrió un error inesperado al conectar con el servidor. Por favor, intenta de nuevo.";
+        let mensaje = "Ocurrió un error inesperado.";
+        let tipo = 'error';
 
-        if (typeof err === 'string') {
-            mensaje = err;
-        } else if (err.message) {
-            // Error estándar de JavaScript o de Fetch
+        if (err instanceof ApiError) {
             mensaje = err.message;
-        } else if (err.response && err.response.data) {
-            // Por si en algún momento usan Axios u otra librería similar
-            mensaje = JSON.stringify(err.response.data);
+            if (err.status === 403) tipo = 'warning';
+        } else if (err instanceof Error) {
+            mensaje = err.message;
+        } else if (typeof err === 'string') {
+            mensaje = err;
         }
 
-        // 3. Mostramos una alerta al usuario en lugar de romper la pantalla!
-        alert(`⚠️ Atención:\n\n${mensaje}`);
-
-    }, []);
+        showToast(mensaje, tipo);
+    }, [showToast]);
 }

@@ -9,13 +9,13 @@ import {
     actualizarProducto, eliminarProducto,
     crearVariante, actualizarVariante, eliminarVariante,
     crearImagenProducto, eliminarImagenProducto,
-} from '@/services/api';
+} from '@/services/apis/catalogo.js';
 import { useRouter } from 'next/navigation';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import TagsInput from '@/components/comercial/catalogo/TagsInput';
 import FilerModal from '@/components/ui/FilerModal';
 import AttributesEditor from '@/components/comercial/catalogo/AttributesEditor';
-import { getFullImageUrl } from '@/services/api';
+import { getFullImageUrl } from '@/services/apis/catalogo.js';
 
 // ─── Mini componentes de formulario ──────────────────────────────
 

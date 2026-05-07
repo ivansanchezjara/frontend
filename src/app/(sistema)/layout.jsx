@@ -2,9 +2,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { logout, getUser } from '@/services/auth';
-import { Menu, X, ChevronLeft, ChevronRight, LogOut, User } from 'lucide-react';
-import { navItems, familyStyles } from '@/config/navigation';
+import { logout, getUser } from '@/services/apis/auth.js';
+import { Menu, X, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { navItems, familyStyles } from '@/config/navigation.js';
 
 export default function SistemaLayout({ children }) {
     const pathname = usePathname();

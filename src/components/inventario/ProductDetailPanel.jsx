@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { getFullImageUrl } from '@/services/api';
+import { getFullImageUrl } from '@/services/apis/media.js';
 
 export default function ProductDetailPanel({ producto, onClose }) {
 

@@ -1,8 +1,8 @@
 // src/app/(sistema)/catalogo/page.jsx
 "use client";
-import { useEffect, useState, useMemo } from 'react';
-import { getProductos, getCategorias } from '@/services/api';
-import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { useEffect, useState } from 'react';
+import { getProductos, getCategorias } from '@/services/apis/catalogo.js';
+import { useApi } from '@/hooks/useApi';
 import { useDebounce } from '@/hooks/useDebounce';
 import Link from 'next/link';
 import { Image as ImageIcon } from 'lucide-react';
@@ -39,15 +39,26 @@ function IconList() {
 }
 
 export default function CatalogoPage() {
-    // --- ESTADO ---
-    const [productos, setProductos] = useState([]);
-    const [categorias, setCategorias] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [count, setCount] = useState(0);
-    const [page, setPage] = useState(1);
-    const pageSize = 24;
+    // --- API & DATA ---
+    const {
+        data: catData = [],
+        loading: loadingCats
+    } = useApi(getCategorias, { auto: true, initialData: [] });
 
-    // Filtros
+    const {
+        data: prodData,
+        loading: loadingProds,
+        execute: fetchProducts
+    } = useApi(getProductos);
+
+    // Helpers para acceder a la data de productos
+    const productos = prodData?.results || [];
+    const count = prodData?.count || 0;
+    const categorias = catData;
+
+    const pageSize = 24;
+    const [page, setPage] = useState(1);
+
     const [busqueda, setBusqueda] = useState('');
     const busquedaDebounced = useDebounce(busqueda, 400);
     const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('todas');
@@ -55,41 +66,24 @@ export default function CatalogoPage() {
     // Vista
     const [vista, setVista] = useState('grilla'); // 'grilla' | 'tabla'
 
-    const handleError = useErrorHandler();
-
-    // Cargar Categorías (una sola vez)
-    useEffect(() => {
-        getCategorias().then(setCategorias).catch(handleError);
-    }, [handleError]);
-
     // Cargar Productos (cuando cambian filtros o página)
     useEffect(() => {
-        async function fetchProducts() {
-            setLoading(true);
-            try {
-                const params = {
-                    page,
-                    search: busquedaDebounced,
-                    categoria: categoriaSeleccionada !== 'todas' ? categoriaSeleccionada : undefined
-                };
-                const data = await getProductos(params);
-                setProductos(data.results || []);
-                setCount(data.count || 0);
-            } catch (err) {
-                handleError(err);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchProducts();
-    }, [handleError, busquedaDebounced, categoriaSeleccionada, page]);
+        const params = {
+            page,
+            search: busquedaDebounced,
+            categoria: categoriaSeleccionada !== 'todas' ? categoriaSeleccionada : undefined
+        };
+        fetchProducts(params);
+    }, [fetchProducts, busquedaDebounced, categoriaSeleccionada, page]);
 
     // Resetear a página 1 cuando cambia la búsqueda o categoría
     useEffect(() => {
         setPage(1);
     }, [busquedaDebounced, categoriaSeleccionada]);
 
-    if (loading && productos.length === 0) return <LoadingScreen texto="Cargando Catálogo..." />;
+    // Pantalla de carga inicial
+    const isInitialLoading = (loadingProds || loadingCats) && productos.length === 0;
+    if (isInitialLoading) return <LoadingScreen texto="Cargando Catálogo..." />;
 
     const hayFiltrosActivos = busqueda !== '' || categoriaSeleccionada !== 'todas';
 

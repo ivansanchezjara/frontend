@@ -1,29 +1,31 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import {
   Search,
   Package,
-  AlertCircle,
   Settings2,
   Boxes,
-  ArrowRight,
-  ChevronRight,
   ArrowDownRight,
   MapPin,
 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
-import { getApiUrl } from "@/services/api";
+import { useApi } from "@/hooks/useApi";
+import { getStockLotes } from "@/services/apis/inventario";
+import { crearAjuste } from "@/services/apis/movimientos";
 
 export default function NuevoAjusteInventarioPage() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [stockLotes, setStockLotes] = useState([]); // Para el buscador global
 
-  // ESTADO REFACTORIZADO: Ahora orientado a Logística
+  // 2. Lotes para la variante seleccionada
+  const { execute: fetchVarianteLotes } = useApi(getStockLotes);
+
+  // 3. Envío del ajuste
+  const { loading: isSubmitting, execute: submitAjuste } = useApi(crearAjuste);
+
+  // --- ESTADO LOCAL ---
   const [ajuste, setAjuste] = useState({
     variante: "",
     motivo: "",
@@ -31,24 +33,7 @@ export default function NuevoAjusteInventarioPage() {
   });
 
   const [selectedVarianteInfo, setSelectedVarianteInfo] = useState(null);
-  const [lotes, setLotes] = useState([]); // Aquí guardaremos los lotes del producto
-
-  useEffect(() => {
-    const token = Cookies.get("token");
-    const API_BASE = getApiUrl();
-    async function loadStockLotes() {
-      try {
-        const res = await fetch(`${API_BASE}/api/inventario/stock-lotes/?limit=1000`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        setStockLotes(Array.isArray(data) ? data : data.results || []);
-      } catch (err) {
-        console.error("Error fetching stock lotes:", err);
-      }
-    }
-    loadStockLotes();
-  }, []);
+  const [lotes, setLotes] = useState([]); // Lotes locales con estados de edición
 
   const handleAjusteChange = (e) => {
     const { name, value } = e.target;
@@ -57,6 +42,9 @@ export default function NuevoAjusteInventarioPage() {
 
   // Función para manejar cambios dentro de la tabla de lotes
   const handleLoteChange = (loteId, field, value) => {
+    // No permitir cantidades negativas
+    if (field === "nueva_cantidad" && value !== "" && parseInt(value, 10) < 0) return;
+
     setLotes((prev) =>
       prev.map((lote) => {
         if (lote.id !== loteId) return lote;
@@ -77,10 +65,10 @@ export default function NuevoAjusteInventarioPage() {
       return prev.map((lote) =>
         lote.id === loteId
           ? {
-              ...lote,
-              nuevo_lote_codigo: destino ? destino.lote_codigo : lote.nuevo_lote_codigo,
-              destino_lote_id: destino ? destino.id : null,
-            }
+            ...lote,
+            nuevo_lote_codigo: destino ? destino.lote_codigo : lote.nuevo_lote_codigo,
+            destino_lote_id: destino ? destino.id : null,
+          }
           : lote,
       );
     });
@@ -121,17 +109,9 @@ export default function NuevoAjusteInventarioPage() {
     setAjuste((prev) => ({ ...prev, variante: v.id }));
     setIsSearchOpen(false);
 
-    const token = Cookies.get("token");
-    const API_BASE = getApiUrl();
     try {
-      const res = await fetch(
-        `${API_BASE}/api/inventario/stock-lotes/?variante=${v.id}&limit=1000`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      const data = await res.json();
-      const lotesFetch = Array.isArray(data) ? data : data.results || [];
+      const data = await fetchVarianteLotes({ variante: v.id, limit: 1000 });
+      const lotesFetch = data?.results || data || [];
 
       setLotes(
         lotesFetch.map((l) => ({
@@ -140,7 +120,7 @@ export default function NuevoAjusteInventarioPage() {
           deposito: l.deposito,
           vencimiento_actual: l.vencimiento || "",
           cantidad_actual: l.cantidad,
-          deposito_nombre: l.deposito_nombre, // Agregamos el nombre para el feedback visual
+          deposito_nombre: l.deposito_nombre,
           nueva_cantidad: "",
           nuevo_vencimiento: "",
           nuevo_lote_codigo: "",
@@ -148,7 +128,6 @@ export default function NuevoAjusteInventarioPage() {
         })),
       );
     } catch (err) {
-      console.error("Error fetching lotes", err);
       setLotes([]);
     }
   };
@@ -196,10 +175,6 @@ export default function NuevoAjusteInventarioPage() {
       return;
     }
 
-    setIsSubmitting(true);
-    const token = Cookies.get("token");
-    const API_BASE = getApiUrl();
-
     const payload = {
       variante: ajuste.variante,
       motivo: ajuste.motivo,
@@ -217,25 +192,10 @@ export default function NuevoAjusteInventarioPage() {
     };
 
     try {
-      const response = await fetch(`${API_BASE}/api/inventario/ajustes/`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        router.push("/movimientos/ajustes");
-      } else {
-        const errData = await response.json();
-        alert("Error al guardar: " + JSON.stringify(errData));
-      }
+      await submitAjuste(payload);
+      router.push("/movimientos/ajustes");
     } catch (error) {
-      alert("Error de conexión.");
-    } finally {
-      setIsSubmitting(false);
+      // useErrorHandler ya muestra el mensaje, aquí solo evitamos el flujo de éxito
     }
   };
 
@@ -256,11 +216,10 @@ export default function NuevoAjusteInventarioPage() {
         <button
           disabled={isSubmitting || !selectedVarianteInfo || !hasAnyChange || !totalsMatch}
           onClick={handleSubmit}
-          className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${
-            isSubmitting || !selectedVarianteInfo || !hasAnyChange || !totalsMatch
-              ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
-              : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100"
-          }`}
+          className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${isSubmitting || !selectedVarianteInfo || !hasAnyChange || !totalsMatch
+            ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+            : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100"
+            }`}
         >
           {isSubmitting ? "GUARDANDO..." : "GUARDAR AJUSTE"}
         </button>
@@ -353,9 +312,8 @@ export default function NuevoAjusteInventarioPage() {
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Actual</p>
                 <p className="text-3xl font-black text-slate-900">{totalStockActual}</p>
               </div>
-              <div className={`p-6 rounded-[24px] border shadow-sm text-center flex flex-col justify-center transition-all ${
-                totalsMatch ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'
-              }`}>
+              <div className={`p-6 rounded-[24px] border shadow-sm text-center flex flex-col justify-center transition-all ${totalsMatch ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'
+                }`}>
                 <p className="text-[11px] font-black uppercase tracking-widest mb-1">
                   {totalsMatch ? '✓ Stock Balanceado' : '⚠️ Desbalance'}
                 </p>
@@ -394,7 +352,7 @@ export default function NuevoAjusteInventarioPage() {
                               {lote.lote_codigo} • {lote.deposito_nombre}
                             </span>
                           </div>
-                          
+
                           <div className="grid grid-cols-2 gap-4">
                             <div className="bg-slate-50 p-4 rounded-2xl">
                               <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Cantidad Actual</p>
@@ -423,6 +381,7 @@ export default function NuevoAjusteInventarioPage() {
                               <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Nueva Cantidad</label>
                               <input
                                 type="number"
+                                min="0"
                                 value={lote.nueva_cantidad}
                                 onChange={(e) => handleLoteChange(lote.id, "nueva_cantidad", e.target.value)}
                                 placeholder={lote.cantidad_actual}
@@ -465,11 +424,10 @@ export default function NuevoAjusteInventarioPage() {
                                   key={other.id}
                                   type="button"
                                   onClick={() => handleLoteDestinoChange(lote.id, other.id)}
-                                  className={`p-3 rounded-2xl border text-left transition-all ${
-                                    lote.destino_lote_id === other.id
-                                      ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-100"
-                                      : "border-slate-200 bg-white hover:border-slate-400"
-                                  }`}
+                                  className={`p-3 rounded-2xl border text-left transition-all ${lote.destino_lote_id === other.id
+                                    ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-100"
+                                    : "border-slate-200 bg-white hover:border-slate-400"
+                                    }`}
                                 >
                                   <div className="flex items-center justify-between mb-1">
                                     <p className="text-[10px] font-black text-slate-900 truncate">{other.lote_codigo}</p>
@@ -481,14 +439,12 @@ export default function NuevoAjusteInventarioPage() {
                                 </button>
                               ))}
 
-                            <button
-                              type="button"
+                            <div
                               onClick={() => handleLoteDestinoChange(lote.id, null)}
-                              className={`p-3 rounded-2xl border text-left transition-all group ${
-                                lote.destino_lote_id === null && lote.nuevo_lote_codigo
-                                  ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-100"
-                                  : "border-slate-200 bg-white border-dashed hover:border-blue-400"
-                              }`}
+                              className={`p-3 rounded-2xl border text-left transition-all group cursor-pointer ${lote.destino_lote_id === null && lote.nuevo_lote_codigo
+                                ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-100"
+                                : "border-slate-200 bg-white border-dashed hover:border-blue-400"
+                                }`}
                             >
                               <div className="flex items-center gap-2 mb-1">
                                 <span className={`text-[10px] font-black uppercase ${lote.destino_lote_id === null && lote.nuevo_lote_codigo ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`}>
@@ -500,12 +456,11 @@ export default function NuevoAjusteInventarioPage() {
                                 placeholder="Escribir código..."
                                 value={lote.destino_lote_id === null ? lote.nuevo_lote_codigo : ""}
                                 onChange={(e) => {
-                                  handleLoteDestinoChange(lote.id, null);
                                   handleLoteChange(lote.id, "nuevo_lote_codigo", e.target.value);
                                 }}
                                 className="w-full bg-transparent border-none p-0 text-[11px] font-black text-slate-900 focus:ring-0 placeholder:text-slate-300"
                               />
-                            </button>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -519,19 +474,19 @@ export default function NuevoAjusteInventarioPage() {
 
         {isSearchOpen && (
           <ProductSearchModal
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-          mode="variante"
-          onSelect={(item) => {
-            selectVariante({
-              id: item.variante,
-              product_code: item.variante_codigo,
-              producto_nombre: item.variante_nombre,
-              nombre_variante: item.nombre_variante,
-            });
-          }}
-          lotes={stockLotes}
-        />
+            isOpen={isSearchOpen}
+            onClose={() => setIsSearchOpen(false)}
+            mode="variante"
+            onSelect={(item) => {
+              selectVariante({
+                id: item.variante,
+                product_code: item.variante_codigo,
+                producto_nombre: item.variante_nombre,
+                nombre_variante: item.nombre_variante,
+              });
+            }}
+            apiFunc={getStockLotes}
+          />
         )}
       </main>
     </div>
