@@ -1,26 +1,30 @@
 "use client";
-import { useState } from 'react';
-import { login } from '@/services/apis/auth.js';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { login } from "@/services/apis/auth.js";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       await login(username, password);
-      router.push('/dashboard');
+      router.push("/dashboard");
     } catch (err) {
       // AQUÍ ESTÁ LA MAGIA: Ahora usamos el mensaje exacto que tiró auth.jsx
-      setError(err.message || 'Ocurrió un error inesperado al intentar ingresar.');
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Ocurrió un error inesperado al intentar ingresar.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -36,7 +40,9 @@ export default function LoginPage() {
               ERP<span className="text-blue-500">.</span>CORE
             </span>
           </div>
-          <h1 className="text-3xl font-black text-slate-900">Acceso al Sistema</h1>
+          <h1 className="text-3xl font-black text-slate-900">
+            Acceso al Sistema
+          </h1>
           <p className="text-slate-500 mt-2 font-medium text-sm uppercase tracking-widest">
             Gestión Integral
           </p>
@@ -83,7 +89,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-sm hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/10 active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'AUTENTICANDO...' : 'INGRESAR AL PANEL'}
+              {loading ? "AUTENTICANDO..." : "INGRESAR AL PANEL"}
             </button>
           </form>
         </div>

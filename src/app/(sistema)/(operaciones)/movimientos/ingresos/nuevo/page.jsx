@@ -1,22 +1,26 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
 import { Search, Plus, Trash2, Check, CheckCircle2, Download, Upload, Tag, Clock } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
-import { getApiUrl } from '@/services/api';
 import ResizableHeader from '@/components/ui/ResizableHeader';
 import { Package } from 'lucide-react';
+import { useApi } from '@/hooks/useApi';
+import { getDepositos, crearIngreso } from '@/services/apis/movimientos';
+import { getVariantes } from '@/services/apis/catalogo';
 
 export default function NuevoIngresoPage() {
     const router = useRouter();
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [depositos, setDepositos] = useState([]);
     const [variantes, setVariantes] = useState([]);
     const [errorMsg, setErrorMsg] = useState(null);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [lastAddedId, setLastAddedId] = useState(null);
+
+    const { execute: fetchDepositos } = useApi(getDepositos);
+    const { execute: fetchVariantes } = useApi(getVariantes);
+    const { execute: createIngresoAction, loading: isSubmitting } = useApi(crearIngreso, { auto: false });
 
     const [ingreso, setIngreso] = useState({
         fecha_arribo: new Date().toISOString().split('T')[0],
@@ -28,17 +32,18 @@ export default function NuevoIngresoPage() {
     const [items, setItems] = useState([]);
 
     useEffect(() => {
-        const token = Cookies.get('token');
-        const API_BASE = getApiUrl();
         async function loadData() {
             try {
-                const resDep = await fetch(`${API_BASE}/api/inventario/depositos/`, { headers: { 'Authorization': `Bearer ${token}` } });
-                const dDep = await resDep.json();
-                setDepositos(dDep.results || dDep);
-                const resVar = await fetch(`${API_BASE}/api/catalogo/variantes/`, { headers: { 'Authorization': `Bearer ${token}` } });
-                const dVar = await resVar.json();
-                setVariantes(dVar.results || dVar);
-            } catch (err) { setErrorMsg("Error de conexión."); }
+                const [dDep, dVar] = await Promise.all([
+                    fetchDepositos({ limit: 1000 }),
+                    fetchVariantes({ limit: 5000 })
+                ]);
+                
+                if (dDep) setDepositos(dDep.results || dDep);
+                if (dVar) setVariantes(dVar.results || dVar);
+            } catch (err) { 
+                setErrorMsg("Error cargando los datos iniciales."); 
+            }
         }
         loadData();
     }, []);
@@ -186,22 +191,14 @@ export default function NuevoIngresoPage() {
         e.preventDefault();
         if (errorMsg || items.length === 0) return;
         if (!ingreso.deposito) { alert("Debe seleccionar un depósito."); return; }
-        setIsSubmitting(true);
-        const token = Cookies.get('token');
-        const API_BASE = getApiUrl();
+        
         try {
-            const response = await fetch(`${API_BASE}/api/inventario/ingresos/`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...ingreso, items: items.map(it => ({ ...it, vencimiento: it.vencimiento === '' ? null : it.vencimiento })) })
-            });
-            if (response.ok) router.push('/movimientos/ingresos');
-            else {
-                const errData = await response.json();
-                console.error("Error backend:", errData);
-                alert("Error al guardar: " + JSON.stringify(errData));
-            }
-        } catch (error) { alert("Error de conexión."); } finally { setIsSubmitting(false); }
+            const payload = { ...ingreso, items: items.map(it => ({ ...it, vencimiento: it.vencimiento === '' ? null : it.vencimiento })) };
+            await createIngresoAction(payload);
+            router.push('/movimientos/ingresos');
+        } catch (error) { 
+            // useErrorHandler handles notifications
+        }
     };
 
     return (

@@ -1,40 +1,19 @@
 "use client";
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Cookies from 'js-cookie';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import EmptyState from '@/components/ui/EmptyState';
 import PageHeader from '@/components/ui/PageHeader';
 import { ChevronRight, Package, User, Calendar, Plus, MapPin, Clock } from 'lucide-react';
-import { getApiUrl } from '@/services/api';
+import { useApi } from '@/hooks/useApi';
+import { getConsignaciones } from '@/services/apis/movimientos';
 
 export default function ConsignacionesPage() {
-    const [consignaciones, setConsignaciones] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { data: consignacionesData, loading } = useApi(getConsignaciones, {
+        auto: true,
+        initialData: []
+    });
 
-    const fetchConsignaciones = async () => {
-        setLoading(true);
-        try {
-            const token = Cookies.get('token');
-            const API_BASE = getApiUrl();
-            const response = await fetch(`${API_BASE}/api/inventario/consignaciones/`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setConsignaciones(data.results || data);
-            }
-        } catch (error) {
-            console.error("Error cargando consignaciones:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchConsignaciones();
-    }, []);
+    const consignaciones = consignacionesData?.results || consignacionesData || [];
 
     return (
         <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">

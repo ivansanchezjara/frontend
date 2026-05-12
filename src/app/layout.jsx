@@ -1,4 +1,5 @@
 import { ToastProvider } from "@/components/ui/ToastContext";
+import { ConfirmProvider } from "@/components/ui/ConfirmContext";
 import "./globals.css";
 
 export const metadata = {
@@ -11,7 +12,9 @@ export default function RootLayout({ children }) {
     <html lang="es-PY">
       <body className="antialiased">
         <ToastProvider>
-          {children}
+          <ConfirmProvider>
+            {children}
+          </ConfirmProvider>
         </ToastProvider>
       </body>
     </html>

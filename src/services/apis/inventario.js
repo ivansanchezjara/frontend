@@ -10,7 +10,7 @@ export async function getLotesPorVariante(varianteId) {
       headers: authHeaders(),
       cache: "no-store",
     },
-    "ver lotes",
+    "ver lotes por variante",
   );
 }
 
@@ -26,5 +26,35 @@ export async function getStockLotes(params = {}) {
       cache: "no-store",
     },
     "ver stock por lotes",
+  );
+}
+
+/**
+ * Obtiene todos los lotes de stock (sin paginación).
+ * Útil para listados donde se necesitan todos los lotes disponibles.
+ */
+export async function getAllStockLotes() {
+  return request(
+    `${API_URL}/inventario/stock-lotes/`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver todos los lotes de stock",
+  );
+}
+
+// ─── Lotes por Variante (con varianteId como parámetro) ─────────
+
+export async function getLotesPorVarianteId(varianteId) {
+  return request(
+    `${API_URL}/inventario/stock-lotes/?variante=${varianteId}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver lotes por variante",
   );
 }

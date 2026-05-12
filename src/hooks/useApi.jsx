@@ -11,12 +11,12 @@ import { useErrorHandler } from './useErrorHandler';
  */
 export function useApi(apiFunc, options = {}) {
     const {
-        auto = false,            // ¿Ejecutar inmediatamente al montar?
-        args = [],               // Argumentos iniciales si auto es true
-        initialData = null,      // Valor inicial de data
-        onSuccess = null,        // Callback en caso de éxito
-        onError = null,          // Callback en caso de error
-        handleError: autoHandleError = true // ¿Usar el manejador de errores global?
+        auto = false,
+        args = [],
+        initialData = null,
+        onSuccess = null,
+        onError = null,
+        handleError: autoHandleError = true
     } = options;
 
     const [data, setData] = useState(initialData);
@@ -28,7 +28,6 @@ export function useApi(apiFunc, options = {}) {
         setLoading(true);
         setError(null);
         try {
-            // Usar argumentos pasados a execute o los definidos en la config
             const finalArgs = callArgs.length > 0 ? callArgs : args;
             const result = await apiFunc(...finalArgs);
             
@@ -39,13 +38,16 @@ export function useApi(apiFunc, options = {}) {
             setError(err);
             if (autoHandleError) globalErrorHandler(err);
             if (onError) onError(err);
-            throw err; // Re-lanzar para permitir manejo local adicional si es necesario
+            throw err;
         } finally {
             setLoading(false);
         }
     }, [apiFunc, globalErrorHandler, autoHandleError, onSuccess, onError, JSON.stringify(args)]);
 
-    // Ejecución automática al montar
+    const refetch = useCallback(() => {
+        return execute(...args);
+    }, [execute, args]);
+
     const initialized = useRef(false);
     useEffect(() => {
         if (auto && !initialized.current) {
@@ -60,6 +62,7 @@ export function useApi(apiFunc, options = {}) {
         error,
         execute,
         setData,
-        refresh: execute
+        refresh: execute,
+        refetch
     };
 }

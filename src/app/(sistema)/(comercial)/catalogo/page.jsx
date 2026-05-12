@@ -66,6 +66,9 @@ export default function CatalogoPage() {
     // Vista
     const [vista, setVista] = useState('grilla'); // 'grilla' | 'tabla'
 
+    // Estado para saber si ya se cargó la data inicial al menos una vez
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+
     // Cargar Productos (cuando cambian filtros o página)
     useEffect(() => {
         const params = {
@@ -73,7 +76,7 @@ export default function CatalogoPage() {
             search: busquedaDebounced,
             categoria: categoriaSeleccionada !== 'todas' ? categoriaSeleccionada : undefined
         };
-        fetchProducts(params);
+        fetchProducts(params).then(() => setHasLoadedOnce(true));
     }, [fetchProducts, busquedaDebounced, categoriaSeleccionada, page]);
 
     // Resetear a página 1 cuando cambia la búsqueda o categoría
@@ -81,8 +84,8 @@ export default function CatalogoPage() {
         setPage(1);
     }, [busquedaDebounced, categoriaSeleccionada]);
 
-    // Pantalla de carga inicial
-    const isInitialLoading = (loadingProds || loadingCats) && productos.length === 0;
+    // Pantalla de carga inicial (solo la primera vez que entra a la página)
+    const isInitialLoading = (loadingProds || loadingCats) && !hasLoadedOnce;
     if (isInitialLoading) return <LoadingScreen texto="Cargando Catálogo..." />;
 
     const hayFiltrosActivos = busqueda !== '' || categoriaSeleccionada !== 'todas';
@@ -178,44 +181,46 @@ export default function CatalogoPage() {
                     </div>
 
                     {/* CONTENIDO: VACÍO O VISTA */}
-                    {productos.length === 0 ? (
-                        <EmptyState
-                            titulo={hayFiltrosActivos ? "Sin resultados" : "Catálogo vacío"}
-                            descripcion={hayFiltrosActivos ? "Intentá con otros términos o cambiá el filtro de categoría." : "Creá tu primer producto para empezar a armar el catálogo."}
-                            textoBoton={hayFiltrosActivos ? "Limpiar filtros" : undefined}
-                            onAction={hayFiltrosActivos ? () => { setBusqueda(''); setCategoriaSeleccionada('todas'); } : undefined}
-                        />
-                    ) : vista === 'grilla' ? (
+                    <div className={`transition-opacity duration-300 ${loadingProds ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                        {productos.length === 0 ? (
+                            <EmptyState
+                                titulo={hayFiltrosActivos ? "Sin resultados" : "Catálogo vacío"}
+                                descripcion={hayFiltrosActivos ? "Intentá con otros términos o cambiá el filtro de categoría." : "Creá tu primer producto para empezar a armar el catálogo."}
+                                textoBoton={hayFiltrosActivos ? "Limpiar filtros" : undefined}
+                                onAction={hayFiltrosActivos ? () => { setBusqueda(''); setCategoriaSeleccionada('todas'); } : undefined}
+                            />
+                        ) : vista === 'grilla' ? (
 
-                        /* VISTA GRILLA */
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-                            {productos.map(p => (
-                                <ProductoCard key={p.id} producto={p} />
-                            ))}
-                        </div>
+                            /* VISTA GRILLA */
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+                                {productos.map(p => (
+                                    <ProductoCard key={p.id} producto={p} />
+                                ))}
+                            </div>
 
-                    ) : (
+                        ) : (
 
-                        /* VISTA TABLA */
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="bg-slate-50 text-slate-500">
-                                        <th className="py-3 pl-6 pr-4 text-[11px] font-black uppercase tracking-widest">Producto</th>
-                                        <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Marca</th>
-                                        <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Categoría</th>
-                                        <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Variantes</th>
-                                        <th className="py-3 pr-6 pl-4"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {productos.map(p => (
-                                        <ProductoRow key={p.id} producto={p} />
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                            /* VISTA TABLA */
+                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="bg-slate-50 text-slate-500">
+                                            <th className="py-3 pl-6 pr-4 text-[11px] font-black uppercase tracking-widest">Producto</th>
+                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Marca</th>
+                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Categoría</th>
+                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Variantes</th>
+                                            <th className="py-3 pr-6 pl-4"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {productos.map(p => (
+                                            <ProductoRow key={p.id} producto={p} />
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
 
                     {/* PAGINACIÓN */}
                     {count > pageSize && (

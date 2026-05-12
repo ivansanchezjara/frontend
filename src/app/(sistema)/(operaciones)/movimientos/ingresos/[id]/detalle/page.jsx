@@ -1,9 +1,8 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
-import { getFullImageUrl } from '@/services/apis/media.js';
+import { getFullImageUrl } from '@/services/apis/catalogo';
 import {
     Package, CheckCircle2 as CheckCircle2Icon,
     Clock as ClockIcon,
@@ -13,7 +12,8 @@ import {
     Download as DownloadIcon
 } from 'lucide-react';
 import LoadingScreen from '@/components/ui/LoadingScreen';
-import { getApiUrl } from '@/services/api';
+import { useApi } from '@/hooks/useApi';
+import { getIngreso } from '@/services/apis/movimientos';
 
 const COLUMNAS_CONFIG = [
     { id: 'foto', label: 'Fotos' },
@@ -30,25 +30,14 @@ import ResizableHeader from '@/components/ui/ResizableHeader';
 export default function DetalleIngresoPage() {
     const { id } = useParams();
     const router = useRouter();
-    const [ingreso, setIngreso] = useState(null);
-    const [loading, setLoading] = useState(true);
+
+    const { data: ingreso, loading } = useApi(() => getIngreso(id), {
+        auto: true,
+        onError: () => router.push('/movimientos/ingresos')
+    });
+
     const [colsVisibles, setColsVisibles] = useState(['foto', 'lote', 'vencimiento', 'costos', 'p0', 'p_otros']);
     const [showConfig, setShowConfig] = useState(false);
-
-    useEffect(() => {
-        const token = Cookies.get('token');
-        const API_BASE = getApiUrl();
-        async function fetchDetalle() {
-            try {
-                const res = await fetch(`${API_BASE}/api/inventario/ingresos/${id}/`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) setIngreso(await res.json());
-                else router.push('/movimientos/ingresos');
-            } catch (err) { console.error(err); } finally { setLoading(false); }
-        }
-        fetchDetalle();
-    }, [id]);
 
     const toggleCol = (id) => {
         setColsVisibles(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);

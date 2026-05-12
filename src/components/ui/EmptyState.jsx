@@ -1,4 +1,4 @@
-export default function EmptyState({ titulo, descripcion, onAction, textoBoton }) {
+export default function EmptyState({ titulo = "No se encontraron resultados", descripcion = "Parece que no hay información para mostrar en este momento.", onAction = null, textoBoton = "Crear" }) {
     return (
         <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-16 text-center flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
             <span className="text-6xl mb-4">🔍</span>

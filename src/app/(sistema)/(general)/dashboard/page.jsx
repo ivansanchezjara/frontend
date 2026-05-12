@@ -2,22 +2,21 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getUser } from '@/services/apis/auth.js';
-// 👇 1. Importamos todo desde tu única fuente de la verdad
 import { modulosActivos, modulosFuturos, familyStyles, ordenFamilias } from '@/config/navigation';
 
 export default function DashboardPage() {
-    const [nombreUsuario, setNombreUsuario] = useState('Usuario');
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        const user = getUser();
-        if (user) {
-            let nombreCompleto = user.first_name && user.last_name
-                ? `${user.first_name} ${user.last_name}`
-                : user.first_name || user.username || 'Usuario';
-
-            setNombreUsuario(nombreCompleto);
-        }
+        setMounted(true);
     }, []);
+
+    const user = mounted ? getUser() : null;
+    const nombreUsuario = user
+        ? (user.first_name && user.last_name
+            ? `${user.first_name} ${user.last_name}`
+            : user.first_name || user.username || 'Usuario')
+        : 'Usuario';
 
     return (
         <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-10">
@@ -35,11 +34,18 @@ export default function DashboardPage() {
                     // 👇 2. Usamos familyStyles que importamos arriba
                     const style = familyStyles[colorKey];
 
-                    // Filtramos qué módulos pertenecen a esta familia
-                    const activos = modulosActivos.filter(m => m.color === colorKey);
-                    const futuros = modulosFuturos.filter(m => m.color === colorKey);
+                    // Filtramos qué módulos pertenecen a esta familia y si el usuario tiene permiso
+                    const hasPermission = (item) => {
+                        if (!item.roles || item.roles.length === 0) return true;
+                        if (user?.is_superuser) return true;
+                        const userGroups = user?.groups || [];
+                        return item.roles.some(role => userGroups.includes(role));
+                    };
 
-                    // Si no hay ningún módulo en esta familia, no renderizamos la sección
+                    const activos = modulosActivos.filter(m => m.color === colorKey && hasPermission(m));
+                    const futuros = modulosFuturos.filter(m => m.color === colorKey && hasPermission(m));
+
+                    // Si no hay ningún módulo en esta familia después de filtrar, no renderizamos la sección
                     if (activos.length === 0 && futuros.length === 0) return null;
 
                     return (

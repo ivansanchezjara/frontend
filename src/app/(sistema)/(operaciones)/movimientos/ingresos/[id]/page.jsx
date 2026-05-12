@@ -1,16 +1,16 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Cookies from 'js-cookie';
 import { Search, Plus, Trash2, Check, CheckCircle2, Download, Upload, Tag, Clock, Package } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
-import { getApiUrl } from '@/services/api';
 import ResizableHeader from '@/components/ui/ResizableHeader';
+import { useApi } from '@/hooks/useApi';
+import { getDepositos, getIngreso, actualizarIngreso } from '@/services/apis/movimientos';
+import { getVariantes } from '@/services/apis/catalogo';
 
 export default function EditarIngresoPage() {
     const router = useRouter();
     const { id } = useParams();
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [depositos, setDepositos] = useState([]);
     const [variantes, setVariantes] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -18,6 +18,11 @@ export default function EditarIngresoPage() {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [lastAddedId, setLastAddedId] = useState(null);
+
+    const { execute: fetchDepositos } = useApi(getDepositos);
+    const { execute: fetchVariantes } = useApi(getVariantes);
+    const { execute: fetchIngreso } = useApi(getIngreso);
+    const { execute: updateIngresoAction, loading: isSubmitting } = useApi(actualizarIngreso, { auto: false });
 
     const [ingreso, setIngreso] = useState({
         fecha_arribo: '',
@@ -30,20 +35,18 @@ export default function EditarIngresoPage() {
     const [items, setItems] = useState([]);
 
     useEffect(() => {
-        const token = Cookies.get('token');
-        const API_BASE = getApiUrl();
         async function loadAll() {
             try {
-                const resDep = await fetch(`${API_BASE}/api/inventario/depositos/`, { headers: { 'Authorization': `Bearer ${token}` } });
-                const dDep = await resDep.json();
-                setDepositos(dDep.results || dDep);
-                const resVar = await fetch(`${API_BASE}/api/catalogo/variantes/`, { headers: { 'Authorization': `Bearer ${token}` } });
-                const dVar = await resVar.json();
-                setVariantes(dVar.results || dVar);
+                const [dDep, dVar, dIng] = await Promise.all([
+                    fetchDepositos({ limit: 1000 }),
+                    fetchVariantes({ limit: 5000 }),
+                    fetchIngreso(id)
+                ]);
+                
+                if (dDep) setDepositos(dDep.results || dDep);
+                if (dVar) setVariantes(dVar.results || dVar);
 
-                const resIng = await fetch(`${API_BASE}/api/inventario/ingresos/${id}/`, { headers: { 'Authorization': `Bearer ${token}` } });
-                if (resIng.ok) {
-                    const dIng = await resIng.json();
+                if (dIng) {
                     if (dIng.estado === 'APROBADO') { router.push('/movimientos/ingresos'); return; }
                     setIngreso({ fecha_arribo: dIng.fecha_arribo, descripcion: dIng.descripcion, comprobante: dIng.comprobante || '', deposito: dIng.deposito, estado: dIng.estado });
                     setItems((dIng.items || []).map(it => ({
@@ -61,7 +64,11 @@ export default function EditarIngresoPage() {
                         nuevo_precio_4_intercompany: it.nuevo_precio_4_intercompany
                     })));
                 }
-            } catch (err) { setErrorMsg("Error de conexión."); } finally { setIsLoading(false); }
+            } catch (err) { 
+                setErrorMsg("Error cargando los datos."); 
+            } finally { 
+                setIsLoading(false); 
+            }
         }
         loadAll();
     }, [id]);
@@ -204,22 +211,14 @@ export default function EditarIngresoPage() {
         e.preventDefault();
         if (errorMsg || items.length === 0) return;
         if (!ingreso.deposito) { alert("Debe seleccionar un depósito."); return; }
-        setIsSubmitting(true);
-        const token = Cookies.get('token');
-        const API_BASE = getApiUrl();
+        
         try {
-            const res = await fetch(`${API_BASE}/api/inventario/ingresos/${id}/`, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...ingreso, items: items.map(it => ({ ...it, vencimiento: it.vencimiento === '' ? null : it.vencimiento })) })
-            });
-            if (res.ok) router.push('/movimientos/ingresos');
-            else {
-                const errData = await res.json();
-                console.error("Error backend:", errData);
-                alert("Error al actualizar: " + JSON.stringify(errData));
-            }
-        } catch (error) { alert("Error de conexión."); } finally { setIsSubmitting(false); }
+            const payload = { ...ingreso, items: items.map(it => ({ ...it, vencimiento: it.vencimiento === '' ? null : it.vencimiento })) };
+            await updateIngresoAction(id, payload);
+            router.push('/movimientos/ingresos');
+        } catch (error) { 
+            // useErrorHandler handles notifications 
+        }
     };
 
     if (isLoading) return <div className="p-20 text-center font-black animate-pulse uppercase text-slate-300 tracking-widest text-xl">Cargando borrador...</div>;

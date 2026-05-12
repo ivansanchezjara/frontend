@@ -20,10 +20,15 @@ export default function NuevoAjusteInventarioPage() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // 2. Lotes para la variante seleccionada
-  const { execute: fetchVarianteLotes } = useApi(getStockLotes);
+  const { execute: fetchVarianteLotes } = useApi(getStockLotes, {
+    auto: false,
+    initialData: { results: [] },
+  });
 
   // 3. Envío del ajuste
-  const { loading: isSubmitting, execute: submitAjuste } = useApi(crearAjuste);
+  const { loading: isSubmitting, execute: submitAjuste } = useApi(crearAjuste, {
+    auto: false,
+  });
 
   // --- ESTADO LOCAL ---
   const [ajuste, setAjuste] = useState({
@@ -43,7 +48,8 @@ export default function NuevoAjusteInventarioPage() {
   // Función para manejar cambios dentro de la tabla de lotes
   const handleLoteChange = (loteId, field, value) => {
     // No permitir cantidades negativas
-    if (field === "nueva_cantidad" && value !== "" && parseInt(value, 10) < 0) return;
+    if (field === "nueva_cantidad" && value !== "" && parseInt(value, 10) < 0)
+      return;
 
     setLotes((prev) =>
       prev.map((lote) => {
@@ -65,10 +71,12 @@ export default function NuevoAjusteInventarioPage() {
       return prev.map((lote) =>
         lote.id === loteId
           ? {
-            ...lote,
-            nuevo_lote_codigo: destino ? destino.lote_codigo : lote.nuevo_lote_codigo,
-            destino_lote_id: destino ? destino.id : null,
-          }
+              ...lote,
+              nuevo_lote_codigo: destino
+                ? destino.lote_codigo
+                : lote.nuevo_lote_codigo,
+              destino_lote_id: destino ? destino.id : null,
+            }
           : lote,
       );
     });
@@ -79,30 +87,26 @@ export default function NuevoAjusteInventarioPage() {
     0,
   );
 
-  const [expandedLoteId, setExpandedLoteId] = useState(null);
-
-  const totalStockPropuesto = lotes.reduce(
-    (sum, lote) => {
-      const cantidadActual = Number(lote.cantidad_actual || 0);
-      const nuevaCantidad = lote.nueva_cantidad !== ""
+  const totalStockPropuesto = lotes.reduce((sum, lote) => {
+    const cantidadActual = Number(lote.cantidad_actual || 0);
+    const nuevaCantidad =
+      lote.nueva_cantidad !== ""
         ? parseInt(lote.nueva_cantidad, 10)
         : cantidadActual;
-      const splitDiff = lote.nuevo_lote_codigo && lote.nueva_cantidad !== ""
+    const splitDiff =
+      lote.nuevo_lote_codigo && lote.nueva_cantidad !== ""
         ? Math.max(cantidadActual - parseInt(lote.nueva_cantidad, 10), 0)
         : 0;
-      return sum + nuevaCantidad + splitDiff;
-    },
-    0,
-  );
+    return sum + nuevaCantidad + splitDiff;
+  }, 0);
 
   const totalsMatch = totalStockActual === totalStockPropuesto;
-  const hasAnyChange = lotes.some((l) =>
-    l.nueva_cantidad !== "" || l.nuevo_vencimiento !== "" || l.nuevo_lote_codigo !== ""
+  const hasAnyChange = lotes.some(
+    (l) =>
+      l.nueva_cantidad !== "" ||
+      l.nuevo_vencimiento !== "" ||
+      l.nuevo_lote_codigo !== "",
   );
-
-  const toggleLoteEdit = (loteId) => {
-    setExpandedLoteId((prev) => (prev === loteId ? null : loteId));
-  };
 
   const selectVariante = async (v) => {
     setSelectedVarianteInfo(v);
@@ -141,8 +145,11 @@ export default function NuevoAjusteInventarioPage() {
       return;
     }
 
-    const lotesModificados = lotes.filter((l) =>
-      l.nueva_cantidad !== "" || l.nuevo_vencimiento !== "" || l.nuevo_lote_codigo !== ""
+    const lotesModificados = lotes.filter(
+      (l) =>
+        l.nueva_cantidad !== "" ||
+        l.nuevo_vencimiento !== "" ||
+        l.nuevo_lote_codigo !== "",
     );
 
     if (lotesModificados.length === 0) {
@@ -151,7 +158,8 @@ export default function NuevoAjusteInventarioPage() {
     }
 
     const invalidSplit = lotesModificados.some((l) => {
-      const nuevaCantidad = l.nueva_cantidad !== "" ? parseInt(l.nueva_cantidad, 10) : null;
+      const nuevaCantidad =
+        l.nueva_cantidad !== "" ? parseInt(l.nueva_cantidad, 10) : null;
       if (l.nuevo_lote_codigo && nuevaCantidad !== null) {
         return nuevaCantidad >= l.cantidad_actual || nuevaCantidad < 0;
       }
@@ -163,14 +171,14 @@ export default function NuevoAjusteInventarioPage() {
 
     if (invalidSplit) {
       alert(
-        "Para crear un nuevo lote, la cantidad debe reducirse respecto al lote original y no puede ser negativa."
+        "Para crear un nuevo lote, la cantidad debe reducirse respecto al lote original y no puede ser negativa.",
       );
       return;
     }
 
     if (totalStockActual !== totalStockPropuesto) {
       alert(
-        "El stock total debe permanecer igual. Ajusta cantidades o splits para igualar el total antes y después."
+        "El stock total debe permanecer igual. Ajusta cantidades o splits para igualar el total antes y después.",
       );
       return;
     }
@@ -209,17 +217,28 @@ export default function NuevoAjusteInventarioPage() {
         subtitle={
           <>
             <Package size={12} />
-            <span>Auditoría y redistribución de stock por lotes y depósitos.</span>
+            <span>
+              Auditoría y redistribución de stock por lotes y depósitos.
+            </span>
           </>
         }
       >
         <button
-          disabled={isSubmitting || !selectedVarianteInfo || !hasAnyChange || !totalsMatch}
+          disabled={
+            isSubmitting ||
+            !selectedVarianteInfo ||
+            !hasAnyChange ||
+            !totalsMatch
+          }
           onClick={handleSubmit}
-          className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${isSubmitting || !selectedVarianteInfo || !hasAnyChange || !totalsMatch
-            ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
-            : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100"
-            }`}
+          className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${
+            isSubmitting ||
+            !selectedVarianteInfo ||
+            !hasAnyChange ||
+            !totalsMatch
+              ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+              : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100"
+          }`}
         >
           {isSubmitting ? "GUARDANDO..." : "GUARDAR AJUSTE"}
         </button>
@@ -309,19 +328,36 @@ export default function NuevoAjusteInventarioPage() {
           {selectedVarianteInfo && (
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-white p-6 rounded-[24px] border border-slate-200 shadow-sm text-center">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Actual</p>
-                <p className="text-3xl font-black text-slate-900">{totalStockActual}</p>
-              </div>
-              <div className={`p-6 rounded-[24px] border shadow-sm text-center flex flex-col justify-center transition-all ${totalsMatch ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'
-                }`}>
-                <p className="text-[11px] font-black uppercase tracking-widest mb-1">
-                  {totalsMatch ? '✓ Stock Balanceado' : '⚠️ Desbalance'}
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                  Total Actual
                 </p>
-                {!totalsMatch && <p className="text-[10px] font-bold opacity-70 leading-tight">La suma final debe igualar a la actual</p>}
+                <p className="text-3xl font-black text-slate-900">
+                  {totalStockActual}
+                </p>
+              </div>
+              <div
+                className={`p-6 rounded-[24px] border shadow-sm text-center flex flex-col justify-center transition-all ${
+                  totalsMatch
+                    ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                    : "bg-rose-50 border-rose-100 text-rose-700"
+                }`}
+              >
+                <p className="text-[11px] font-black uppercase tracking-widest mb-1">
+                  {totalsMatch ? "✓ Stock Balanceado" : "⚠️ Desbalance"}
+                </p>
+                {!totalsMatch && (
+                  <p className="text-[10px] font-bold opacity-70 leading-tight">
+                    La suma final debe igualar a la actual
+                  </p>
+                )}
               </div>
               <div className="bg-white p-6 rounded-[24px] border border-slate-200 shadow-sm text-center">
-                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">Total Propuesto</p>
-                <p className="text-3xl font-black text-blue-900">{totalStockPropuesto}</p>
+                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">
+                  Total Propuesto
+                </p>
+                <p className="text-3xl font-black text-blue-900">
+                  {totalStockPropuesto}
+                </p>
               </div>
             </div>
           )}
@@ -334,138 +370,202 @@ export default function NuevoAjusteInventarioPage() {
               </h3>
 
               <div className="space-y-4">
-                {lotes.filter(l => l.cantidad_actual > 0).length === 0 ? (
+                {lotes.filter((l) => l.cantidad_actual > 0).length === 0 ? (
                   <div className="p-12 text-center border-2 border-dashed border-slate-200 rounded-[32px] bg-slate-50/50">
-                    <p className="text-slate-400 font-black uppercase tracking-widest text-xs">No hay lotes con stock para este producto</p>
+                    <p className="text-slate-400 font-black uppercase tracking-widest text-xs">
+                      No hay lotes con stock para este producto
+                    </p>
                   </div>
                 ) : (
-                  lotes.filter(l => l.cantidad_actual > 0).map((lote) => (
-                    <div key={lote.id} className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
-                      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* LADO IZQUIERDO: ACTUAL */}
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
-                              <MapPin size={16} />
-                            </div>
-                            <span className="text-xs font-black text-slate-600 uppercase tracking-widest">
-                              {lote.lote_codigo} • {lote.deposito_nombre}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-slate-50 p-4 rounded-2xl">
-                              <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Cantidad Actual</p>
-                              <p className="text-xl font-black text-slate-700">{lote.cantidad_actual} u.</p>
-                            </div>
-                            <div className="bg-slate-50 p-4 rounded-2xl">
-                              <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Vencimiento Actual</p>
-                              <p className="text-xs font-black text-slate-700 uppercase">{lote.vencimiento_actual || "Sin fecha"}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* LADO DERECHO: NUEVO */}
-                        <div className="space-y-4 relative">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                              <Settings2 size={16} />
-                            </div>
-                            <span className="text-xs font-black text-blue-600 uppercase tracking-widest">
-                              Ajuste de Valores
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Nueva Cantidad</label>
-                              <input
-                                type="number"
-                                min="0"
-                                value={lote.nueva_cantidad}
-                                onChange={(e) => handleLoteChange(lote.id, "nueva_cantidad", e.target.value)}
-                                placeholder={lote.cantidad_actual}
-                                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-black text-base outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Nuevo Venc.</label>
-                              <input
-                                type="date"
-                                value={lote.nuevo_vencimiento}
-                                onChange={(e) => handleLoteChange(lote.id, "nuevo_vencimiento", e.target.value)}
-                                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold text-xs outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ABAJO: DESTINO DE LA DIFERENCIA */}
-                      {lote.nueva_cantidad !== "" && parseInt(lote.nueva_cantidad, 10) < lote.cantidad_actual && (
-                        <div className="p-6 bg-slate-50/50 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <ArrowDownRight className="text-blue-500" size={18} />
-                              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
-                                Redistribución de Diferencia ({lote.cantidad_actual - parseInt(lote.nueva_cantidad, 10)} u.)
-                              </p>
-                            </div>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase">
-                              Seleccioná a dónde mover las unidades restantes
-                            </p>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                            {lotes
-                              .filter((other) => other.id !== lote.id)
-                              .map((other) => (
-                                <button
-                                  key={other.id}
-                                  type="button"
-                                  onClick={() => handleLoteDestinoChange(lote.id, other.id)}
-                                  className={`p-3 rounded-2xl border text-left transition-all ${lote.destino_lote_id === other.id
-                                    ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-100"
-                                    : "border-slate-200 bg-white hover:border-slate-400"
-                                    }`}
-                                >
-                                  <div className="flex items-center justify-between mb-1">
-                                    <p className="text-[10px] font-black text-slate-900 truncate">{other.lote_codigo}</p>
-                                    <div className={`w-2 h-2 rounded-full ${lote.destino_lote_id === other.id ? 'bg-blue-500 animate-pulse' : 'bg-slate-200'}`} />
-                                  </div>
-                                  <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
-                                    {other.deposito_nombre}
-                                  </p>
-                                </button>
-                              ))}
-
-                            <div
-                              onClick={() => handleLoteDestinoChange(lote.id, null)}
-                              className={`p-3 rounded-2xl border text-left transition-all group cursor-pointer ${lote.destino_lote_id === null && lote.nuevo_lote_codigo
-                                ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-100"
-                                : "border-slate-200 bg-white border-dashed hover:border-blue-400"
-                                }`}
-                            >
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className={`text-[10px] font-black uppercase ${lote.destino_lote_id === null && lote.nuevo_lote_codigo ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}`}>
-                                  Nuevo Lote
-                                </span>
+                  lotes
+                    .filter((l) => l.cantidad_actual > 0)
+                    .map((lote) => (
+                      <div
+                        key={lote.id}
+                        className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100"
+                      >
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                          {/* LADO IZQUIERDO: ACTUAL */}
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+                                <MapPin size={16} />
                               </div>
-                              <input
-                                type="text"
-                                placeholder="Escribir código..."
-                                value={lote.destino_lote_id === null ? lote.nuevo_lote_codigo : ""}
-                                onChange={(e) => {
-                                  handleLoteChange(lote.id, "nuevo_lote_codigo", e.target.value);
-                                }}
-                                className="w-full bg-transparent border-none p-0 text-[11px] font-black text-slate-900 focus:ring-0 placeholder:text-slate-300"
-                              />
+                              <span className="text-xs font-black text-slate-600 uppercase tracking-widest">
+                                {lote.lote_codigo} • {lote.deposito_nombre}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="bg-slate-50 p-4 rounded-2xl">
+                                <p className="text-[9px] font-black text-slate-400 uppercase mb-1">
+                                  Cantidad Actual
+                                </p>
+                                <p className="text-xl font-black text-slate-700">
+                                  {lote.cantidad_actual} u.
+                                </p>
+                              </div>
+                              <div className="bg-slate-50 p-4 rounded-2xl">
+                                <p className="text-[9px] font-black text-slate-400 uppercase mb-1">
+                                  Vencimiento Actual
+                                </p>
+                                <p className="text-xs font-black text-slate-700 uppercase">
+                                  {lote.vencimiento_actual || "Sin fecha"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* LADO DERECHO: NUEVO */}
+                          <div className="space-y-4 relative">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                                <Settings2 size={16} />
+                              </div>
+                              <span className="text-xs font-black text-blue-600 uppercase tracking-widest">
+                                Ajuste de Valores
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+                                  Nueva Cantidad
+                                </label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={lote.nueva_cantidad}
+                                  onChange={(e) =>
+                                    handleLoteChange(
+                                      lote.id,
+                                      "nueva_cantidad",
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder={lote.cantidad_actual}
+                                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-black text-base outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
+                                  Nuevo Venc.
+                                </label>
+                                <input
+                                  type="date"
+                                  value={lote.nuevo_vencimiento}
+                                  onChange={(e) =>
+                                    handleLoteChange(
+                                      lote.id,
+                                      "nuevo_vencimiento",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold text-xs outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  ))
+
+                        {/* ABAJO: DESTINO DE LA DIFERENCIA */}
+                        {lote.nueva_cantidad !== "" &&
+                          parseInt(lote.nueva_cantidad, 10) <
+                            lote.cantidad_actual && (
+                            <div className="p-6 bg-slate-50/50 space-y-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <ArrowDownRight
+                                    className="text-blue-500"
+                                    size={18}
+                                  />
+                                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                                    Redistribución de Diferencia (
+                                    {lote.cantidad_actual -
+                                      parseInt(lote.nueva_cantidad, 10)}{" "}
+                                    u.)
+                                  </p>
+                                </div>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase">
+                                  Seleccioná a dónde mover las unidades
+                                  restantes
+                                </p>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                {lotes
+                                  .filter((other) => other.id !== lote.id)
+                                  .map((other) => (
+                                    <button
+                                      key={other.id}
+                                      type="button"
+                                      onClick={() =>
+                                        handleLoteDestinoChange(
+                                          lote.id,
+                                          other.id,
+                                        )
+                                      }
+                                      className={`p-3 rounded-2xl border text-left transition-all ${
+                                        lote.destino_lote_id === other.id
+                                          ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-100"
+                                          : "border-slate-200 bg-white hover:border-slate-400"
+                                      }`}
+                                    >
+                                      <div className="flex items-center justify-between mb-1">
+                                        <p className="text-[10px] font-black text-slate-900 truncate">
+                                          {other.lote_codigo}
+                                        </p>
+                                        <div
+                                          className={`w-2 h-2 rounded-full ${lote.destino_lote_id === other.id ? "bg-blue-500 animate-pulse" : "bg-slate-200"}`}
+                                        />
+                                      </div>
+                                      <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
+                                        {other.deposito_nombre}
+                                      </p>
+                                    </button>
+                                  ))}
+
+                                <div
+                                  onClick={() =>
+                                    handleLoteDestinoChange(lote.id, null)
+                                  }
+                                  className={`p-3 rounded-2xl border text-left transition-all group cursor-pointer ${
+                                    lote.destino_lote_id === null &&
+                                    lote.nuevo_lote_codigo
+                                      ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-100"
+                                      : "border-slate-200 bg-white border-dashed hover:border-blue-400"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span
+                                      className={`text-[10px] font-black uppercase ${lote.destino_lote_id === null && lote.nuevo_lote_codigo ? "text-blue-600" : "text-slate-400 group-hover:text-blue-500"}`}
+                                    >
+                                      Nuevo Lote
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    placeholder="Escribir código..."
+                                    value={
+                                      lote.destino_lote_id === null
+                                        ? lote.nuevo_lote_codigo
+                                        : ""
+                                    }
+                                    onChange={(e) => {
+                                      handleLoteChange(
+                                        lote.id,
+                                        "nuevo_lote_codigo",
+                                        e.target.value,
+                                      );
+                                    }}
+                                    className="w-full bg-transparent border-none p-0 text-[11px] font-black text-slate-900 focus:ring-0 placeholder:text-slate-300"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                      </div>
+                    ))
                 )}
               </div>
             </div>

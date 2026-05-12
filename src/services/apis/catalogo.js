@@ -105,27 +105,52 @@ export async function eliminarProducto(slug) {
 
 // ─── Variantes ───────────────────────────────────────────────────
 
+export async function getVariantes(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/catalogo/variantes/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver variantes",
+  );
+}
+
 export async function crearVariante(data) {
-  return request(`${API_URL}/catalogo/variantes/`, {
-    method: "POST",
-    headers: jsonHeaders(),
-    body: JSON.stringify(data),
-  });
+  return request(
+    `${API_URL}/catalogo/variantes/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear variante",
+  );
 }
 
 export async function actualizarVariante(id, data) {
-  return request(`${API_URL}/catalogo/variantes/${id}/`, {
-    method: "PATCH",
-    headers: jsonHeaders(),
-    body: JSON.stringify(data),
-  });
+  return request(
+    `${API_URL}/catalogo/variantes/${id}/`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar variante",
+  );
 }
 
 export async function eliminarVariante(id) {
-  return request(`${API_URL}/catalogo/variantes/${id}/`, {
-    method: "DELETE",
-    headers: authHeaders(),
-  });
+  return request(
+    `${API_URL}/catalogo/variantes/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "eliminar variante",
+  );
 }
 
 // ─── Galería de Imágenes ────────────────────────────────────────
@@ -139,8 +164,24 @@ export async function crearImagenProducto(data) {
 }
 
 export async function eliminarImagenProducto(id) {
-  return request(`${API_URL}/catalogo/imagenes-producto/${id}/`, {
-    method: "DELETE",
-    headers: authHeaders(),
-  });
+  return request(
+    `${API_URL}/catalogo/imagenes-producto/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "eliminar imagen del producto",
+  );
+}
+
+// ─── Stats ────────────────────────────────────────────────────────
+
+export async function getProductosStats() {
+  return request(
+    `${API_URL}/catalogo/productos/stats/`,
+    {
+      headers: authHeaders(),
+    },
+    "ver estadísticas de productos",
+  );
 }

@@ -23,11 +23,40 @@ export default function SistemaLayout({ children }) {
         ? ((user.first_name?.[0] || '') + (user.last_name?.[0] || '') || user.username?.substring(0, 2) || '?').toUpperCase()
         : '?';
 
-    // 2. AGRUPAMOS LOS ITEMS POR CATEGORÍA MANTENIENDO EL ORDEN
+    // 2. FILTRADO POR ROLES Y AGRUPACIÓN
+    const hasPermission = (item) => {
+        // Si el item no tiene restricciones, pasa directo
+        if (!item.roles || item.roles.length === 0) return true;
+
+        // Si no hay usuario cargado todavía (primer milisegundo de renderizado), ocultamos
+        if (!user) return false;
+
+        // Si es superusuario, ve todo
+        if (user.is_superuser) return true;
+
+        const userGroups = user.groups || [];
+
+        return item.roles.some(role => {
+            // CASO A: Si Django envía un array de textos ["gestorDeCatalogo"]
+            if (typeof userGroups[0] === 'string') {
+                return userGroups.includes(role);
+            }
+
+            // CASO B: Si Django envía un array de objetos [{ id: 1, name: "gestorDeCatalogo" }]
+            if (typeof userGroups[0] === 'object') {
+                return userGroups.some(g => g.name === role);
+            }
+
+            return false;
+        });
+    };
+
     const categoriasOrdenadas = [];
     const itemsAgrupados = {};
 
     navItems.forEach(item => {
+        if (!hasPermission(item)) return;
+
         const cat = item.category || 'General';
         if (!itemsAgrupados[cat]) {
             itemsAgrupados[cat] = [];

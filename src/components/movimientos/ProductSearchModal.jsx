@@ -21,7 +21,7 @@ export default function ProductSearchModal({
   const [lastAddedId, setLastAddedId] = useState(null);
 
   const { data, loading, execute } = useApi(apiFunc, {
-    auto: !!apiFunc,
+    auto: false,
     args: [{ search: "", limit: 50 }],
     initialData: [],
   });
@@ -38,7 +38,9 @@ export default function ProductSearchModal({
 
   if (!isOpen) return null;
 
-  const rawData = apiFunc ? (data?.results || data || []) : lotes;
+  const rawData = apiFunc
+    ? (data?.results || (Array.isArray(data) ? data : []))
+    : (Array.isArray(lotes) ? lotes : (lotes?.results || []));
 
   let displayData = [];
   if (mode === "variante") {

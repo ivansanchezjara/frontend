@@ -1,7 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import {
   Plus,
   Package,
@@ -16,6 +15,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
 import { useApi } from "@/hooks/useApi";
 import { getStockLotes } from "@/services/apis/inventario";
+import { crearConsignacion } from "@/services/apis/movimientos";
 
 export default function NuevaConsignacionPage() {
   const router = useRouter();
@@ -23,6 +23,7 @@ export default function NuevaConsignacionPage() {
 
   // --- API & DATA ---
   const { execute: fetchLotes } = useApi(getStockLotes);
+  const { execute: createConsignacionAction, loading: isSubmitting } = useApi(crearConsignacion, { auto: false });
 
   const [header, setHeader] = useState({
     responsable: "",
@@ -32,8 +33,6 @@ export default function NuevaConsignacionPage() {
   });
 
   const [items, setItems] = useState([]);
-
-  const isSubmitting = false; // TODO: Implementar con useApi para el POST
 
   const handleChangeHeader = (e) => {
     setHeader({ ...header, [e.target.name]: e.target.value });
@@ -125,10 +124,7 @@ export default function NuevaConsignacionPage() {
       }
     }
 
-    setIsSubmitting(true);
     try {
-      const token = Cookies.get("token");
-      const API_BASE = getApiUrl();
       const payload = {
         ...header,
         fecha_esperada_devolucion: header.fecha_esperada_devolucion || null,
@@ -138,35 +134,10 @@ export default function NuevaConsignacionPage() {
         })),
       };
 
-      const res = await fetch(`${API_BASE}/api/inventario/consignaciones/`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        router.push("/movimientos/consignaciones");
-      } else {
-        const contentType = res.headers.get("content-type");
-        let errorMessage = "Error desconocido";
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-          const data = await res.json();
-          errorMessage = JSON.stringify(data);
-        } else {
-          errorMessage = await res.text();
-        }
-        alert("Error del servidor: " + errorMessage.substring(0, 200));
-      }
+      await createConsignacionAction(payload);
+      router.push("/movimientos/consignaciones");
     } catch (err) {
-      console.error("Connection Error:", err);
-      alert(
-        "Error de conexión: No se pudo contactar con el servidor. Verifique que el backend esté corriendo.",
-      );
-    } finally {
-      setIsSubmitting(false);
+      // El useErrorHandler interno de useApi maneja la notificación
     }
   };
 

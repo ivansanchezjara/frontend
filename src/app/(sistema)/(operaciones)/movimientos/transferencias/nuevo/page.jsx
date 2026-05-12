@@ -1,15 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import { Search, Check, MapPin, Trash2, Package } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
-import { getApiUrl } from "@/services/api";
+import { useApi } from "@/hooks/useApi";
+import { getDepositos, crearTransferencia } from "@/services/apis/movimientos";
+import { getStockLotes } from "@/services/apis/inventario";
 
 export default function NuevaTransferenciaPage() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [stockLotes, setStockLotes] = useState([]);
   const [depositos, setDepositos] = useState([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -21,33 +21,30 @@ export default function NuevaTransferenciaPage() {
   });
 
   const [items, setItems] = useState([]);
-  const [lastAddedId, setLastAddedId] = useState(null);
+
+  const { execute: fetchStock } = useApi(getStockLotes);
+  const { execute: fetchDepositos } = useApi(getDepositos);
+  const { execute: createTransferAction, loading: isSubmitting } = useApi(
+    crearTransferencia,
+    { auto: false },
+  );
 
   useEffect(() => {
-    const token = Cookies.get("token");
-    const API_BASE = getApiUrl();
-
     async function loadData() {
       try {
-        // Traemos stock
-        const resStock = await fetch(
-          `${API_BASE}/api/inventario/stock-lotes/`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
-        const dataStock = await resStock.json();
-        setStockLotes(
-          Array.isArray(dataStock) ? dataStock : dataStock.results || [],
-        );
-        console.log("Stock cargado:", Array.isArray(dataStock) ? dataStock : dataStock.results || []);
+        const [dataStock, dDep] = await Promise.all([
+          fetchStock(),
+          fetchDepositos(),
+        ]);
 
-        // Traemos depósitos
-        const resDep = await fetch(`${API_BASE}/api/inventario/depositos/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const dDep = await resDep.json();
-        setDepositos(Array.isArray(dDep) ? dDep : dDep.results || []);
+        if (dataStock) {
+          setStockLotes(
+            Array.isArray(dataStock) ? dataStock : dataStock.results || [],
+          );
+        }
+        if (dDep) {
+          setDepositos(Array.isArray(dDep) ? dDep : dDep.results || []);
+        }
       } catch (err) {
         console.error("Error cargando datos:", err);
       }
@@ -122,39 +119,19 @@ export default function NuevaTransferenciaPage() {
       }
     }
 
-    setIsSubmitting(true);
-    const token = Cookies.get("token");
-    const API_BASE = getApiUrl();
-
     try {
-      const response = await fetch(
-        `${API_BASE}/api/inventario/transferencias/`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...transf,
-            items: items.map((i) => ({
-              lote_origen: i.lote_origen,
-              cantidad: Number(i.cantidad),
-            })),
-          }),
-        },
-      );
+      const payload = {
+        ...transf,
+        items: items.map((i) => ({
+          lote_origen: i.lote_origen,
+          cantidad: Number(i.cantidad),
+        })),
+      };
 
-      if (response.ok) {
-        router.push("/movimientos/transferencias");
-      } else {
-        const errData = await response.json();
-        alert("Error al guardar: " + JSON.stringify(errData));
-      }
+      await createTransferAction(payload);
+      router.push("/movimientos/transferencias");
     } catch (error) {
-      alert("Error de conexión.");
-    } finally {
-      setIsSubmitting(false);
+      // Error handling is managed by useApi / useErrorHandler
     }
   };
 
@@ -171,7 +148,9 @@ export default function NuevaTransferenciaPage() {
         subtitle={
           <>
             <Package size={12} />
-            <span>Mové stock entre depósitos de forma controlada y auditada.</span>
+            <span>
+              Mové stock entre depósitos de forma controlada y auditada.
+            </span>
           </>
         }
       >
@@ -269,7 +248,10 @@ export default function NuevaTransferenciaPage() {
                     Productos a Transferir
                   </h2>
                   <p className="text-[11px] text-slate-500 uppercase tracking-widest mt-1">
-                    Ítems agregados: <span className="font-black text-slate-900">{items.length}</span>
+                    Ítems agregados:{" "}
+                    <span className="font-black text-slate-900">
+                      {items.length}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -369,15 +351,23 @@ export default function NuevaTransferenciaPage() {
           isOpen={isSearchOpen}
           onClose={() => setIsSearchOpen(false)}
           onSelect={addItem}
-          lotes={(stockLotes || []).filter(
-            (l) => {
-              const depositoId = typeof l.deposito === 'object' ? l.deposito.id : l.deposito;
-              const origenId = parseInt(transf.deposito_origen);
-              const match = depositoId === origenId;
-              console.log("Filtrando lote:", l.lote_codigo, "depositoId:", depositoId, "origenId:", origenId, "match:", match);
-              return match;
-            }
-          )}
+          lotes={(stockLotes || []).filter((l) => {
+            const depositoId =
+              typeof l.deposito === "object" ? l.deposito.id : l.deposito;
+            const origenId = parseInt(transf.deposito_origen);
+            const match = depositoId === origenId;
+            console.log(
+              "Filtrando lote:",
+              l.lote_codigo,
+              "depositoId:",
+              depositoId,
+              "origenId:",
+              origenId,
+              "match:",
+              match,
+            );
+            return match;
+          })}
           placeholder={`Buscar stock en ${(depositos || []).find((d) => d.id === parseInt(transf.deposito_origen))?.nombre || "depósito"}...`}
           emptyMessage="No se encontró stock disponible en este depósito."
         />

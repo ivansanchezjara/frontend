@@ -57,6 +57,7 @@ export const modulosActivos = [
     title: "Catálogo Master",
     desc: "Gestión de productos, fotos y descripciones.",
     color: "emerald",
+    roles: ["Admin", "gestorDeCatalogo"],
   },
   {
     href: "/inventario/stock",
@@ -64,6 +65,7 @@ export const modulosActivos = [
     title: "Stock y Disponibilidad",
     desc: "Consulta rápida de existencias, vencimientos y ubicaciones.",
     color: "blue",
+    roles: ["Admin"],
   },
   {
     href: "/movimientos",
@@ -71,6 +73,7 @@ export const modulosActivos = [
     title: "Gestión de Movimientos",
     desc: "Carga de ingresos, consignaciones y ajustes comerciales.",
     color: "blue",
+    roles: ["Admin"],
   },
   {
     href: "/media-manager",
@@ -78,6 +81,7 @@ export const modulosActivos = [
     title: "Gestor de Medios",
     desc: "Almacenamiento y Archivos de la plataforma.",
     color: "emerald",
+    roles: ["Admin", "gestorDeCatalogo"],
   },
 ];
 
@@ -87,36 +91,42 @@ export const modulosFuturos = [
     title: "Ventas y CRM",
     desc: "Seguimiento de clientes, cotizaciones y persecución comercial.",
     color: "emerald",
+    roles: ["Admin"],
   },
   {
     icon: "💵",
     title: "Caja y Ventas Diarias",
     desc: "Apertura, cierre y facturación en mostrador.",
     color: "emerald",
+    roles: ["Admin"],
   },
   {
     icon: "💳",
     title: "Cobranzas",
     desc: "Gestión de cuentas por cobrar y conciliación de clientes.",
     color: "purple",
+    roles: ["Admin"],
   },
   {
     icon: "📊",
     title: "Finanzas y Gastos",
     desc: "Flujo de caja, gastos fijos y rentabilidad macro.",
     color: "purple",
+    roles: ["Admin"],
   },
   {
     icon: "🔧",
     title: "Asistencia Técnica",
     desc: "Servicio post-venta y reparaciones de equipos.",
     color: "blue",
+    roles: ["Admin"],
   },
   {
     icon: "👥",
     title: "Recursos Humanos",
     desc: "Legajos, asistencia y gestión de equipo.",
     color: "amber",
+    roles: ["Admin"],
   },
 ];
 
@@ -136,6 +146,7 @@ export const navItems = [
     label: "Catálogo Master",
     type: "active",
     color: "emerald",
+    roles: ["Admin", "gestorDeCatalogo"],
   },
   {
     category: "Comercial",
@@ -143,6 +154,7 @@ export const navItems = [
     icon: "🤝",
     type: "future",
     color: "emerald",
+    roles: ["Admin"],
   },
   {
     category: "Comercial",
@@ -150,6 +162,7 @@ export const navItems = [
     icon: "💵",
     type: "future",
     color: "emerald",
+    roles: ["Admin"],
   },
   {
     category: "Operaciones",
@@ -158,6 +171,7 @@ export const navItems = [
     label: "Stock y Disponibilidad",
     type: "active",
     color: "blue",
+    roles: ["Admin"],
   },
   {
     category: "Operaciones",
@@ -166,6 +180,7 @@ export const navItems = [
     label: "Gestión de Movimientos",
     type: "active",
     color: "blue",
+    roles: ["Admin"],
   },
   {
     category: "Comercial",
@@ -174,6 +189,7 @@ export const navItems = [
     label: "Gestor de Medios",
     type: "active",
     color: "emerald",
+    roles: ["Admin", "gestorDeCatalogo"],
   },
   {
     category: "Operaciones",
@@ -181,6 +197,7 @@ export const navItems = [
     icon: "🔧",
     type: "future",
     color: "blue",
+    roles: ["Admin"],
   },
   {
     category: "Finanzas",
@@ -188,6 +205,7 @@ export const navItems = [
     icon: "💳",
     type: "future",
     color: "purple",
+    roles: ["Admin"],
   },
   {
     category: "Finanzas",
@@ -195,6 +213,7 @@ export const navItems = [
     icon: "📊",
     type: "future",
     color: "purple",
+    roles: ["Admin"],
   },
   {
     category: "Equipo",
@@ -202,5 +221,6 @@ export const navItems = [
     icon: "👥",
     type: "future",
     color: "amber",
+    roles: ["Admin"],
   },
 ];

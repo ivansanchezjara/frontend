@@ -1,18 +1,30 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import { Search, Package, AlertCircle, Info } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
-import { getApiUrl } from "@/services/api";
+import { useApi } from "@/hooks/useApi";
+import { getAllStockLotes } from "@/services/apis/inventario";
+import { crearBaja } from "@/services/apis/movimientos";
 
 export default function NuevaBajaPage() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [stockLotes, setStockLotes] = useState([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+
+  // Cargar lotes con useApi
+  const { data: stockLotesData } = useApi(getAllStockLotes, {
+    auto: true,
+    initialData: [],
+  });
+
+  const stockLotes = stockLotesData || [];
+
+  // Envío de la baja con useApi
+  const { loading: isSubmitting, execute: submitBaja } = useApi(crearBaja, {
+    auto: false,
+  });
 
   const [baja, setBaja] = useState({
     lote: "",
@@ -22,24 +34,6 @@ export default function NuevaBajaPage() {
   });
 
   const [selectedLoteInfo, setSelectedLoteInfo] = useState(null);
-
-  useEffect(() => {
-    const token = Cookies.get("token");
-    const API_BASE = getApiUrl();
-    async function loadData() {
-      try {
-        // Para simplificar, traemos los lotes que tienen stock
-        const res = await fetch(`${API_BASE}/api/inventario/stock-lotes/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        setStockLotes(Array.isArray(data) ? data : data.results || []);
-      } catch (err) {
-        console.error("Error cargando lotes:", err);
-      }
-    }
-    loadData();
-  }, []);
 
   const handleBajaChange = (e) => {
     const { name, value } = e.target;
@@ -71,39 +65,22 @@ export default function NuevaBajaPage() {
     e.preventDefault();
 
     // Validaciones extra antes de enviar
-    if (!baja.lote || isSubmitting || errorMsg) return;
+    if (!baja.lote || errorMsg) return;
     if (!baja.cantidad || Number(baja.cantidad) <= 0) {
       setErrorMsg("Ingrese una cantidad válida.");
       return;
     }
 
-    setIsSubmitting(true);
-    const token = Cookies.get("token");
-    const API_BASE = getApiUrl();
-
     try {
-      const response = await fetch(`${API_BASE}/api/inventario/bajas/`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...baja,
-          cantidad: Number(baja.cantidad), // Aseguramos que sea un número para el backend
-        }),
+      await submitBaja({
+        lote: baja.lote,
+        cantidad: Number(baja.cantidad),
+        motivo: baja.motivo,
+        observaciones: baja.observaciones,
       });
-
-      if (response.ok) {
-        router.push("/movimientos/bajas");
-      } else {
-        const errData = await response.json();
-        alert("Error al guardar: " + JSON.stringify(errData));
-      }
+      router.push("/movimientos/bajas");
     } catch (error) {
-      alert("Error de conexión.");
-    } finally {
-      setIsSubmitting(false);
+      // useErrorHandler ya muestra el mensaje
     }
   };
 
@@ -117,7 +94,10 @@ export default function NuevaBajaPage() {
         subtitle={
           <>
             <Package size={12} />
-            <span>Registrá pérdidas, mermas o productos vencidos para darlos de baja.</span>
+            <span>
+              Registrá pérdidas, mermas o productos vencidos para darlos de
+              baja.
+            </span>
           </>
         }
       >
@@ -170,21 +150,20 @@ export default function NuevaBajaPage() {
                       </p>
                       {selectedLoteInfo.vencimiento && (
                         <p
-                          className={`text-[10px] font-black uppercase tracking-widest mt-1 ${
-                            new Date(selectedLoteInfo.vencimiento) < new Date()
+                          className={`text-[10px] font-black uppercase tracking-widest mt-1 ${new Date(selectedLoteInfo.vencimiento) < new Date()
                               ? "text-red-600"
                               : new Date(selectedLoteInfo.vencimiento) -
-                                    new Date() <
-                                  180 * 24 * 60 * 60 * 1000
+                                new Date() <
+                                180 * 24 * 60 * 60 * 1000
                                 ? "text-amber-600"
                                 : "text-emerald-600"
-                          }`}
+                            }`}
                         >
                           {new Date(selectedLoteInfo.vencimiento) < new Date()
                             ? "⚠️ VENCIDO"
                             : new Date(selectedLoteInfo.vencimiento) -
-                                  new Date() <
-                                180 * 24 * 60 * 60 * 1000
+                              new Date() <
+                              180 * 24 * 60 * 60 * 1000
                               ? "⏰ PRÓXIMO A VENCER"
                               : "✓ VIGENTE"}{" "}
                           •{" "}
