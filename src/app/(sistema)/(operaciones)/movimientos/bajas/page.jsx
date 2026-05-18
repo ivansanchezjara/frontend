@@ -6,10 +6,23 @@ import EmptyState from "@/components/ui/EmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { Trash2, Package, User, Calendar, Plus, Clock } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
+import { useDebounce } from "@/hooks/useDebounce";
 import { getBajas, aprobarBaja } from "@/services/apis/movimientos";
+import MovimientosFilterBar from "@/components/movimientos/MovimientosFilterBar";
+import MovimientoCard from "@/components/movimientos/MovimientoCard";
+import Pagination from "@/components/ui/Pagination";
 
 export default function BajasPage() {
-  const [bajas, setBajas] = useState([]);
+  // Estados de filtros y paginación
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 500);
+  const [filters, setFilters] = useState({
+    fecha_inicio: '',
+    fecha_fin: '',
+    estado: ''
+  });
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 24;
 
   // Cargar bajas con useApi
   const {
@@ -17,13 +30,27 @@ export default function BajasPage() {
     loading,
     execute: fetchBajas,
   } = useApi(getBajas, {
-    auto: true,
-    initialData: [],
+    auto: false,
+    initialData: { results: [], count: 0 },
   });
 
+  // Cargar datos cuando cambian los filtros o la página
   useEffect(() => {
-    setBajas(bajasData?.results || bajasData || []);
-  }, [bajasData]);
+    fetchBajas({
+      page,
+      search: debouncedSearch,
+      ...filters
+    });
+  }, [page, debouncedSearch, filters, fetchBajas]);
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+    setPage(1); // Volver a la primera página al filtrar
+  };
+
+  const bajas = bajasData?.results || [];
+  const totalCount = bajasData?.count || 0;
 
   const { execute: aprobarBajaAction } = useApi(aprobarBaja, {
     auto: false,
@@ -84,6 +111,23 @@ export default function BajasPage() {
 
       <main className="flex-1 overflow-y-auto p-8 min-w-0">
         <div className="max-w-[1800px] mx-auto space-y-6">
+          <MovimientosFilterBar 
+            searchTerm={searchTerm}
+            setSearchTerm={(val) => {
+              setSearchTerm(val);
+              setPage(1);
+            }}
+            filters={filters}
+            handleFilterChange={handleFilterChange}
+            onClear={() => {
+              setSearchTerm('');
+              setFilters({ fecha_inicio: '', fecha_fin: '', estado: '' });
+              setPage(1);
+            }}
+            loading={loading}
+            placeholder="Buscar por descripción o variante..."
+          />
+
           {loading ? (
             <LoadingScreen message="Sincronizando bajas..." />
           ) : bajas.length === 0 ? (
@@ -99,71 +143,36 @@ export default function BajasPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {bajas.map((baja) => (
-                <div
+                <MovimientoCard
                   key={baja.id}
-                  className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-rose-200 transition-all group flex flex-col md:flex-row items-center gap-4"
-                >
-                  {/* Icono de Estado */}
-                  <div
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border ${baja.estado === "APROBADO" ? "bg-slate-50 text-slate-400 border-slate-100" : "bg-rose-50 text-rose-600 border-rose-100"}`}
-                  >
-                    <Trash2 size={24} />
-                  </div>
-
-                  {/* Info Principal */}
-                  <div className="flex-1 min-w-0 text-center md:text-left">
-                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-                        ID #{baja.id}
-                      </span>
-                      <span
-                        className={`text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-widest ${baja.estado === "APROBADO" ? "bg-slate-100 text-slate-600" : "bg-rose-100 text-rose-700"}`}
-                      >
-                        {baja.estado}
-                      </span>
-                      <span className="text-[8px] font-black px-2 py-1 bg-amber-100 text-amber-700 rounded-full uppercase tracking-widest">
-                        {getMotivoLabel(baja.motivo)}
-                      </span>
-                    </div>
-                    <h3 className="text-lg md:text-xl font-black text-slate-900 truncate tracking-tight">
-                      {baja.cantidad} x {baja.variante_nombre}
-                    </h3>
-                    <p className="text-slate-500 text-[11px] font-medium mt-1 italic">
-                      "{baja.observaciones || "Sin observaciones"}"
-                    </p>
-                    <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-3 text-slate-400 font-bold text-[9px] uppercase tracking-widest">
-                      <span className="flex items-center gap-1">
-                        <Calendar size={12} />{" "}
-                        {new Date(baja.fecha).toLocaleDateString()}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock size={12} /> {baja.deposito_nombre}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <User size={12} /> {baja.usuario_nombre}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Acciones */}
-                  <div className="flex items-center gap-2">
-                    {baja.estado === "BORRADOR" && (
-                      <button
-                        onClick={(e) => handleAprobar(baja.id, e)}
-                        className="bg-rose-600 text-white px-4 py-2 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-md shadow-rose-100 hover:bg-rose-700 transition-all border border-rose-500"
-                      >
-                        Aprobar
-                      </button>
-                    )}
-                    {baja.estado === "APROBADO" && (
-                      <div className="flex items-center gap-1 text-emerald-600 font-black text-[9px] uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-xl">
-                        <Package size={12} /> Stock Descontado
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  id={baja.id}
+                  estado={baja.estado}
+                  titulo={`${baja.cantidad} x ${baja.variante_nombre}`}
+                  subtitulo={baja.observaciones}
+                  customIcon={Trash2}
+                  badges={[
+                    { label: getMotivoLabel(baja.motivo), className: 'bg-amber-100 text-amber-700' }
+                  ]}
+                  info={[
+                    { icon: Calendar, label: new Date(baja.fecha).toLocaleDateString() },
+                    { icon: Clock, label: baja.deposito_nombre },
+                    { icon: User, label: baja.usuario_nombre }
+                  ]}
+                  onApprove={handleAprobar}
+                  approveLabel="Aprobar"
+                />
               ))}
             </div>
+          )}
+
+          {/* Paginación */}
+          {!loading && totalCount > PAGE_SIZE && (
+            <Pagination 
+              count={totalCount}
+              pageSize={PAGE_SIZE}
+              currentPage={page}
+              onPageChange={setPage}
+            />
           )}
         </div>
       </main>
