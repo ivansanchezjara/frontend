@@ -4,13 +4,13 @@ import Link from "next/link";
 import { SearchX } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
-import VarianteModal from "@/components/comercial/catalogo/Modals/VarianteModal";
-import DatosGeneralesSection from "@/components/comercial/catalogo/DatosGeneralesSection";
-import DescripcionSection from "@/components/comercial/catalogo/DescripcionSection";
-import ProductoHeader from "@/components/comercial/catalogo/ProductoHeader";
-import VariantesSection from "@/components/comercial/catalogo/VariantesSection";
-import VisibilidadSection from "@/components/comercial/catalogo/VisibilidadSection";
-import ZonaPeligroSection from "@/components/comercial/catalogo/ZonaPeligroSection";
+import VarianteModal from "@/components/comercial/catalogo/modals/VarianteModal";
+import DatosGeneralesSection from "@/components/comercial/catalogo/detail/DatosGeneralesSection";
+import DescripcionSection from "@/components/comercial/catalogo/detail/DescripcionSection";
+import ProductoHeader from "@/components/comercial/catalogo/list/ProductoHeader";
+import VariantesSection from "@/components/comercial/catalogo/detail/VariantesSection";
+import VisibilidadSection from "@/components/comercial/catalogo/detail/VisibilidadSection";
+import ZonaPeligroSection from "@/components/comercial/catalogo/detail/ZonaPeligroSection";
 import { FilerModal, Heading, LoadingScreen, Text, useConfirm } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import {

@@ -1,15 +1,15 @@
 "use client";
 import { EmptyState, LoadingScreen, PageHeader, Pagination, SearchBar, Button, Badge, Heading, Text } from '@/components/ui';
 import { useEffect, useState } from 'react';
-import { getProductos, getCategorias } from '@/services/apis/catalogo.js';
+import { getProductos } from '@/services/apis/catalogo.js';
 import { useApi } from '@/hooks/useApi';
 import { useDebounce } from '@/hooks/useDebounce';
 import Link from 'next/link';
 import { Image as ImageIcon, LayoutGrid, List } from 'lucide-react';
 
 // Catálogo Components
-import ProductoCard from '@/components/comercial/catalogo/ProductoCard';
-import ProductoRow from '@/components/comercial/catalogo/ProductoRow';
+import ProductoCard from '@/components/comercial/catalogo/list/ProductoCard';
+import ProductoRow from '@/components/comercial/catalogo/list/ProductoRow';
 
 // Normalización para búsqueda sin tildes
 const normalizar = (t) => t?.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() || "";
@@ -26,7 +26,6 @@ export default function CatalogoPage() {
     // Helpers para acceder a la data de productos
     const productos = prodData?.results || [];
     const count = prodData?.count || 0;
-    const categorias = catData;
 
     const pageSize = 24;
     const [page, setPage] = useState(1);

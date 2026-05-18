@@ -1,7 +1,7 @@
 "use client";
-import { FilerModal, Button, Heading, Text, Input } from '@/components/ui';
+import { FilerModal, Button, Heading, Text, Input, Field } from '@/components/ui';
 import { useState } from "react";
-import { Trash2, X, Plus, Loader2 } from "lucide-react";
+import { Trash2, Plus, Loader2 } from "lucide-react";
 import {
   crearVariante,
   actualizarVariante,
@@ -9,7 +9,6 @@ import {
   eliminarImagenProducto,
   getFullImageUrl,
 } from "@/services/apis/catalogo.js";
-import Field from "@/components/comercial/catalogo/Field";
 
 export default function VarianteModal({
   variante,
@@ -175,7 +174,7 @@ export default function VarianteModal({
                 )}
               </div>
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={() => setIsFilerOpen(true)}
               >

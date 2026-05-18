@@ -1,6 +1,7 @@
 import { getFullImageUrl } from '@/services/apis/catalogo';
 import { useRouter } from 'next/navigation';
 import { Badge, Text } from '@/components/ui';
+import { ChevronRight } from 'lucide-react';
 
 export default function ProductoRow({ producto }) {
     const router = useRouter();
@@ -30,14 +31,14 @@ export default function ProductoRow({ producto }) {
                             {nombre_general}
                             {featured && <span className="ml-2 text-amber-500 text-xs">⭐</span>}
                         </Text>
-                        <Text variant="caption" className=" font-mono text-slate-400 lowercase leading-none">{general_code}</Text>
+                        <Text variant="mono" className="lowercase leading-none">{general_code}</Text>
                     </div>
                 </div>
             </td>
 
             {/* Marca */}
             <td className="py-3 px-4 whitespace-nowrap">
-                <Text variant="bodySm" className="font-medium text-slate-600">
+                <Text variant="bodySm">
                     {brand}
                 </Text>
             </td>
@@ -45,27 +46,24 @@ export default function ProductoRow({ producto }) {
             {/* Categoría */}
             <td className="py-3 px-4">
                 {categoria ? (
-                    <Badge variant="default" className="normal-case tracking-normal">
+                    <Text variant="tag">
                         {categoria.nombre}
-                    </Badge>
+                    </Text>
                 ) : (
-                    <Text variant="bodySm" className="text-slate-300">—</Text>
+                    <Text variant="bodySm">-</Text>
                 )}
             </td>
 
             {/* Variantes */}
             <td className="py-3 px-4 text-center">
-                <Text variant="bodySm" className="font-bold text-slate-700">
+                <Text variant="bodySmBold">
                     {cantidadVariantes}
                 </Text>
             </td>
 
             {/* Flecha */}
             <td className="py-3 pr-6 pl-4 text-right">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
-                    className="w-4 h-4 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all inline-block">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-                </svg>
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all inline-block" />
             </td>
         </tr>
     );

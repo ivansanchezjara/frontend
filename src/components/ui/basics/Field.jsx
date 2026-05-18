@@ -1,4 +1,4 @@
-import { Text } from "@/components/ui";
+import { Text } from "./Typography";
 
 export default function Field({ label, hint, children }) {
   return (

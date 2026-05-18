@@ -1,4 +1,4 @@
-import { Text } from "@/components/ui";
+import { Text } from "../basics/Typography";
 
 export default function Section({ title, subtitle, children }) {
   return (

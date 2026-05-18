@@ -1,5 +1,7 @@
 "use client";
 import { useState } from 'react';
+import { Text } from '@/components/ui';
+import { X, Plus } from 'lucide-react';
 
 export default function AttributesEditor({ attributes = {}, onChange }) {
     const [newKey, setNewKey] = useState('');
@@ -31,14 +33,14 @@ export default function AttributesEditor({ attributes = {}, onChange }) {
             {/* Lista de atributos existentes */}
             <div className="space-y-2">
                 {entries.length === 0 && (
-                    <p className="text-[11px] text-slate-400 italic px-1">Sin atributos técnicos todavía.</p>
+                    <Text variant="bodySm" className="text-xs font-black text-slate-400 uppercase tracking-tight block px-1 truncate" >Sin atributos técnicos todavía.</Text>
                 )}
                 {entries.map(([k, v]) => (
                     <div key={k} className="flex gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-100 group">
                         <div className="w-1/3 shrink-0">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight block px-1 truncate" title={k}>
+                            <Text variant="bodySm" className="text-[10px] font-black text-slate-400 uppercase tracking-tight block px-1 truncate" title={k}>
                                 {k}
-                            </span>
+                            </Text>
                         </div>
                         <input
                             className="flex-1 bg-transparent border-none text-xs font-bold text-slate-700 focus:ring-0 p-0"
@@ -46,12 +48,11 @@ export default function AttributesEditor({ attributes = {}, onChange }) {
                             onChange={(e) => handleEditValue(k, e.target.value)}
                         />
                         <button
+                            type="button"
                             onClick={() => handleRemove(k)}
-                            className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                            className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                            <X className="w-3.5 h-3.5" />
                         </button>
                     </div>
                 ))}
@@ -60,7 +61,7 @@ export default function AttributesEditor({ attributes = {}, onChange }) {
             {/* Selector para nuevo atributo */}
             <div className="flex gap-2 items-end pt-2 border-t border-slate-100">
                 <div className="flex-1">
-                    <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block px-1">Nueva Clave</label>
+                    <Text variant="bodySm" className="text-[9px] font-black text-slate-400 uppercase mb-1 block px-1" as="label">Nueva Clave</Text>
                     <input
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                         placeholder="Ej: Material"
@@ -70,7 +71,7 @@ export default function AttributesEditor({ attributes = {}, onChange }) {
                     />
                 </div>
                 <div className="flex-[1.5]">
-                    <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block px-1">Valor</label>
+                    <Text variant="bodySm" className="text-[9px] font-black text-slate-400 uppercase mb-1 block px-1" as="label">Valor</Text>
                     <input
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                         placeholder="Ej: Acero 316L"
@@ -84,7 +85,7 @@ export default function AttributesEditor({ attributes = {}, onChange }) {
                     disabled={!newKey.trim()}
                     className="h-[34px] px-3 bg-slate-900 text-white rounded-lg font-bold text-xs hover:bg-blue-600 transition-all disabled:opacity-30 flex items-center justify-center cursor-pointer"
                 >
-                    +
+                    <Plus className="w-4 h-4" />
                 </button>
             </div>
         </div>

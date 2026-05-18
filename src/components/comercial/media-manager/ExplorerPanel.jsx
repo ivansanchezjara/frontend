@@ -1,7 +1,7 @@
 "use client";
 import { Pagination } from '@/components/ui';
 import { Search, CheckSquare, ImageIcon, Check, Trash2, Link as LinkIcon, ChevronRight, Edit2, Package, X, AlertCircle } from 'lucide-react';
-import BulkAssignModal from '@/components/comercial/catalogo/Modals/BulkAssignModal';
+import BulkAssignModal from '@/components/comercial/media-manager/modals/BulkAssignModal';
 
 export default function ExplorerPanel({
     archivos,

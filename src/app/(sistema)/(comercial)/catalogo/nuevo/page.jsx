@@ -6,11 +6,7 @@ import Image from "next/image";
 import { Check, FileJson, ImagePlus, Package, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import AttributesEditor from "@/components/comercial/catalogo/AttributesEditor";
-import Field from "@/components/comercial/catalogo/Field";
-import Section from "@/components/comercial/catalogo/Section";
-import TagsInput from "@/components/comercial/catalogo/TagsInput";
-import Toggle from "@/components/comercial/catalogo/Toggle";
+import AttributesEditor from "@/components/comercial/catalogo/detail/AttributesEditor";
 import {
   Badge,
   Button,
@@ -18,6 +14,10 @@ import {
   LoadingScreen,
   PageHeader,
   Text,
+  Field,
+  Section,
+  TagsInput,
+  Toggle,
 } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import {

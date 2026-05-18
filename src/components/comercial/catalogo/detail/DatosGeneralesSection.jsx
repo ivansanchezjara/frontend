@@ -1,10 +1,8 @@
 "use client";
 import { useState } from "react";
-import { Button, Text, Input } from "@/components/ui";
+import { Button, Text, Input, Section, Field } from "@/components/ui";
 import { Plus, Check, X, Image, Loader2 } from "lucide-react";
 import { crearCategoria, getFullImageUrl } from "@/services/apis/catalogo.js";
-import Section from "./Section";
-import Field from "./Field";
 
 const inputClass =
   "w-full px-3.5 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm font-medium text-slate-700 placeholder:text-slate-400";
@@ -67,10 +65,12 @@ export default function DatosGeneralesSection({
               <button
                 type="button"
                 onClick={onOpenFiler}
-                className="w-full aspect-square bg-slate-50 border-2 border-dashed border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer text-slate-400 hover:text-emerald-500"
+                className="w-full aspect-square bg-slate-50 border-2 border-dashed border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer text-slate-400 hover:text-emerald-500 group"
               >
-                <span className="text-3xl">🏜️</span>
-                <span className="text-xs font-bold mt-1">Elegir</span>
+                <Image size={32} className="group-hover:scale-110 transition-transform text-slate-300 group-hover:text-emerald-500 shrink-0" />
+                <Text variant="label" className="group-hover:text-emerald-500 transition-colors">
+                  Elegir
+                </Text>
               </button>
             )}
           </div>

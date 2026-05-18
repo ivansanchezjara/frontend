@@ -30,9 +30,16 @@ export function Text({
   const styles = {
     body: "text-base font-medium text-slate-500",
     bodySm: "text-sm font-medium text-slate-500",
+    bodyXs: "text-xs font-medium text-slate-500",
+    bodyBold: "text-base font-bold text-slate-700",
+    bodySmBold: "text-sm font-bold text-slate-700",
+    bodyXsBold: "text-xs font-bold text-slate-700",
     muted: "text-sm font-medium text-slate-400",
+    mutedXs: "text-xs font-medium text-slate-400",
+    mono: "text-xs font-mono text-slate-400",
     caption: "text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300",
     label: "text-[10px] font-black uppercase tracking-widest text-slate-400",
+    tag: "text-[10px] font-bold uppercase tracking-widest text-emerald-600",
   };
 
   const variantStyle = styles[variant] || styles.body;

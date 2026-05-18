@@ -9,7 +9,7 @@ export default function ProductoCard({ producto }) {
 
     return (
         <Link href={`/catalogo/${slug}`} className="group block h-full">
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full flex flex-col">
 
                 {/* Imagen */}
                 <div className="relative h-44 bg-slate-100 overflow-hidden shrink-0">
@@ -27,7 +27,7 @@ export default function ProductoCard({ producto }) {
 
                     {/* Badge featured */}
                     {featured && (
-                        <Badge variant="warning" className="absolute top-2 left-2 text-[10px] font-black uppercase">
+                        <Badge variant="warning" className="absolute top-2 left-2 text-[10px]">
                             ⭐ Destacado
                         </Badge>
                     )}

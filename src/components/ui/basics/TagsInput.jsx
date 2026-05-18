@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef } from 'react';
-import { Badge } from '@/components/ui';
+import Badge from './Badge';
 import { X } from 'lucide-react';
 
 export default function TagsInput({ tags = [], onChange }) {

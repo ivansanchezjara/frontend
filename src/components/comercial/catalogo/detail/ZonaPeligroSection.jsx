@@ -1,5 +1,5 @@
 "use client";
-import Section from "./Section";
+import { Section } from "@/components/ui";
 
 export default function ZonaPeligroSection({
   producto,
