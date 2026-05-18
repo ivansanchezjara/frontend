@@ -1,8 +1,6 @@
 "use client";
+import { EmptyState, LoadingScreen, PageHeader } from '@/components/ui';
 import Link from 'next/link';
-import LoadingScreen from '@/components/ui/LoadingScreen';
-import EmptyState from '@/components/ui/EmptyState';
-import PageHeader from '@/components/ui/PageHeader';
 import { ChevronRight, Package, User, Calendar, Plus, MapPin, Clock } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { getConsignaciones } from '@/services/apis/movimientos';

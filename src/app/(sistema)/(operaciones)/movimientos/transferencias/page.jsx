@@ -1,36 +1,66 @@
 "use client";
+import { EmptyState, LoadingScreen, PageHeader, Pagination } from '@/components/ui';
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import LoadingScreen from "@/components/ui/LoadingScreen";
-import EmptyState from "@/components/ui/EmptyState";
-import PageHeader from "@/components/ui/PageHeader";
+import { useRouter } from "next/navigation";
 import {
   ArrowRightLeft,
   Package,
   User,
   Calendar,
   Plus,
-  CheckCircle,
+  Check
 } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   getTransferencias,
   aprobarTransferencia,
 } from "@/services/apis/movimientos";
 import MovimientoCard from "@/components/movimientos/MovimientoCard";
 import MovimientosFilterBar from "@/components/movimientos/MovimientosFilterBar";
-import Pagination from "@/components/ui/Pagination";
 
 export default function TransferenciasPage() {
+  const router = useRouter();
+
+  // Estados de filtros y paginación
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 500);
+  const [filters, setFilters] = useState({
+    fecha_inicio: '',
+    fecha_fin: '',
+    estado: ''
+  });
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 24;
+  const [vista, setVista] = useState('grilla'); // 'grilla' | 'tabla'
+
   const {
     data: transferenciasData,
     loading,
     execute: fetchTransferencias,
   } = useApi(getTransferencias, {
-    auto: true,
-    initialData: { results: [] },
+    auto: false,
+    initialData: { results: [], count: 0 },
   });
 
   const transferencias = transferenciasData?.results || [];
+  const totalCount = transferenciasData?.count || 0;
+
+  // Cargar datos cuando cambian los filtros o la página
+  useEffect(() => {
+    fetchTransferencias({
+      page,
+      search: debouncedSearch,
+      ...filters
+    });
+  }, [page, debouncedSearch, filters, fetchTransferencias]);
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+    setPage(1); // Volver a la primera página al filtrar
+  };
 
   const { execute: aprobarAction } = useApi(aprobarTransferencia, {
     auto: false,
@@ -78,6 +108,25 @@ export default function TransferenciasPage() {
 
       <main className="flex-1 overflow-y-auto p-8 min-w-0">
         <div className="max-w-[1800px] mx-auto space-y-6">
+          <MovimientosFilterBar
+            searchTerm={searchTerm}
+            setSearchTerm={(val) => {
+              setSearchTerm(val);
+              setPage(1);
+            }}
+            filters={filters}
+            handleFilterChange={handleFilterChange}
+            onClear={() => {
+              setSearchTerm('');
+              setFilters({ fecha_inicio: '', fecha_fin: '', estado: '' });
+              setPage(1);
+            }}
+            loading={loading}
+            placeholder="Buscar por depósito de origen o destino..."
+            vista={vista}
+            setVista={setVista}
+          />
+
           {loading ? (
             <LoadingScreen message="Sincronizando transferencias..." />
           ) : transferencias.length === 0 ? (
@@ -90,7 +139,7 @@ export default function TransferenciasPage() {
                 (window.location.href = "/movimientos/transferencias/nuevo")
               }
             />
-          ) : (
+          ) : vista === 'grilla' ? (
             <div className="grid grid-cols-1 gap-4">
               {transferencias.map((transf) => (
                 <MovimientoCard
@@ -113,6 +162,87 @@ export default function TransferenciasPage() {
                 />
               ))}
             </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+                      <th className="py-4 px-6">ID</th>
+                      <th className="py-4 px-4">Estado</th>
+                      <th className="py-4 px-4">Origen</th>
+                      <th className="py-4 px-4">Destino</th>
+                      <th className="py-4 px-4">Fecha</th>
+                      <th className="py-4 px-4 text-center">Ítems</th>
+                      <th className="py-4 px-4">Usuario</th>
+                      <th className="py-4 px-6 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                    {transferencias.map((transf) => {
+                      const config = transf.estado === 'APROBADO' ? {
+                        badge: 'bg-emerald-100 text-emerald-700',
+                      } : {
+                        badge: 'bg-amber-100 text-amber-700',
+                      };
+
+                      return (
+                        <tr
+                          key={transf.id}
+                          className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
+                          onClick={() => router.push(`/movimientos/transferencias/${transf.id}/detalle`)}
+                        >
+                          <td className="py-4 px-6 text-slate-400 font-bold">#{transf.id}</td>
+                          <td className="py-4 px-4">
+                            <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${config.badge}`}>
+                              {transf.estado}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                            {transf.deposito_origen_nombre}
+                          </td>
+                          <td className="py-4 px-4 font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                            {transf.deposito_destino_nombre}
+                          </td>
+                          <td className="py-4 px-4 text-slate-500">
+                            {new Date(transf.fecha).toLocaleDateString()}
+                          </td>
+                          <td className="py-4 px-4 text-center font-bold text-slate-900">{transf.items?.length || 0}</td>
+                          <td className="py-4 px-4 text-slate-500">{transf.usuario_nombre}</td>
+                          <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                            {transf.estado === 'BORRADOR' ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={(e) => handleAprobar(transf.id, e)}
+                                  className="p-1.5 bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-lg border border-slate-200 hover:border-emerald-100 transition-all"
+                                  title="Aprobar"
+                                >
+                                  <Check size={14} />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                Auditado
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Paginación */}
+          {!loading && totalCount > PAGE_SIZE && (
+            <Pagination
+              count={totalCount}
+              pageSize={PAGE_SIZE}
+              currentPage={page}
+              onPageChange={setPage}
+            />
           )}
         </div>
       </main>

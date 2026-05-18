@@ -1,5 +1,6 @@
 "use client";
-import Link from "next/link";
+
+import { Badge, Button, PageHeader } from "@/components/ui";
 
 export default function ProductoHeader({
   producto,
@@ -10,48 +11,38 @@ export default function ProductoHeader({
   onSave,
 }) {
   return (
-    <header className="bg-white border-b border-slate-200 px-10 py-4 shrink-0 z-10 flex items-center justify-between gap-6">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-          <Link
-            href="/catalogo"
-            className="hover:text-emerald-600 transition-colors"
-          >
-            Catálogo
-          </Link>
-          <span>/</span>
-          <span className="text-slate-700 truncate">
-            {producto.nombre_general}
-          </span>
-        </div>
-        <p className="text-[10px] font-bold text-emerald-600 uppercase mt-0.5 font-mono">
-          {producto.slug}
-        </p>
-      </div>
-
-      <div className="flex items-center gap-3 shrink-0">
+    <PageHeader
+      breadcrumbs={[
+        { label: "Catálogo", href: "/catalogo" },
+        { label: producto.nombre_general },
+      ]}
+      subtitle={producto.slug}
+      subtitleClassName="font-mono text-emerald-600"
+    >
+      <div className="flex items-center gap-3">
         {saveSuccess && (
-          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
-            ✓ Cambios guardados
-          </span>
+          <Badge variant="success" className="border border-emerald-200">
+            Cambios guardados
+          </Badge>
         )}
         {saveError && (
-          <span
-            className="text-xs font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-full border border-red-200 max-w-xs truncate"
+          <Badge
+            variant="danger"
+            className="max-w-xs truncate border border-red-200"
             title={saveError}
           >
-            ✕ {saveError}
-          </span>
+            {saveError}
+          </Badge>
         )}
-        <button
+        <Button
           id="btn-guardar-producto"
           onClick={onSave}
           disabled={!isDirty || saving}
-          className="bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-600 transition-all shadow-lg active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          className="bg-slate-900 text-xs hover:bg-emerald-600"
         >
           {saving ? "Guardando..." : "Guardar Cambios"}
-        </button>
+        </Button>
       </div>
-    </header>
+    </PageHeader>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { LoadingScreen, PageHeader, ResizableHeader } from '@/components/ui';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -11,7 +12,6 @@ import {
     Inbox as InboxIcon,
     Download as DownloadIcon
 } from 'lucide-react';
-import LoadingScreen from '@/components/ui/LoadingScreen';
 import { useApi } from '@/hooks/useApi';
 import { getIngreso } from '@/services/apis/movimientos';
 
@@ -24,8 +24,6 @@ const COLUMNAS_CONFIG = [
     { id: 'p_otros', label: 'P. Distribución (P1-P4)' },
 ];
 
-import PageHeader from '@/components/ui/PageHeader';
-import ResizableHeader from '@/components/ui/ResizableHeader';
 
 export default function DetalleIngresoPage() {
     const { id } = useParams();

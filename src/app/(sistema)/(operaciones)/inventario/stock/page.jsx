@@ -1,13 +1,9 @@
 "use client";
+import { EmptyState, LoadingScreen, PageHeader, Pagination, SearchBar } from '@/components/ui';
 import { useState, useEffect } from "react";
 import ProductTable, {
   COLUMNAS_VISIBLES_POR_DEFECTO,
 } from "@/components/inventario/ProductTable";
-import SearchBar from "@/components/ui/SearchBar";
-import LoadingScreen from "@/components/ui/LoadingScreen";
-import EmptyState from "@/components/ui/EmptyState";
-import PageHeader from "@/components/ui/PageHeader";
-import Pagination from "@/components/ui/Pagination";
 import AuditoriaModal from "@/components/inventario/AuditoriaModal";
 import { getProductos, getProductosStats } from "@/services/apis/catalogo.js";
 import { getLotesPorVarianteId } from "@/services/apis/inventario.js";

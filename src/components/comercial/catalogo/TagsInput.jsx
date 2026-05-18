@@ -1,5 +1,7 @@
 "use client";
 import { useState, useRef } from 'react';
+import { Badge } from '@/components/ui';
+import { X } from 'lucide-react';
 
 export default function TagsInput({ tags = [], onChange }) {
     const [inputValue, setInputValue] = useState('');
@@ -29,24 +31,23 @@ export default function TagsInput({ tags = [], onChange }) {
     return (
         <div
             onClick={() => inputRef.current?.focus()}
-            className="min-h-[44px] w-full flex flex-wrap gap-1.5 items-center px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all cursor-text"
+            className="min-h-[44px] w-full flex flex-wrap gap-1.5 items-center px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all cursor-text"
         >
             {tags.map(tag => (
-                <span
+                <Badge
                     key={tag}
-                    className="flex items-center gap-1 bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full"
+                    variant="primary"
+                    className="gap-1 normal-case tracking-normal py-1"
                 >
                     {tag}
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); removeTag(tag); }}
-                        className="text-blue-400 hover:text-blue-700 transition-colors ml-0.5"
+                        className="text-blue-400 hover:text-blue-700 transition-colors ml-0.5 flex items-center"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
-                            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-                        </svg>
+                        <X size={12} />
                     </button>
-                </span>
+                </Badge>
             ))}
 
             <input

@@ -1,12 +1,12 @@
 "use client";
+import { FilerModal, Button, Heading, Text } from '@/components/ui';
 import { useState } from "react";
+import { Trash2, X, Plus, Loader2 } from "lucide-react";
 import {
   crearImagenProducto,
   eliminarImagenProducto,
+  getFullImageUrl,
 } from "@/services/apis/catalogo.js";
-
-import FilerModal from "@/components/ui/FilerModal";
-import { getFullImageUrl } from "@/services/apis/catalogo.js";
 
 export default function GaleriaVarianteModal({ variante, onClose, onRefresh }) {
   const [isFilerOpen, setIsFilerOpen] = useState(false);
@@ -47,17 +47,18 @@ export default function GaleriaVarianteModal({ variante, onClose, onRefresh }) {
       <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl z-10 flex flex-col max-h-[80vh]">
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between shrink-0">
           <div>
-            <h3 className="text-lg font-black text-slate-900">Galería Extra</h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Fotos adicionales para <strong>{variante.nombre_variante}</strong>
-            </p>
+            <Heading level={4}>Galería Extra</Heading>
+            <Text variant="muted" className="mt-0.5">
+              Fotos adicionales para <strong className="font-semibold text-slate-700">{variante.nombre_variante}</strong>
+            </Text>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
+            icon={X}
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
-          >
-            ✕
-          </button>
+            className="rounded-full"
+          />
         </div>
 
         <div className="p-6 overflow-y-auto flex-1">
@@ -71,47 +72,37 @@ export default function GaleriaVarianteModal({ variante, onClose, onRefresh }) {
                   src={getFullImageUrl(img.url)}
                   className="w-full h-full object-cover"
                 />
-                <button
+                <Button
+                  variant="danger"
+                  size="icon"
+                  icon={Trash2}
                   onClick={() => handleDelete(img.id)}
-                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2.5}
-                    stroke="currentColor"
-                    className="w-4 h-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
-                    />
-                  </svg>
-                </button>
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                />
               </div>
             ))}
             <button
+              type="button"
               disabled={saving}
               onClick={() => setIsFilerOpen(true)}
-              className="w-full aspect-square border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-500 transition-all cursor-pointer"
+              className="w-full aspect-square border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-500 transition-all cursor-pointer group"
             >
-              <span className="text-2xl">{saving ? "⌛" : "📸"}</span>
-              <span className="text-[10px] font-black uppercase">
-                Nueva Foto
-              </span>
+              {saving ? (
+                <Loader2 size={24} className="animate-spin text-emerald-500 shrink-0" />
+              ) : (
+                <Plus size={24} className="group-hover:scale-110 transition-transform text-slate-400 group-hover:text-emerald-500 shrink-0" />
+              )}
+              <Text variant="label" className="group-hover:text-emerald-500 transition-colors">
+                {saving ? "Guardando..." : "Nueva Foto"}
+              </Text>
             </button>
           </div>
         </div>
 
         <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end">
-          <button
-            onClick={onClose}
-            className="bg-slate-900 text-white px-6 py-2 rounded-xl font-bold text-xs"
-          >
+          <Button onClick={onClose} variant="primary">
             Cerrar
-          </button>
+          </Button>
         </div>
 
         <FilerModal

@@ -1,5 +1,6 @@
 import { getFullImageUrl } from '@/services/apis/catalogo';
 import { useRouter } from 'next/navigation';
+import { Badge, Text } from '@/components/ui';
 
 export default function ProductoRow({ producto }) {
     const router = useRouter();
@@ -25,34 +26,38 @@ export default function ProductoRow({ producto }) {
                         )}
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors leading-tight">
+                        <Text variant="bodySm" className="font-bold text-slate-900 group-hover:text-emerald-600 transition-colors leading-tight">
                             {nombre_general}
                             {featured && <span className="ml-2 text-amber-500 text-xs">⭐</span>}
-                        </p>
-                        <p className="text-xs text-slate-400 font-mono">{general_code}</p>
+                        </Text>
+                        <Text variant="caption" className=" font-mono text-slate-400 lowercase leading-none">{general_code}</Text>
                     </div>
                 </div>
             </td>
 
             {/* Marca */}
-            <td className="py-3 px-4 text-sm font-medium text-slate-600 whitespace-nowrap">
-                {brand}
+            <td className="py-3 px-4 whitespace-nowrap">
+                <Text variant="bodySm" className="font-medium text-slate-600">
+                    {brand}
+                </Text>
             </td>
 
             {/* Categoría */}
             <td className="py-3 px-4">
                 {categoria ? (
-                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
+                    <Badge variant="default" className="normal-case tracking-normal">
                         {categoria.nombre}
-                    </span>
+                    </Badge>
                 ) : (
-                    <span className="text-xs text-slate-300">—</span>
+                    <Text variant="bodySm" className="text-slate-300">—</Text>
                 )}
             </td>
 
             {/* Variantes */}
             <td className="py-3 px-4 text-center">
-                <span className="text-sm font-bold text-slate-700">{cantidadVariantes}</span>
+                <Text variant="bodySm" className="font-bold text-slate-700">
+                    {cantidadVariantes}
+                </Text>
             </td>
 
             {/* Flecha */}

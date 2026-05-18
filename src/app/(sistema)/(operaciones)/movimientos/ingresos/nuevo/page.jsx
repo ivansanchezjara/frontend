@@ -1,9 +1,8 @@
 "use client";
+import { PageHeader, ResizableHeader } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Plus, Trash2, Check, CheckCircle2, Download, Upload, Tag, Clock } from 'lucide-react';
-import PageHeader from '@/components/ui/PageHeader';
-import ResizableHeader from '@/components/ui/ResizableHeader';
 import { Package } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { getDepositos, crearIngreso } from '@/services/apis/movimientos';
@@ -38,11 +37,11 @@ export default function NuevoIngresoPage() {
                     fetchDepositos({ limit: 1000 }),
                     fetchVariantes({ limit: 5000 })
                 ]);
-                
+
                 if (dDep) setDepositos(dDep.results || dDep);
                 if (dVar) setVariantes(dVar.results || dVar);
-            } catch (err) { 
-                setErrorMsg("Error cargando los datos iniciales."); 
+            } catch (err) {
+                setErrorMsg("Error cargando los datos iniciales.");
             }
         }
         loadData();
@@ -191,12 +190,12 @@ export default function NuevoIngresoPage() {
         e.preventDefault();
         if (errorMsg || items.length === 0) return;
         if (!ingreso.deposito) { alert("Debe seleccionar un depósito."); return; }
-        
+
         try {
             const payload = { ...ingreso, items: items.map(it => ({ ...it, vencimiento: it.vencimiento === '' ? null : it.vencimiento })) };
             await createIngresoAction(payload);
             router.push('/movimientos/ingresos');
-        } catch (error) { 
+        } catch (error) {
             // useErrorHandler handles notifications
         }
     };

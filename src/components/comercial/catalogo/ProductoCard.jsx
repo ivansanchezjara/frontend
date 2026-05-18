@@ -1,5 +1,6 @@
 import { getFullImageUrl } from '@/services/apis/catalogo';
 import Link from 'next/link';
+import { Badge, Heading, Text } from '@/components/ui';
 
 export default function ProductoCard({ producto }) {
     const { nombre_general, general_code, brand, categoria, imagen_principal_url, variants, slug, featured } = producto;
@@ -26,33 +27,33 @@ export default function ProductoCard({ producto }) {
 
                     {/* Badge featured */}
                     {featured && (
-                        <span className="absolute top-2 left-2 bg-amber-400 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide">
+                        <Badge variant="warning" className="absolute top-2 left-2 text-[10px] font-black uppercase">
                             ⭐ Destacado
-                        </span>
+                        </Badge>
                     )}
 
                     {/* Badge categoría */}
                     {categoria && (
-                        <span className="absolute top-2 right-2 bg-white/90 backdrop-blur text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-200">
+                        <Badge variant="default" className="absolute top-2 right-2 bg-white/90 backdrop-blur text-slate-600 text-[10px] border border-slate-200/50">
                             {categoria.nombre}
-                        </span>
+                        </Badge>
                     )}
                 </div>
 
                 {/* Info */}
                 <div className="p-4 flex flex-col flex-1">
                     <div className="flex-1">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{general_code}</p>
-                        <h3 className="text-sm font-black text-slate-900 leading-tight mt-0.5 group-hover:text-emerald-600 transition-colors line-clamp-2 h-9">
+                        <Text variant="caption">{general_code}</Text>
+                        <Heading level={5} className="text-sm mt-0.5 group-hover:text-emerald-600 transition-colors line-clamp-2 h-9 leading-tight">
                             {nombre_general}
-                        </h3>
-                        <p className="text-xs text-slate-500 font-medium mt-0.5">{brand}</p>
+                        </Heading>
+                        <Text variant="bodySm" className="mt-0.5">{brand}</Text>
                     </div>
 
                     <div className="flex items-center justify-between pt-3 mt-4 border-t border-slate-100">
-                        <span className="text-[11px] font-bold text-slate-500">
+                        <Text variant="bodySm" className="text-[11px] font-bold text-slate-500">
                             {cantidadVariantes} {cantidadVariantes === 1 ? 'variante' : 'variantes'}
-                        </span>
+                        </Text>
                     </div>
                 </div>
             </div>

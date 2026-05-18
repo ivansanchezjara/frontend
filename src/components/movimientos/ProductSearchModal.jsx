@@ -1,4 +1,3 @@
-// c:\Users\ivanm\Documents\ERP Project\frontend\src\components\movimientos\ProductSearchModal.jsx
 "use client";
 import { useState, useEffect } from "react";
 import { Search, Package, Check, Loader2 } from "lucide-react";

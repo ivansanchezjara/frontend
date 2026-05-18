@@ -1,10 +1,8 @@
 "use client";
+import { EmptyState, LoadingScreen, PageHeader } from '@/components/ui';
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import LoadingScreen from "@/components/ui/LoadingScreen";
-import EmptyState from "@/components/ui/EmptyState";
-import PageHeader from "@/components/ui/PageHeader";
 import {
   Settings2,
   User,
@@ -24,10 +22,10 @@ export default function AjustesInventarioPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // --- API & DATA ---
-  const { 
-    data: ajustesData, 
-    loading, 
-    refresh: fetchAjustes 
+  const {
+    data: ajustesData,
+    loading,
+    refresh: fetchAjustes
   } = useApi(getAjustes, { auto: true, initialData: [] });
 
   const ajustes = ajustesData?.results || ajustesData || [];

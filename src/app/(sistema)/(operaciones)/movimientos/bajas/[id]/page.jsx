@@ -1,19 +1,28 @@
-
-import { PageHeader } from '@/components/ui';
-import { useState } from "react";
+"use client";
+import { LoadingScreen, PageHeader } from '@/components/ui';
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Package, AlertCircle, Info } from "lucide-react";
 import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
 import { useApi } from "@/hooks/useApi";
 import { getAllStockLotes } from "@/services/apis/inventario";
-import { crearBaja } from "@/services/apis/movimientos";
+import { getBaja, actualizarBaja } from "@/services/apis/movimientos";
 
-export default function NuevaBajaPage() {
+export default function EditarBajaPage({ params }) {
+  const { id } = use(params);
   const router = useRouter();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [selectedLoteInfo, setSelectedLoteInfo] = useState(null);
 
-  // Cargar lotes con useApi
+  // Cargar detalles de la baja actual con useApi
+  const { data: bajaData, loading: loadingBaja } = useApi(getBaja, {
+    auto: true,
+    initialData: null,
+    args: [id],
+  });
+
+  // Cargar lotes de stock con useApi
   const { data: stockLotesData } = useApi(getAllStockLotes, {
     auto: true,
     initialData: [],
@@ -21,8 +30,8 @@ export default function NuevaBajaPage() {
 
   const stockLotes = stockLotesData || [];
 
-  // Envío de la baja con useApi
-  const { loading: isSubmitting, execute: submitBaja } = useApi(crearBaja, {
+  // Envío de la actualización de la baja con useApi
+  const { loading: isSubmitting, execute: submitBaja } = useApi(actualizarBaja, {
     auto: false,
   });
 
@@ -33,7 +42,45 @@ export default function NuevaBajaPage() {
     observaciones: "",
   });
 
-  const [selectedLoteInfo, setSelectedLoteInfo] = useState(null);
+  // Pre-poblar los datos una vez cargados
+  useEffect(() => {
+    if (bajaData) {
+      setBaja({
+        lote: bajaData.lote,
+        cantidad: bajaData.cantidad,
+        motivo: bajaData.motivo || "ROTURA",
+        observaciones: bajaData.observaciones || "",
+      });
+
+      if (stockLotes.length > 0) {
+        const lote = stockLotes.find((l) => l.id === bajaData.lote);
+        if (lote) {
+          setSelectedLoteInfo(lote);
+        } else {
+          // Fallback robusto en caso de que no esté en la lista activa de lotes
+          setSelectedLoteInfo({
+            id: bajaData.lote,
+            lote_codigo: bajaData.lote_codigo,
+            variante_nombre: bajaData.variante_nombre,
+            nombre_variante: bajaData.variante_especifica,
+            deposito_nombre: bajaData.deposito_nombre,
+            cantidad: bajaData.cantidad, // fallback stock
+            vencimiento: bajaData.lote_vencimiento,
+          });
+        }
+      } else {
+        setSelectedLoteInfo({
+          id: bajaData.lote,
+          lote_codigo: bajaData.lote_codigo,
+          variante_nombre: bajaData.variante_nombre,
+          nombre_variante: bajaData.variante_especifica,
+          deposito_nombre: bajaData.deposito_nombre,
+          cantidad: bajaData.cantidad,
+          vencimiento: bajaData.lote_vencimiento,
+        });
+      }
+    }
+  }, [bajaData, stockLotes]);
 
   const handleBajaChange = (e) => {
     const { name, value } = e.target;
@@ -42,9 +89,14 @@ export default function NuevaBajaPage() {
     if (name === "cantidad" && selectedLoteInfo) {
       const val = value === "" ? "" : parseInt(value, 10);
 
-      if (val !== "" && val > selectedLoteInfo.cantidad) {
+      // Si es el lote original de la baja, sumamos la cantidad ya asignada al stock disponible temporalmente para la validación
+      const stockDisponibleVal = selectedLoteInfo.id === bajaData?.lote
+        ? (selectedLoteInfo.cantidad || 0)
+        : (selectedLoteInfo.cantidad || 0);
+
+      if (val !== "" && val > stockDisponibleVal) {
         setErrorMsg(
-          `La cantidad no puede superar el stock disponible (${selectedLoteInfo.cantidad})`,
+          `La cantidad no puede superar el stock disponible (${stockDisponibleVal})`,
         );
       } else if (val !== "" && val <= 0) {
         setErrorMsg(`La cantidad debe ser mayor a 0.`);
@@ -72,7 +124,7 @@ export default function NuevaBajaPage() {
     }
 
     try {
-      await submitBaja({
+      await submitBaja(id, {
         lote: baja.lote,
         cantidad: Number(baja.cantidad),
         motivo: baja.motivo,
@@ -84,12 +136,39 @@ export default function NuevaBajaPage() {
     }
   };
 
+  if (loadingBaja) {
+    return <LoadingScreen message="Cargando detalles de la baja..." />;
+  }
+
+  if (!bajaData) {
+    return (
+      <div className="p-20 text-center font-black uppercase text-slate-400 h-screen flex items-center justify-center">
+        Baja no encontrada
+      </div>
+    );
+  }
+
+  // Prevenir edición de bajas que ya no están en BORRADOR
+  if (bajaData.estado !== "BORRADOR") {
+    return (
+      <div className="p-20 text-center font-black uppercase text-slate-400 h-screen flex items-center justify-center flex-col gap-4">
+        <span>Solo se pueden editar bajas en estado BORRADOR</span>
+        <button
+          onClick={() => router.push("/movimientos/bajas")}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-black py-2 px-6 rounded-xl transition-all uppercase text-[10px] tracking-widest"
+        >
+          Volver a Bajas
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       <PageHeader
         breadcrumbs={[
           { label: "Bajas de Inventario", href: "/movimientos/bajas" },
-          { label: "Nueva Baja" },
+          { label: `Editar Baja #${id}` },
         ]}
         subtitle={
           <>
@@ -106,7 +185,7 @@ export default function NuevaBajaPage() {
           onClick={handleSubmit}
           className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${!baja.lote || !!errorMsg || !baja.cantidad ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100"}`}
         >
-          {isSubmitting ? "GUARDANDO..." : "GUARDAR BAJA"}
+          {isSubmitting ? "GUARDANDO..." : "GUARDAR CAMBIOS"}
         </button>
       </PageHeader>
 
@@ -141,9 +220,11 @@ export default function NuevaBajaPage() {
                       </p>
                       <h4 className="font-black text-slate-900 text-lg">
                         {selectedLoteInfo.variante_nombre}{" "}
-                        <span className="text-slate-400 text-sm font-bold">
-                          | {selectedLoteInfo.nombre_variante}
-                        </span>
+                        {selectedLoteInfo.nombre_variante && (
+                          <span className="text-slate-400 text-sm font-bold">
+                            | {selectedLoteInfo.nombre_variante}
+                          </span>
+                        )}
                       </h4>
                       <p className="text-xs font-bold text-slate-500">
                         Depósito: {selectedLoteInfo.deposito_nombre}

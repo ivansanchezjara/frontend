@@ -1,9 +1,8 @@
-import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function Pagination({ count, pageSize, currentPage, onPageChange }) {
     const totalPages = Math.ceil(count / pageSize);
-    
+
     if (totalPages <= 1) return null;
 
     const getPages = () => {
@@ -11,7 +10,7 @@ export default function Pagination({ count, pageSize, currentPage, onPageChange 
         const maxVisible = 5;
         let start = Math.max(1, currentPage - 2);
         let end = Math.min(totalPages, start + maxVisible - 1);
-        
+
         if (end - start + 1 < maxVisible) {
             start = Math.max(1, end - maxVisible + 1);
         }

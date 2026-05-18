@@ -1,5 +1,5 @@
+import { PageHeader } from '@/components/ui';
 import Link from 'next/link';
-import PageHeader from '@/components/ui/PageHeader';
 import {
     ArrowDownCircle, ArrowUpCircle,
     RefreshCcw, Settings2, Truck, ArrowRight, Package

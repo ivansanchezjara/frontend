@@ -1,88 +1,34 @@
-// src/app/(sistema)/catalogo/nuevo/page.jsx
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { Check, FileJson, ImagePlus, Package, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+import AttributesEditor from "@/components/comercial/catalogo/AttributesEditor";
+import Field from "@/components/comercial/catalogo/Field";
+import Section from "@/components/comercial/catalogo/Section";
+import TagsInput from "@/components/comercial/catalogo/TagsInput";
+import Toggle from "@/components/comercial/catalogo/Toggle";
 import {
+  Badge,
+  Button,
+  FilerModal,
+  LoadingScreen,
+  PageHeader,
+  Text,
+} from "@/components/ui";
+import { useApi } from "@/hooks/useApi";
+import {
+  crearCategoria,
   crearProducto,
   getCategorias,
-  crearCategoria,
+  getFullImageUrl,
 } from "@/services/apis/catalogo.js";
-import { useApi } from "@/hooks/useApi";
-import LoadingScreen from "@/components/ui/LoadingScreen";
-import TagsInput from "@/components/comercial/catalogo/TagsInput";
-import FilerModal from "@/components/ui/FilerModal";
-import AttributesEditor from "@/components/comercial/catalogo/AttributesEditor";
-import { getFullImageUrl } from "@/services/apis/catalogo.js";
-import { FileJson } from "lucide-react";
-
-// ─── Mini componentes de formulario (idénticos a [slug]/page.jsx) ──
-
-function Section({ title, subtitle, children }) {
-  return (
-    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-slate-100">
-        <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest">
-          {title}
-        </h2>
-        {subtitle && (
-          <p className="text-[11px] text-slate-400 mt-0.5">{subtitle}</p>
-        )}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Field({ label, hint, children }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block">
-        {label}
-      </label>
-      {children}
-      {hint && <p className="text-[11px] text-slate-400">{hint}</p>}
-    </div>
-  );
-}
 
 const inputClass =
   "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm font-medium text-slate-700 placeholder:text-slate-400";
-
-function Toggle({ checked, onChange, label, description }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={`relative flex items-center gap-3 p-4 rounded-2xl border-2 transition-all cursor-pointer text-left w-full ${checked ? "border-emerald-400 bg-emerald-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}
-    >
-      <div
-        className={`w-10 h-6 rounded-full transition-all flex-shrink-0 relative ${checked ? "bg-emerald-500" : "bg-slate-300"}`}
-      >
-        <div
-          className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${checked ? "left-5" : "left-1"}`}
-        />
-      </div>
-      <div>
-        <p
-          className={`text-sm font-black ${checked ? "text-emerald-700" : "text-slate-600"}`}
-        >
-          {label}
-        </p>
-        {description && (
-          <p
-            className={`text-xs mt-0.5 ${checked ? "text-emerald-500" : "text-slate-400"}`}
-          >
-            {description}
-          </p>
-        )}
-      </div>
-    </button>
-  );
-}
-
-// ─── Página ───────────────────────────────────────────────────────
 
 const FORM_INICIAL = {
   nombre_general: "",
@@ -100,10 +46,18 @@ const FORM_INICIAL = {
   atributos: {},
 };
 
+function formatApiError(err, fallback) {
+  if (err && typeof err === "object" && !(err instanceof Error)) {
+    return Object.entries(err)
+      .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+      .join(" · ");
+  }
+
+  return err?.message || fallback;
+}
+
 export default function NuevoProductoPage() {
   const router = useRouter();
-
-  // Categorías con useApi
   const { data: categoriasData } = useApi(getCategorias, {
     auto: true,
     initialData: [],
@@ -112,29 +66,20 @@ export default function NuevoProductoPage() {
   const [formData, setFormData] = useState(FORM_INICIAL);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-
-  // Estado para nueva categoría
   const [isCreatingCat, setIsCreatingCat] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [savingCat, setSavingCat] = useState(false);
   const [categorias, setCategorias] = useState([]);
-
-  // Estado del modal Filer
   const [isFilerOpen, setIsFilerOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-
-  // Estado para Importación JSON
   const [isJSONModalOpen, setIsJSONModalOpen] = useState(false);
   const [jsonInput, setJsonInput] = useState("");
 
-  // Procesar categorías
   useEffect(() => {
-    if (categoriasData) {
-      const cats = Array.isArray(categoriasData)
-        ? categoriasData
-        : categoriasData?.results || [];
-      setCategorias(cats);
-    }
+    if (!categoriasData) return;
+    setCategorias(
+      Array.isArray(categoriasData) ? categoriasData : categoriasData?.results || [],
+    );
   }, [categoriasData]);
 
   const field = (key) => (value) => {
@@ -144,15 +89,16 @@ export default function NuevoProductoPage() {
 
   const handleCrearCategoriaConfirm = async () => {
     if (!newCatName.trim()) return;
+
     setSavingCat(true);
     try {
       const nuevaCat = await crearCategoria(newCatName.trim());
-      setCategorias([...categorias, nuevaCat]);
+      setCategorias((prev) => [...prev, nuevaCat]);
       field("categoria_id")(nuevaCat.id);
       setIsCreatingCat(false);
       setNewCatName("");
-    } catch (err) {
-      alert("Error al crear la categoría. Probá de nuevo.");
+    } catch {
+      setError("Error al crear la categoría. Probá de nuevo.");
     } finally {
       setSavingCat(false);
     }
@@ -168,27 +114,21 @@ export default function NuevoProductoPage() {
       });
       setIsJSONModalOpen(false);
       setJsonInput("");
-      alert("Datos cargados correctamente.");
-    } catch (err) {
-      alert("Error: El formato JSON no es válido.");
+      setError(null);
+    } catch {
+      setError("El formato JSON no es válido.");
     }
   };
 
   const handleSubmit = async () => {
     setSaving(true);
     setError(null);
+
     try {
       const nuevo = await crearProducto(formData);
-      // Redirigir a la ficha del producto recién creado
       router.push(`/catalogo/${nuevo.slug}`);
     } catch (err) {
-      const msg =
-        typeof err === "object"
-          ? Object.entries(err)
-            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
-            .join(" · ")
-          : "Error al crear el producto.";
-      setError(msg);
+      setError(formatApiError(err, "Error al crear el producto."));
       setSaving(false);
     }
   };
@@ -198,84 +138,82 @@ export default function NuevoProductoPage() {
     formData.general_code.trim() !== "" &&
     !saving;
 
-  // Esperar a que carguen las categorías
-  if (!categoriasData || categorias.length === 0)
+  if (!categoriasData || categorias.length === 0) {
     return <LoadingScreen texto="Preparando formulario..." />;
+  }
 
   return (
-    <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
-      {/* ── HEADER ── */}
-      <header className="bg-white border-b border-slate-200 px-10 py-4 shrink-0 z-10 flex items-center justify-between gap-6">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-            <Link
-              href="/catalogo"
-              className="hover:text-emerald-600 transition-colors"
-            >
-              Catálogo
-            </Link>
-            <span>/</span>
-            <span className="text-slate-700">Nuevo Producto</span>
-          </div>
-          <p className="text-[10px] font-bold text-emerald-600 uppercase mt-0.5">
-            Podés agregar variantes después de crear el producto.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0">
+    <div className="flex h-screen flex-1 flex-col overflow-hidden bg-slate-50/50">
+      <PageHeader
+        breadcrumbs={[
+          { label: "Catálogo", href: "/catalogo" },
+          { label: "Nuevo Producto" },
+        ]}
+        subtitle="Podés agregar variantes después de crear el producto."
+        subtitleClassName="text-emerald-600"
+      >
+        <div className="flex items-center gap-3">
           {error && (
-            <span
-              className="text-xs font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-full border border-red-200 max-w-xs truncate"
+            <Badge
+              variant="danger"
+              className="max-w-xs truncate border border-red-200"
               title={error}
             >
-              ✕ {error}
-            </span>
+              {error}
+            </Badge>
           )}
-          <button
+          <Button
+            variant="secondary"
             onClick={() => setIsJSONModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl font-bold text-xs hover:bg-blue-100 transition-all active:scale-95"
+            icon={FileJson}
+            className="text-xs text-blue-600"
           >
-            <FileJson size={14} /> CARGAR JSON
-          </button>
+            Cargar JSON
+          </Button>
           <Link
             href="/catalogo"
-            className="px-4 py-2.5 border border-slate-200 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-50 transition-colors"
+            className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-50"
           >
             Cancelar
           </Link>
-          <button
+          <Button
             id="btn-crear-producto"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-600 transition-all shadow-lg active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="bg-slate-900 text-xs hover:bg-emerald-600"
           >
             {saving ? "Creando..." : "Crear Producto"}
-          </button>
+          </Button>
         </div>
-      </header>
+      </PageHeader>
 
-      {/* ── CONTENIDO ── */}
-      <main className="flex-1 overflow-y-auto p-8 min-w-0">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* ── Datos generales ── */}
+      <main className="min-w-0 flex-1 overflow-y-auto p-8">
+        <div className="mx-auto max-w-4xl space-y-6">
           <Section title="Datos Generales">
-            <div className="p-6 grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-8">
-              {/* CAJA LATERAL DE IMAGEN PRINCIPAL */}
+            <div className="grid grid-cols-1 gap-8 p-6 lg:grid-cols-[200px_1fr]">
               <div className="flex flex-col items-center">
-                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2 w-full lg:text-left text-center">
+                <Text
+                  as="label"
+                  variant="label"
+                  className="mb-2 block w-full text-center text-[11px] text-slate-500 lg:text-left"
+                >
                   Imagen Principal
-                </label>
+                </Text>
                 <div className="w-full max-w-[180px] lg:max-w-none">
                   {selectedImage ? (
-                    <div className="relative group rounded-2xl overflow-hidden border border-slate-200 aspect-square bg-white">
-                      <img
+                    <div className="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                      <Image
                         src={getFullImageUrl(selectedImage.url)}
-                        className="w-full h-full object-contain"
+                        alt="Imagen principal seleccionada"
+                        fill
+                        unoptimized
+                        className="object-contain"
                       />
-                      <div className="absolute inset-x-0 bottom-0 p-3 flex justify-center bg-gradient-to-t from-slate-900/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-slate-900/80 to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100">
                         <button
+                          type="button"
                           onClick={() => setIsFilerOpen(true)}
-                          className="bg-white/90 backdrop-blur-sm text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm w-full hover:bg-emerald-50 transition-colors"
+                          className="w-full rounded-lg bg-white/90 px-3 py-1.5 text-[10px] font-bold text-slate-700 shadow-sm backdrop-blur-sm transition-colors hover:bg-emerald-50"
                         >
                           Cambiar
                         </button>
@@ -285,17 +223,16 @@ export default function NuevoProductoPage() {
                     <button
                       type="button"
                       onClick={() => setIsFilerOpen(true)}
-                      className="w-full aspect-square bg-slate-50 border-2 border-dashed border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all cursor-pointer text-slate-400 hover:text-emerald-500"
+                      className="flex aspect-square w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 text-slate-400 transition-all hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-500"
                     >
-                      <span className="text-3xl">🏜️</span>
-                      <span className="text-xs font-bold mt-1">Elegir</span>
+                      <ImagePlus size={32} />
+                      <span className="mt-1 text-xs font-bold">Elegir</span>
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* CAMPOS DE TEXTO */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
+              <div className="grid w-full grid-cols-1 gap-5 md:grid-cols-2">
                 <div className="md:col-span-2">
                   <Field label="Nombre del Producto *">
                     <input
@@ -340,16 +277,16 @@ export default function NuevoProductoPage() {
                         onChange={(e) => field("categoria_id")(e.target.value)}
                       >
                         <option value="">Sin categoría</option>
-                        {categorias.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.nombre}
+                        {categorias.map((categoria) => (
+                          <option key={categoria.id} value={categoria.id}>
+                            {categoria.nombre}
                           </option>
                         ))}
                       </select>
                       <button
                         type="button"
                         onClick={() => setIsCreatingCat(true)}
-                        className="px-3 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 font-bold text-xl rounded-xl border border-emerald-200"
+                        className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xl font-bold text-emerald-600 hover:bg-emerald-100"
                         title="Nueva Categoría"
                       >
                         +
@@ -364,17 +301,17 @@ export default function NuevoProductoPage() {
                         className={`${inputClass} flex-1`}
                         value={newCatName}
                         onChange={(e) => setNewCatName(e.target.value)}
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && handleCrearCategoriaConfirm()
-                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleCrearCategoriaConfirm();
+                        }}
                       />
                       <button
                         type="button"
                         disabled={savingCat}
                         onClick={handleCrearCategoriaConfirm}
-                        className="px-3 bg-emerald-600 text-white hover:bg-emerald-700 font-bold text-sm rounded-xl"
+                        className="rounded-xl bg-emerald-600 px-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
                       >
-                        ✓
+                        <Check size={16} />
                       </button>
                       <button
                         type="button"
@@ -382,9 +319,9 @@ export default function NuevoProductoPage() {
                           setIsCreatingCat(false);
                           setNewCatName("");
                         }}
-                        className="px-3 bg-slate-100 text-slate-500 hover:bg-slate-200 font-bold text-sm rounded-xl"
+                        className="rounded-xl bg-slate-100 px-3 text-sm font-bold text-slate-500 hover:bg-slate-200"
                       >
-                        ✕
+                        <X size={16} />
                       </button>
                     </div>
                   )}
@@ -415,14 +352,13 @@ export default function NuevoProductoPage() {
             </div>
           </Section>
 
-          {/* ── Visibilidad ── */}
           <Section title="Visibilidad y Atributos">
             <div className="p-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-xs font-medium text-blue-700 mb-4">
-                💡 El slug URL se genera automáticamente desde el nombre del
+              <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-medium text-blue-700">
+                El slug URL se genera automáticamente desde el nombre del
                 producto.
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Toggle
                   checked={formData.featured}
                   onChange={field("featured")}
@@ -441,10 +377,14 @@ export default function NuevoProductoPage() {
                 />
               </div>
 
-              <div className="mt-6 pt-6 border-t border-slate-100">
-                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-4 italic">
-                  ⚙️ Especificaciones Técnicas (JSON)
-                </label>
+              <div className="mt-6 border-t border-slate-100 pt-6">
+                <Text
+                  as="label"
+                  variant="label"
+                  className="mb-4 block text-slate-500"
+                >
+                  Especificaciones Técnicas (JSON)
+                </Text>
                 <AttributesEditor
                   attributes={formData.atributos}
                   onChange={field("atributos")}
@@ -453,9 +393,8 @@ export default function NuevoProductoPage() {
             </div>
           </Section>
 
-          {/* ── Descripción ── */}
           <Section title="Descripción y Tags">
-            <div className="p-6 space-y-5">
+            <div className="space-y-5 p-6">
               <Field
                 label="Descripción Corta"
                 hint={`${formData.description.length}/500 caracteres`}
@@ -489,21 +428,19 @@ export default function NuevoProductoPage() {
             </div>
           </Section>
 
-          {/* ── Info variantes ── */}
-          <div className="bg-slate-100 border border-slate-200 rounded-2xl px-6 py-5 flex items-start gap-4">
-            <span className="text-2xl">📦</span>
+          <aside className="flex items-start gap-4 rounded-2xl border border-slate-200 bg-slate-100 px-6 py-5">
+            <Package className="mt-0.5 shrink-0 text-slate-400" size={24} />
             <div>
-              <p className="text-sm font-black text-slate-700">
+              <Text className="font-black text-slate-700">
                 ¿Dónde agrego las variantes?
-              </p>
-              <p className="text-xs text-slate-500 mt-1">
-                Las variantes (tallas, versiones, SKUs) se agregan{" "}
-                <strong>después de crear el producto</strong>, desde la ficha
-                individual. Al hacer clic en <em>"Crear Producto"</em> vas a ser
-                redirigido directamente ahí.
-              </p>
+              </Text>
+              <Text variant="bodySm" className="mt-1 text-xs">
+                Las variantes se agregan después de crear el producto, desde la
+                ficha individual. Al crear el producto vas a ser redirigido
+                directamente ahí.
+              </Text>
             </div>
-          </div>
+          </aside>
         </div>
       </main>
 
@@ -518,42 +455,39 @@ export default function NuevoProductoPage() {
         }}
       />
 
-      {/* Modal de Importación JSON */}
       {isJSONModalOpen && (
-        <div className="fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white max-w-2xl w-full rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-slate-100 bg-slate-50">
-              <h3 className="text-lg font-black text-slate-900">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+          <div className="flex w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="border-b border-slate-100 bg-slate-50 p-6">
+              <Text as="h3" variant="body" className="font-black text-slate-900">
                 Importar desde JSON
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">
+              </Text>
+              <Text variant="bodySm" className="mt-1 text-xs">
                 Pegá el objeto JSON para rellenar los campos automáticamente.
-              </p>
+              </Text>
             </div>
             <div className="p-6">
               <textarea
-                className="w-full h-64 bg-slate-50 border border-slate-200 rounded-2xl p-4 font-mono text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
-                placeholder='{ "nombre_general": "Producto Ejemplo", "brand": "Marca", ... }'
+                className="h-64 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                placeholder='{ "nombre_general": "Producto Ejemplo", "brand": "Marca" }'
                 value={jsonInput}
                 onChange={(e) => setJsonInput(e.target.value)}
               />
             </div>
-            <div className="px-6 pb-6 flex gap-3">
-              <button
+            <div className="flex gap-3 px-6 pb-6">
+              <Button
+                variant="outline"
+                className="flex-1"
                 onClick={() => {
                   setIsJSONModalOpen(false);
                   setJsonInput("");
                 }}
-                className="flex-1 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-colors"
               >
                 Cancelar
-              </button>
-              <button
-                onClick={handleJSONImport}
-                className="flex-1 py-2.5 bg-slate-900 text-white font-bold rounded-xl text-sm hover:bg-blue-600 transition-colors"
-              >
+              </Button>
+              <Button className="flex-1 bg-slate-900" onClick={handleJSONImport}>
                 Cargar Datos
-              </button>
+              </Button>
             </div>
           </div>
         </div>

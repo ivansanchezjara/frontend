@@ -1,29 +1,53 @@
-// src/app/(sistema)/catalogo/[slug]/page.jsx
 "use client";
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { SearchX } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
 
+import VarianteModal from "@/components/comercial/catalogo/Modals/VarianteModal";
+import DatosGeneralesSection from "@/components/comercial/catalogo/DatosGeneralesSection";
+import DescripcionSection from "@/components/comercial/catalogo/DescripcionSection";
+import ProductoHeader from "@/components/comercial/catalogo/ProductoHeader";
+import VariantesSection from "@/components/comercial/catalogo/VariantesSection";
+import VisibilidadSection from "@/components/comercial/catalogo/VisibilidadSection";
+import ZonaPeligroSection from "@/components/comercial/catalogo/ZonaPeligroSection";
+import { FilerModal, Heading, LoadingScreen, Text, useConfirm } from "@/components/ui";
+import { useApi } from "@/hooks/useApi";
 import {
-  getProducto,
-  getCategorias,
   actualizarProducto,
   eliminarProducto,
   eliminarVariante,
+  getCategorias,
+  getProducto,
 } from "@/services/apis/catalogo.js";
 
-import { useApi } from "@/hooks/useApi";
-import { useConfirm } from "@/components/ui/ConfirmContext";
-import LoadingScreen from "@/components/ui/LoadingScreen";
-import FilerModal from "@/components/ui/FilerModal";
-import VarianteModal from "@/components/comercial/catalogo/Modals/VarianteModal";
+function getInitialFormData(producto) {
+  return {
+    nombre_general: producto.nombre_general || "",
+    general_code: producto.general_code || "",
+    brand: producto.brand || "",
+    categoria_id: producto.categoria?.id ?? "",
+    sub_category: producto.sub_category || "",
+    professional_area: producto.professional_area || "",
+    description: producto.description || "",
+    long_description: producto.long_description || "",
+    featured: producto.featured ?? false,
+    is_published: producto.is_published ?? false,
+    tags: producto.tags || [],
+    imagen_principal: producto.imagen_principal || null,
+    atributos: producto.atributos || {},
+  };
+}
 
-import ProductoHeader from "@/components/comercial/catalogo/ProductoHeader";
-import DatosGeneralesSection from "@/components/comercial/catalogo/DatosGeneralesSection";
-import VisibilidadSection from "@/components/comercial/catalogo/VisibilidadSection";
-import DescripcionSection from "@/components/comercial/catalogo/DescripcionSection";
-import VariantesSection from "@/components/comercial/catalogo/VariantesSection";
-import ZonaPeligroSection from "@/components/comercial/catalogo/ZonaPeligroSection";
+function formatSaveError(err) {
+  if (err && typeof err === "object" && !(err instanceof Error)) {
+    return Object.entries(err)
+      .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+      .join(" · ");
+  }
+
+  return err?.message || "Error al guardar.";
+}
 
 export default function FichaProductoPage() {
   const { slug } = useParams();
@@ -31,24 +55,23 @@ export default function FichaProductoPage() {
   const { alert: showAlert, danger } = useConfirm();
 
   const [notFound, setNotFound] = useState(false);
-
-  // Formulario
   const [formData, setFormData] = useState(null);
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  // Variantes
-  const [varianteModal, setVarianteModal] = useState(null); // null | 'new' | {variante}
+  const [varianteModal, setVarianteModal] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [isDeletingProd, setIsDeletingProd] = useState(false);
-
-  // Estado para Media Manager (Filer) del Producto
   const [isFilerOpen, setIsFilerOpen] = useState(false);
   const [selectedMainImg, setSelectedMainImg] = useState(null);
+  const [producto, setProducto] = useState(null);
+  const [categorias, setCategorias] = useState([]);
 
-  // ── Carga inicial con useApi ──
+  const handleProductoError = useCallback((err) => {
+    if (err.status === 404) setNotFound(true);
+  }, []);
+
   const {
     data: productoData,
     loading,
@@ -57,9 +80,7 @@ export default function FichaProductoPage() {
     auto: false,
     initialData: null,
     args: [slug],
-    onError: (err) => {
-      if (err.status === 404) setNotFound(true);
-    },
+    onError: handleProductoError,
   });
 
   const { data: categoriasData } = useApi(getCategorias, {
@@ -67,59 +88,36 @@ export default function FichaProductoPage() {
     initialData: [],
   });
 
-  // Estado para producto y categorías (derivados de useApi)
-  const [producto, setProducto] = useState(null);
-  const [categorias, setCategorias] = useState([]);
-
-  // Procesar datos y efectos
   useEffect(() => {
     if (slug) {
       setNotFound(false);
       refetchProducto();
     }
-  }, [slug]);
+  }, [slug, refetchProducto]);
 
   useEffect(() => {
-    if (productoData) {
-      setProducto(productoData);
-      setNotFound(false);
+    if (!productoData) return;
 
-      // Solo sobreescribimos formData si no ha sido llenado aún
-      if (!formData || !formData.nombre_general) {
-        setFormData({
-          nombre_general: productoData.nombre_general || "",
-          general_code: productoData.general_code || "",
-          brand: productoData.brand || "",
-          categoria_id: productoData.categoria?.id ?? "",
-          sub_category: productoData.sub_category || "",
-          professional_area: productoData.professional_area || "",
-          description: productoData.description || "",
-          long_description: productoData.long_description || "",
-          featured: productoData.featured ?? false,
-          is_published: productoData.is_published ?? false,
-          tags: productoData.tags || [],
-          imagen_principal: productoData.imagen_principal || null,
-          atributos: productoData.atributos || {},
-        });
-      }
+    setProducto(productoData);
+    setNotFound(false);
 
-      if (productoData.imagen_principal_url) {
-        setSelectedMainImg({ url: productoData.imagen_principal_url });
-      }
+    setFormData((current) => {
+      if (current?.nombre_general) return current;
+      return getInitialFormData(productoData);
+    });
+
+    if (productoData.imagen_principal_url) {
+      setSelectedMainImg({ url: productoData.imagen_principal_url });
     }
   }, [productoData]);
 
   useEffect(() => {
-    if (categoriasData) {
-      setCategorias(
-        Array.isArray(categoriasData)
-          ? categoriasData
-          : categoriasData.results || [],
-      );
-    }
+    if (!categoriasData) return;
+    setCategorias(
+      Array.isArray(categoriasData) ? categoriasData : categoriasData.results || [],
+    );
   }, [categoriasData]);
 
-  // ── Helpers de formulario ──
   const field = (key) => (value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
     setIsDirty(true);
@@ -135,6 +133,7 @@ export default function FichaProductoPage() {
   const handleSave = async () => {
     setSaving(true);
     setSaveError(null);
+
     try {
       const updated = await actualizarProducto(slug, formData);
       setProducto(updated);
@@ -142,13 +141,7 @@ export default function FichaProductoPage() {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
-      const msg =
-        typeof err === "object"
-          ? Object.entries(err)
-            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
-            .join(" · ")
-          : "Error al guardar.";
-      setSaveError(msg);
+      setSaveError(formatSaveError(err));
     } finally {
       setSaving(false);
     }
@@ -159,7 +152,9 @@ export default function FichaProductoPage() {
       ...prev,
       variants: isNew
         ? [...prev.variants, guardada]
-        : prev.variants.map((v) => (v.id === guardada.id ? guardada : v)),
+        : prev.variants.map((variant) =>
+          variant.id === guardada.id ? guardada : variant,
+        ),
     }));
     setVarianteModal(null);
   };
@@ -168,8 +163,9 @@ export default function FichaProductoPage() {
     const ok = await danger(
       "¿Desactivar esta variante? Dejará de estar visible en el catálogo e inventario.",
       "Desactivar Variante",
-      { confirmText: "Desactivar" }
+      { confirmText: "Desactivar" },
     );
+
     if (!ok) return;
 
     setDeletingId(id);
@@ -177,7 +173,7 @@ export default function FichaProductoPage() {
       await eliminarVariante(id);
       setProducto((prev) => ({
         ...prev,
-        variants: prev.variants.filter((v) => v.id !== id),
+        variants: prev.variants.filter((variant) => variant.id !== id),
       }));
     } catch (err) {
       const msg = err?.detail || "No se pudo desactivar la variante.";
@@ -191,8 +187,9 @@ export default function FichaProductoPage() {
     const ok = await danger(
       `¿Estás seguro de que deseas desactivar el producto "${producto?.nombre_general}"?\n\nEsto archivará el producto y todas sus variantes.`,
       "Desactivar Producto",
-      { confirmText: "Desactivar" }
+      { confirmText: "Desactivar" },
     );
+
     if (!ok) return;
 
     setIsDeletingProd(true);
@@ -207,41 +204,40 @@ export default function FichaProductoPage() {
     }
   };
 
-  // ── Estados de carga / error ──
   if (loading) return <LoadingScreen texto="Cargando ficha del producto..." />;
 
-  if (notFound)
+  if (notFound) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-5xl mb-4">🔍</p>
-          <h2 className="text-xl font-black text-slate-900">
-            Producto no encontrado
-          </h2>
-          <p className="text-slate-400 mt-2 text-sm">
-            El producto "{slug}" no existe en el catálogo.
-          </p>
+      <main className="flex flex-1 items-center justify-center p-8">
+        <div className="max-w-sm text-center">
+          <div className="mx-auto mb-6 inline-flex rounded-3xl bg-slate-900 p-4 text-white shadow-2xl shadow-emerald-500/20">
+            <SearchX size={44} strokeWidth={2.5} />
+          </div>
+          <Heading level={3}>Producto no encontrado</Heading>
+          <Text className="mt-2">
+            El producto &quot;{slug}&quot; no existe en el catálogo.
+          </Text>
           <Link
             href="/catalogo"
-            className="mt-6 inline-block bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-emerald-600 transition-colors"
+            className="mt-6 inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition-colors hover:bg-emerald-600 active:scale-[0.98]"
           >
-            ← Volver al Catálogo
+            Volver al Catálogo
           </Link>
         </div>
-      </div>
+      </main>
     );
+  }
 
   if (!producto || !formData) return null;
 
   return (
     <>
-      {/* Modal variante */}
       {varianteModal !== null && (
         <VarianteModal
           variante={
             varianteModal === "new"
               ? null
-              : producto.variants.find((v) => v.id === varianteModal.id) ||
+              : producto.variants.find((variant) => variant.id === varianteModal.id) ||
               varianteModal
           }
           productoId={producto.id}
@@ -251,8 +247,7 @@ export default function FichaProductoPage() {
         />
       )}
 
-      <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
-        {/* ── HEADER ── */}
+      <div className="flex h-screen flex-1 flex-col overflow-hidden bg-slate-50/50">
         <ProductoHeader
           producto={producto}
           isDirty={isDirty}
@@ -262,10 +257,8 @@ export default function FichaProductoPage() {
           onSave={handleSave}
         />
 
-        {/* ── CONTENIDO ── */}
-        <main className="flex-1 overflow-y-auto p-8 min-w-0">
-          <div className="max-w-4xl mx-auto space-y-6">
-            {/* ── Datos generales ── */}
+        <main className="min-w-0 flex-1 overflow-y-auto p-8">
+          <div className="mx-auto max-w-4xl space-y-6">
             <DatosGeneralesSection
               formData={formData}
               producto={producto}
@@ -276,22 +269,15 @@ export default function FichaProductoPage() {
               onOpenFiler={() => setIsFilerOpen(true)}
             />
 
-            {/* ── Visibilidad ── */}
             <VisibilidadSection formData={formData} onChange={field} />
-
-            {/* ── Descripción ── */}
             <DescripcionSection formData={formData} onChange={field} />
-
-            {/* ── Variantes ── */}
             <VariantesSection
               variants={producto.variants || []}
               onNew={() => setVarianteModal("new")}
-              onEdit={(v) => setVarianteModal(v)}
+              onEdit={(variant) => setVarianteModal(variant)}
               onDelete={handleDeleteVariante}
               deletingId={deletingId}
             />
-
-            {/* ── Zona de Peligro ── */}
             <ZonaPeligroSection
               producto={producto}
               isDeletingProd={isDeletingProd}

@@ -1,9 +1,8 @@
 "use client";
+import { PageHeader, ResizableHeader } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Search, Plus, Trash2, Check, CheckCircle2, Download, Upload, Tag, Clock, Package } from 'lucide-react';
-import PageHeader from '@/components/ui/PageHeader';
-import ResizableHeader from '@/components/ui/ResizableHeader';
 import { useApi } from '@/hooks/useApi';
 import { getDepositos, getIngreso, actualizarIngreso } from '@/services/apis/movimientos';
 import { getVariantes } from '@/services/apis/catalogo';
@@ -42,7 +41,7 @@ export default function EditarIngresoPage() {
                     fetchVariantes({ limit: 5000 }),
                     fetchIngreso(id)
                 ]);
-                
+
                 if (dDep) setDepositos(dDep.results || dDep);
                 if (dVar) setVariantes(dVar.results || dVar);
 
@@ -64,10 +63,10 @@ export default function EditarIngresoPage() {
                         nuevo_precio_4_intercompany: it.nuevo_precio_4_intercompany
                     })));
                 }
-            } catch (err) { 
-                setErrorMsg("Error cargando los datos."); 
-            } finally { 
-                setIsLoading(false); 
+            } catch (err) {
+                setErrorMsg("Error cargando los datos.");
+            } finally {
+                setIsLoading(false);
             }
         }
         loadAll();
@@ -211,12 +210,12 @@ export default function EditarIngresoPage() {
         e.preventDefault();
         if (errorMsg || items.length === 0) return;
         if (!ingreso.deposito) { alert("Debe seleccionar un depósito."); return; }
-        
+
         try {
             const payload = { ...ingreso, items: items.map(it => ({ ...it, vencimiento: it.vencimiento === '' ? null : it.vencimiento })) };
             await updateIngresoAction(id, payload);
             router.push('/movimientos/ingresos');
-        } catch (error) { 
+        } catch (error) {
             // useErrorHandler handles notifications 
         }
     };

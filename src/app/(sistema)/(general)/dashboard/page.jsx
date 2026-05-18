@@ -1,95 +1,141 @@
 "use client";
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { getUser } from '@/services/apis/auth.js';
-import { modulosActivos, modulosFuturos, familyStyles, ordenFamilias } from '@/config/navigation';
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+
+import { Badge, Heading, Text } from "@/components/ui";
+import {
+  familyStyles,
+  modulosActivos,
+  modulosFuturos,
+  ordenFamilias,
+} from "@/config/navigation";
+import { getUser } from "@/services/apis/auth.js";
+
+function userHasPermission(user, item) {
+  if (!item.roles || item.roles.length === 0) return true;
+  if (user?.is_superuser) return true;
+
+  const userGroups = user?.groups || [];
+
+  return item.roles.some((role) => {
+    if (typeof userGroups[0] === "string") {
+      return userGroups.includes(role);
+    }
+
+    if (typeof userGroups[0] === "object") {
+      return userGroups.some((group) => group.name === role);
+    }
+
+    return false;
+  });
+}
+
+function ModuleCard({ module, style }) {
+  return (
+    <Link href={module.href} className="group h-full">
+      <article
+        className={`flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md ${style.borderHover}`}
+      >
+        <span
+          className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl text-2xl transition-colors group-hover:text-white ${style.bg} ${style.text} ${style.groupHoverBg}`}
+        >
+          {module.icon}
+        </span>
+        <Heading level={5} className="text-sm uppercase">
+          {module.title}
+        </Heading>
+        <Text variant="bodySm" className="mt-1 text-[11px]">
+          {module.desc}
+        </Text>
+      </article>
+    </Link>
+  );
+}
+
+function FutureModuleCard({ module }) {
+  return (
+    <article className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 opacity-60 grayscale">
+      <span className="mb-4 text-2xl">{module.icon}</span>
+      <Heading level={5} className="text-sm uppercase text-slate-700">
+        {module.title}
+      </Heading>
+      <Text variant="bodySm" className="mt-1 text-[11px]">
+        {module.desc}
+      </Text>
+      <Badge className="absolute right-4 top-4 rounded-md bg-slate-200 px-2 py-1 text-[9px] text-slate-500">
+        Pronto
+      </Badge>
+    </article>
+  );
+}
 
 export default function DashboardPage() {
-    const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState(null);
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+  useEffect(() => {
+    setUser(getUser());
+  }, []);
 
-    const user = mounted ? getUser() : null;
-    const nombreUsuario = user
-        ? (user.first_name && user.last_name
-            ? `${user.first_name} ${user.last_name}`
-            : user.first_name || user.username || 'Usuario')
-        : 'Usuario';
+  const nombreUsuario = user
+    ? user.first_name && user.last_name
+      ? `${user.first_name} ${user.last_name}`
+      : user.first_name || user.username || "Usuario"
+    : "Usuario";
 
-    return (
-        <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-10">
-            {/* Header de Bienvenida */}
-            <div className="animate-in fade-in slide-in-from-left-4 duration-700">
-                <h3 className="text-3xl font-black text-slate-900 tracking-tight">
-                    Bienvenido, <span className="text-blue-600">{nombreUsuario}</span>
-                </h3>
-                <p className="text-slate-500 font-medium mt-1">Panel de control del sistema.</p>
-            </div>
+  return (
+    <main className="mx-auto max-w-7xl space-y-10 p-6 md:p-10">
+      <header className="animate-in fade-in slide-in-from-left-4 duration-700">
+        <Heading level={2}>
+          Bienvenido, <span className="text-blue-600">{nombreUsuario}</span>
+        </Heading>
+        <Text className="mt-1">Panel de control del sistema.</Text>
+      </header>
 
-            {/* Renderizado dinámico por Familias */}
-            <div className="space-y-12">
-                {ordenFamilias.map((colorKey) => {
-                    // 👇 2. Usamos familyStyles que importamos arriba
-                    const style = familyStyles[colorKey];
+      <div className="space-y-12">
+        {ordenFamilias.map((colorKey) => {
+          const style = familyStyles[colorKey];
+          const activos = modulosActivos.filter(
+            (module) =>
+              module.color === colorKey && userHasPermission(user, module),
+          );
+          const futuros = modulosFuturos.filter(
+            (module) =>
+              module.color === colorKey && userHasPermission(user, module),
+          );
 
-                    // Filtramos qué módulos pertenecen a esta familia y si el usuario tiene permiso
-                    const hasPermission = (item) => {
-                        if (!item.roles || item.roles.length === 0) return true;
-                        if (user?.is_superuser) return true;
-                        const userGroups = user?.groups || [];
-                        return item.roles.some(role => userGroups.includes(role));
-                    };
+          if (activos.length === 0 && futuros.length === 0) return null;
 
-                    const activos = modulosActivos.filter(m => m.color === colorKey && hasPermission(m));
-                    const futuros = modulosFuturos.filter(m => m.color === colorKey && hasPermission(m));
+          return (
+            <section key={colorKey} className="space-y-6">
+              <div className="flex items-center gap-3">
+                <Text
+                  as="h3"
+                  variant="caption"
+                  className={`${style.text} whitespace-nowrap`}
+                >
+                  {style.label}
+                </Text>
+                <span className={`h-px flex-1 ${style.line}`} />
+              </div>
 
-                    // Si no hay ningún módulo en esta familia después de filtrar, no renderizamos la sección
-                    if (activos.length === 0 && futuros.length === 0) return null;
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {activos.map((module) => (
+                  <ModuleCard
+                    key={module.href}
+                    module={module}
+                    style={style}
+                  />
+                ))}
 
-                    return (
-                        <div key={colorKey} className="space-y-6">
-                            {/* Divisoria de la Familia */}
-                            <div className="flex items-center gap-3">
-                                <h4 className={`text-[10px] font-black ${style.text} uppercase tracking-[0.3em]`}>
-                                    {style.label}
-                                </h4>
-                                <span className={`h-px flex-1 ${style.line}`}></span>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {/* 1. Renderizamos los Activos primero */}
-                                {activos.map((mod) => (
-                                    <Link key={mod.href} href={mod.href} className="group h-full">
-                                        <div className={`bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full ${style.borderHover}`}>
-                                            <span className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 group-hover:text-white transition-colors text-2xl ${style.bg} ${style.text} ${style.groupHoverBg}`}>
-                                                {mod.icon}
-                                            </span>
-                                            <h5 className="font-black text-slate-900 text-sm uppercase tracking-tight">{mod.title}</h5>
-                                            <p className="text-slate-500 text-[11px] mt-1 font-medium">{mod.desc}</p>
-                                        </div>
-                                    </Link>
-                                ))}
-
-                                {/* 2. Renderizamos los Futuros de esta misma familia */}
-                                {futuros.map((mod) => (
-                                    <div key={mod.title} className="bg-slate-50/50 p-6 rounded-2xl border border-slate-200 border-dashed flex flex-col grayscale opacity-60 h-full relative overflow-hidden">
-                                        <span className="text-2xl mb-4">{mod.icon}</span>
-                                        <h5 className="font-black text-slate-700 text-sm uppercase tracking-tight">{mod.title}</h5>
-                                        <p className="text-slate-500 text-[11px] mt-1 font-medium">{mod.desc}</p>
-
-                                        {/* Badge de Próximamente */}
-                                        <div className="absolute top-4 right-4 bg-slate-200 text-slate-500 text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
-                                            Pronto
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
+                {futuros.map((module) => (
+                  <FutureModuleCard key={module.title} module={module} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </main>
+  );
 }

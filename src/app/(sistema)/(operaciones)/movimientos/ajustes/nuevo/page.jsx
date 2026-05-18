@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from '@/components/ui';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -9,7 +10,6 @@ import {
   ArrowDownRight,
   MapPin,
 } from "lucide-react";
-import PageHeader from "@/components/ui/PageHeader";
 import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
 import { useApi } from "@/hooks/useApi";
 import { getStockLotes } from "@/services/apis/inventario";
@@ -71,12 +71,12 @@ export default function NuevoAjusteInventarioPage() {
       return prev.map((lote) =>
         lote.id === loteId
           ? {
-              ...lote,
-              nuevo_lote_codigo: destino
-                ? destino.lote_codigo
-                : lote.nuevo_lote_codigo,
-              destino_lote_id: destino ? destino.id : null,
-            }
+            ...lote,
+            nuevo_lote_codigo: destino
+              ? destino.lote_codigo
+              : lote.nuevo_lote_codigo,
+            destino_lote_id: destino ? destino.id : null,
+          }
           : lote,
       );
     });
@@ -231,14 +231,13 @@ export default function NuevoAjusteInventarioPage() {
             !totalsMatch
           }
           onClick={handleSubmit}
-          className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${
-            isSubmitting ||
+          className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${isSubmitting ||
             !selectedVarianteInfo ||
             !hasAnyChange ||
             !totalsMatch
-              ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
-              : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100"
-          }`}
+            ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+            : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100"
+            }`}
         >
           {isSubmitting ? "GUARDANDO..." : "GUARDAR AJUSTE"}
         </button>
@@ -336,11 +335,10 @@ export default function NuevoAjusteInventarioPage() {
                 </p>
               </div>
               <div
-                className={`p-6 rounded-[24px] border shadow-sm text-center flex flex-col justify-center transition-all ${
-                  totalsMatch
-                    ? "bg-emerald-50 border-emerald-100 text-emerald-700"
-                    : "bg-rose-50 border-rose-100 text-rose-700"
-                }`}
+                className={`p-6 rounded-[24px] border shadow-sm text-center flex flex-col justify-center transition-all ${totalsMatch
+                  ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                  : "bg-rose-50 border-rose-100 text-rose-700"
+                  }`}
               >
                 <p className="text-[11px] font-black uppercase tracking-widest mb-1">
                   {totalsMatch ? "✓ Stock Balanceado" : "⚠️ Desbalance"}
@@ -471,7 +469,7 @@ export default function NuevoAjusteInventarioPage() {
                         {/* ABAJO: DESTINO DE LA DIFERENCIA */}
                         {lote.nueva_cantidad !== "" &&
                           parseInt(lote.nueva_cantidad, 10) <
-                            lote.cantidad_actual && (
+                          lote.cantidad_actual && (
                             <div className="p-6 bg-slate-50/50 space-y-4">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
@@ -505,11 +503,10 @@ export default function NuevoAjusteInventarioPage() {
                                           other.id,
                                         )
                                       }
-                                      className={`p-3 rounded-2xl border text-left transition-all ${
-                                        lote.destino_lote_id === other.id
-                                          ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-100"
-                                          : "border-slate-200 bg-white hover:border-slate-400"
-                                      }`}
+                                      className={`p-3 rounded-2xl border text-left transition-all ${lote.destino_lote_id === other.id
+                                        ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-100"
+                                        : "border-slate-200 bg-white hover:border-slate-400"
+                                        }`}
                                     >
                                       <div className="flex items-center justify-between mb-1">
                                         <p className="text-[10px] font-black text-slate-900 truncate">
@@ -529,12 +526,11 @@ export default function NuevoAjusteInventarioPage() {
                                   onClick={() =>
                                     handleLoteDestinoChange(lote.id, null)
                                   }
-                                  className={`p-3 rounded-2xl border text-left transition-all group cursor-pointer ${
-                                    lote.destino_lote_id === null &&
+                                  className={`p-3 rounded-2xl border text-left transition-all group cursor-pointer ${lote.destino_lote_id === null &&
                                     lote.nuevo_lote_codigo
-                                      ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-100"
-                                      : "border-slate-200 bg-white border-dashed hover:border-blue-400"
-                                  }`}
+                                    ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-100"
+                                    : "border-slate-200 bg-white border-dashed hover:border-blue-400"
+                                    }`}
                                 >
                                   <div className="flex items-center gap-2 mb-1">
                                     <span

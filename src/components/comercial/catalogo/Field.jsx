@@ -1,11 +1,17 @@
+import { Text } from "@/components/ui";
+
 export default function Field({ label, hint, children }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block">
+      <Text as="label" variant="label" className="block text-[11px] text-slate-500">
         {label}
-      </label>
+      </Text>
       {children}
-      {hint && <p className="text-[11px] text-slate-400">{hint}</p>}
+      {hint && (
+        <Text variant="bodySm" className="text-[11px] text-slate-400">
+          {hint}
+        </Text>
+      )}
     </div>
   );
 }

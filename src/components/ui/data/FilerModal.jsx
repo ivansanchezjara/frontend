@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { getFolders, getImages, uploadImage, createFolder } from '@/services/apis/media.js';
 import { getFullImageUrl } from '@/services/apis/catalogo.js';
 import { Folder, Image as ImageIcon, Upload, ChevronRight, Home, Link as LinkIcon, Plus, Search } from 'lucide-react';
-import Pagination from '@/components/ui/Pagination';
+import Pagination from './Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
 
 export default function FilerModal({ isOpen, onClose, onSelectImage, initialSearch = '' }) {

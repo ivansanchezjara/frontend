@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { getProductos } from "@/services/apis/catalogo.js";
 import { useApi } from "@/hooks/useApi";
-import { Search, Package, Check } from "lucide-react";
+import { Package, Check } from "lucide-react";
+import { Button, Heading, Text, SearchBar } from "@/components/ui";
 
 export default function BulkAssignModal({
   isOpen,
@@ -68,13 +69,13 @@ export default function BulkAssignModal({
     <div className="fixed inset-0 z-[110] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white max-w-lg w-full rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
         <div className="p-6 border-b border-slate-100 bg-slate-50">
-          <h3 className="text-lg font-black text-slate-900">
+          <Heading level={4}>
             Asignación de Medios
-          </h3>
-          <p className="text-xs text-slate-500 mt-1">
-            Vas a asignar <strong>{selectedCount}</strong>{" "}
+          </Heading>
+          <Text variant="bodySm" className="mt-1">
+            Vas a asignar <strong className="font-semibold text-slate-700">{selectedCount}</strong>{" "}
             {selectedCount === 1 ? "imagen" : "imágenes"} al catálogo.
-          </p>
+          </Text>
         </div>
 
         {/* Selector de tipo de asignación */}
@@ -84,30 +85,24 @@ export default function BulkAssignModal({
             { id: "variant_main", label: "Imagen SKU" },
             { id: "product_main", label: "Principal Producto" },
           ].map((type) => (
-            <button
+            <Button
               key={type.id}
               onClick={() => setTargetType(type.id)}
-              className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${targetType === type.id ? "bg-blue-600 border-blue-600 text-white shadow-lg" : "bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100"}`}
+              variant={targetType === type.id ? "primary" : "secondary"}
+              size="sm"
+              className="flex-1"
             >
               {type.label}
-            </button>
+            </Button>
           ))}
         </div>
 
         <div className="p-4 border-b border-slate-100">
-          <div className="relative">
-            <Search
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              type="text"
-              placeholder="Buscar producto o SKU..."
-              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Buscar producto o SKU..."
+          />
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
@@ -150,9 +145,12 @@ export default function BulkAssignModal({
                     </button>
                   ) : (
                     <>
-                      <div className="px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50 rounded-lg">
+                      <Text
+                        variant="label"
+                        className="px-3 py-1.5 bg-slate-50/50 rounded-lg"
+                      >
                         {p.nombre_general}
-                      </div>
+                      </Text>
                       {p.variants.map((v) => (
                         <button
                           key={v.id}
@@ -193,20 +191,22 @@ export default function BulkAssignModal({
         </div>
 
         <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
-          <button
+          <Button
             onClick={onClose}
-            className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-100 transition-colors"
+            variant="outline"
+            className="flex-1"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             disabled={selectedIds.length === 0}
             onClick={handleAssignClick}
-            className="flex-1 py-2.5 bg-slate-900 text-white font-bold rounded-xl text-sm hover:bg-blue-600 transition-colors disabled:opacity-50"
+            variant="primary"
+            className="flex-1"
           >
             Asignar a {selectedIds.length}{" "}
             {selectedIds.length === 1 ? "elemento" : "elementos"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

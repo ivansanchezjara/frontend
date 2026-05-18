@@ -1,14 +1,11 @@
 "use client";
+import { EmptyState, LoadingScreen, PageHeader, Pagination } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import LoadingScreen from '@/components/ui/LoadingScreen';
-import EmptyState from '@/components/ui/EmptyState';
-import PageHeader from '@/components/ui/PageHeader';
-import Pagination from '@/components/ui/Pagination';
 import {
     Package, User, MapPin,
-    Plus, Calendar
+    Plus, Calendar, Edit3, Check, X
 } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -29,6 +26,7 @@ export default function IngresosPage() {
     });
     const [page, setPage] = useState(1);
     const PAGE_SIZE = 24;
+    const [vista, setVista] = useState('grilla'); // 'grilla' | 'tabla'
 
     const { data: ingresosData, loading, execute: fetchIngresos } = useApi(getIngresos, {
         auto: false,
@@ -124,6 +122,8 @@ export default function IngresosPage() {
                         }}
                         loading={loading}
                         placeholder="Buscar por descripción, comprobante, ID o marca..."
+                        vista={vista}
+                        setVista={setVista}
                     />
 
                     {loading ? (
@@ -136,7 +136,7 @@ export default function IngresosPage() {
                             actionLabel="Nuevo Ingreso"
                             onAction={() => window.location.href = '/movimientos/ingresos/nuevo'}
                         />
-                    ) : (
+                    ) : vista === 'grilla' ? (
                         <div className="grid grid-cols-1 gap-4">
                             {ingresos.map((ing) => (
                                 <MovimientoCard
@@ -158,6 +158,93 @@ export default function IngresosPage() {
                                     approveLabel="Aprobar Ingreso"
                                 />
                             ))}
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+                                            <th className="py-4 px-6">ID</th>
+                                            <th className="py-4 px-4">Estado</th>
+                                            <th className="py-4 px-4">Descripción</th>
+                                            <th className="py-4 px-4">Fecha Arribo</th>
+                                            <th className="py-4 px-4">Depósito</th>
+                                            <th className="py-4 px-4">Usuario</th>
+                                            <th className="py-4 px-6 text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                                        {ingresos.map((ing) => {
+                                            const config = ing.estado === 'APROBADO' ? {
+                                                badge: 'bg-emerald-100 text-emerald-700',
+                                            } : ing.estado === 'RECHAZADO' ? {
+                                                badge: 'bg-rose-100 text-rose-700',
+                                            } : {
+                                                badge: 'bg-amber-100 text-amber-700',
+                                            };
+
+                                            return (
+                                                <tr
+                                                    key={ing.id}
+                                                    className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
+                                                    onClick={() => router.push(`/movimientos/ingresos/${ing.id}/detalle`)}
+                                                >
+                                                    <td className="py-4 px-6 text-slate-400 font-bold">#{ing.id}</td>
+                                                    <td className="py-4 px-4">
+                                                        <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${config.badge}`}>
+                                                            {ing.estado}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 px-4 font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                                                        {ing.descripcion}
+                                                    </td>
+                                                    <td className="py-4 px-4 text-slate-500">
+                                                        {new Date(ing.fecha_arribo).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="py-4 px-4 text-slate-500">{ing.deposito_nombre}</td>
+                                                    <td className="py-4 px-4 text-slate-500">
+                                                        {ing.usuario_nombre?.split(' ')[0]}
+                                                    </td>
+                                                    <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                                                        {ing.estado === 'BORRADOR' ? (
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <Link
+                                                                    href={`/movimientos/ingresos/${ing.id}`}
+                                                                    className="p-1.5 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg border border-slate-200 hover:border-blue-100 transition-all"
+                                                                    title="Editar"
+                                                                >
+                                                                    <Edit3 size={14} />
+                                                                </Link>
+                                                                <button
+                                                                    onClick={(e) => handleAprobar(ing.id, e)}
+                                                                    disabled={isAprobando || isRechazando}
+                                                                    className="p-1.5 bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-lg border border-slate-200 hover:border-emerald-100 transition-all disabled:opacity-50"
+                                                                    title="Aprobar"
+                                                                >
+                                                                    <Check size={14} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => handleRechazar(ing.id, e)}
+                                                                    disabled={isAprobando || isRechazando}
+                                                                    className="p-1.5 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg border border-slate-200 hover:border-rose-100 transition-all disabled:opacity-50"
+                                                                    title="Rechazar"
+                                                                >
+                                                                    <X size={14} />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                                Auditado
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
                 </div>

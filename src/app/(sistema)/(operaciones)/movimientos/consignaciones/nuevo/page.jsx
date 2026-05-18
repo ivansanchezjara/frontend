@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from '@/components/ui';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -11,7 +12,6 @@ import {
   Info,
   LayoutGrid,
 } from "lucide-react";
-import PageHeader from "@/components/ui/PageHeader";
 import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
 import { useApi } from "@/hooks/useApi";
 import { getStockLotes } from "@/services/apis/inventario";

@@ -1,8 +1,8 @@
 "use client";
+import { PageHeader } from '@/components/ui';
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Check, MapPin, Trash2, Package } from "lucide-react";
-import PageHeader from "@/components/ui/PageHeader";
 import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
 import { useApi } from "@/hooks/useApi";
 import { getDepositos, crearTransferencia } from "@/services/apis/movimientos";

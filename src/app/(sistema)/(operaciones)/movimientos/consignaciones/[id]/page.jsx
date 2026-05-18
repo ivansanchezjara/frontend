@@ -1,7 +1,6 @@
 "use client";
+import { LoadingScreen, PageHeader } from '@/components/ui';
 import { useState, use } from "react";
-import LoadingScreen from "@/components/ui/LoadingScreen";
-import PageHeader from "@/components/ui/PageHeader";
 import {
   Package,
   CheckCircle,

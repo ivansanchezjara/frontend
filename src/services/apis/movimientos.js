@@ -177,6 +177,17 @@ export async function aprobarBaja(id) {
   );
 }
 
+export async function rechazarBaja(id) {
+  return request(
+    `${API_URL}/inventario/bajas/${id}/rechazar/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "rechazar baja de inventario",
+  );
+}
+
 export async function crearBaja(data) {
   return request(
     `${API_URL}/inventario/bajas/`,
@@ -186,6 +197,30 @@ export async function crearBaja(data) {
       body: JSON.stringify(data),
     },
     "crear baja de inventario",
+  );
+}
+
+export async function getBaja(id) {
+  return request(
+    `${API_URL}/inventario/bajas/${id}/`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver detalle de baja",
+  );
+}
+
+export async function actualizarBaja(id, data) {
+  return request(
+    `${API_URL}/inventario/bajas/${id}/`,
+    {
+      method: "PUT",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar baja de inventario",
   );
 }
 

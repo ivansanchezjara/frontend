@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { logout, getUser } from '@/services/apis/auth.js';
 import { Menu, X, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import { navItems, familyStyles } from '@/config/navigation.js';
+import { BrandMark, Text } from '@/components/ui';
 
 export default function SistemaLayout({ children }) {
     const pathname = usePathname();
@@ -70,8 +71,7 @@ export default function SistemaLayout({ children }) {
             {/* Header Móvil */}
             <header className="md:hidden bg-slate-900 border-b border-slate-800 p-3 sticky top-0 z-50 flex items-center justify-between shadow-md">
                 <Link href="/dashboard" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-                    <div className="w-7 h-7 bg-blue-500 rounded-md flex items-center justify-center font-black text-white text-sm shadow-lg shadow-blue-500/20">E</div>
-                    <h1 className="text-base font-black tracking-tighter text-white">ERP<span className="text-blue-500">.</span>CORE</h1>
+                    <BrandMark size="sm" tone="light" textClassName="tracking-tighter" />
                 </Link>
                 <button
                     onClick={() => setIsMobileOpen(true)}
@@ -113,21 +113,25 @@ export default function SistemaLayout({ children }) {
                 {/* Logo Section */}
                 <div className={`mb-6 flex items-center gap-2.5 transition-all duration-300 ${(!isExpanded && !isMobileOpen) ? 'md:flex-col md:gap-3' : 'justify-between'}`}>
                     <Link href="/dashboard" className="flex items-center gap-2.5 hover:scale-105 transition-transform cursor-pointer" onClick={() => setIsMobileOpen(false)}>
-                        <div className="w-7 h-7 bg-blue-500 rounded-md flex items-center justify-center font-black text-white text-sm shrink-0 shadow-lg shadow-blue-500/20">E</div>
-                        {(isExpanded || isMobileOpen) && <h1 className="text-lg font-black tracking-tighter animate-in fade-in slide-in-from-left-2 duration-300">ERP<span className="text-blue-500">.</span>CORE</h1>}
+                        <BrandMark
+                            size="md"
+                            tone="light"
+                            showText={isExpanded || isMobileOpen}
+                            textClassName="tracking-tighter animate-in fade-in slide-in-from-left-2 duration-300"
+                        />
                     </Link>
                 </div>
 
                 {/* Navigation Items (Agrupados por Familias) */}
-                <nav className="flex-1 overflow-y-auto scrollbar-hide pb-2">
+                <nav className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide pb-2">
                     {categoriasOrdenadas.map((categoria, catIdx) => (
                         <div key={categoria} className={`${catIdx > 0 ? 'mt-5' : ''}`}>
 
                             {/* Título de Categoría o Divisoria */}
                             {(isExpanded || isMobileOpen) ? (
-                                <h4 className="px-2 mb-1.5 text-[9px] font-black text-slate-500 uppercase tracking-widest animate-in fade-in duration-300">
+                                <Text as="h4" variant="label" className="mb-1.5 px-2 text-[9px] text-slate-500 animate-in fade-in duration-300">
                                     {categoria}
-                                </h4>
+                                </Text>
                             ) : (
                                 <div className="w-full flex justify-center mb-1.5 mt-3">
                                     <div className="w-6 h-px bg-slate-800"></div>
@@ -172,10 +176,10 @@ export default function SistemaLayout({ children }) {
                         </div>
                         {(isExpanded || isMobileOpen) && (
                             <div className="truncate flex-1">
-                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Tu Cuenta</p>
-                                <p className="text-xs font-bold text-white leading-none truncate">
+                                <Text variant="label" className="mb-1 text-[9px] leading-none text-slate-500">Tu Cuenta</Text>
+                                <Text variant="bodySm" className="truncate text-xs font-bold leading-none text-white">
                                     {user?.first_name} {user?.last_name || (user?.first_name ? '' : user?.username)}
-                                </p>
+                                </Text>
                             </div>
                         )}
                     </Link>

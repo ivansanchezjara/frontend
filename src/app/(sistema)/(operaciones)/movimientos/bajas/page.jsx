@@ -1,18 +1,17 @@
 "use client";
+import { EmptyState, LoadingScreen, PageHeader, Pagination } from '@/components/ui';
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import LoadingScreen from "@/components/ui/LoadingScreen";
-import EmptyState from "@/components/ui/EmptyState";
-import PageHeader from "@/components/ui/PageHeader";
-import { Trash2, Package, User, Calendar, Plus, Clock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Trash2, Package, User, Calendar, Plus, Clock, Tag, Hash, Edit3, Check, X } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
 import { useDebounce } from "@/hooks/useDebounce";
-import { getBajas, aprobarBaja } from "@/services/apis/movimientos";
+import { getBajas, aprobarBaja, rechazarBaja } from "@/services/apis/movimientos";
 import MovimientosFilterBar from "@/components/movimientos/MovimientosFilterBar";
 import MovimientoCard from "@/components/movimientos/MovimientoCard";
-import Pagination from "@/components/ui/Pagination";
 
 export default function BajasPage() {
+  const router = useRouter();
   // Estados de filtros y paginación
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 500);
@@ -23,6 +22,7 @@ export default function BajasPage() {
   });
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 24;
+  const [vista, setVista] = useState('grilla'); // 'grilla' | 'tabla'
 
   // Cargar bajas con useApi
   const {
@@ -52,7 +52,11 @@ export default function BajasPage() {
   const bajas = bajasData?.results || [];
   const totalCount = bajasData?.count || 0;
 
-  const { execute: aprobarBajaAction } = useApi(aprobarBaja, {
+  const { execute: aprobarBajaAction, loading: isAprobando } = useApi(aprobarBaja, {
+    auto: false,
+  });
+
+  const { execute: rechazarBajaAction, loading: isRechazando } = useApi(rechazarBaja, {
     auto: false,
   });
 
@@ -68,6 +72,24 @@ export default function BajasPage() {
 
     try {
       await aprobarBajaAction(id);
+      fetchBajas();
+    } catch (error) {
+      // useErrorHandler ya muestra el mensaje
+    }
+  };
+
+  const handleRechazar = async (id, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (
+      !confirm(
+        "¿Confirmar rechazo de esta baja? Esta acción es irreversible.",
+      )
+    )
+      return;
+
+    try {
+      await rechazarBajaAction(id);
       fetchBajas();
     } catch (error) {
       // useErrorHandler ya muestra el mensaje
@@ -111,7 +133,7 @@ export default function BajasPage() {
 
       <main className="flex-1 overflow-y-auto p-8 min-w-0">
         <div className="max-w-[1800px] mx-auto space-y-6">
-          <MovimientosFilterBar 
+          <MovimientosFilterBar
             searchTerm={searchTerm}
             setSearchTerm={(val) => {
               setSearchTerm(val);
@@ -126,6 +148,8 @@ export default function BajasPage() {
             }}
             loading={loading}
             placeholder="Buscar por descripción o variante..."
+            vista={vista}
+            setVista={setVista}
           />
 
           {loading ? (
@@ -140,14 +164,15 @@ export default function BajasPage() {
                 (window.location.href = "/movimientos/bajas/nuevo")
               }
             />
-          ) : (
+          ) : vista === 'grilla' ? (
             <div className="grid grid-cols-1 gap-4">
               {bajas.map((baja) => (
                 <MovimientoCard
                   key={baja.id}
                   id={baja.id}
                   estado={baja.estado}
-                  titulo={`${baja.cantidad} x ${baja.variante_nombre}`}
+                  titulo={`${baja.cantidad} x ${baja.variante_nombre} ${baja.variante_especifica ? `(${baja.variante_especifica})` : ''
+                    }`}
                   subtitulo={baja.observaciones}
                   customIcon={Trash2}
                   badges={[
@@ -156,18 +181,118 @@ export default function BajasPage() {
                   info={[
                     { icon: Calendar, label: new Date(baja.fecha).toLocaleDateString() },
                     { icon: Clock, label: baja.deposito_nombre },
-                    { icon: User, label: baja.usuario_nombre }
+                    { icon: User, label: baja.usuario_nombre },
+                    { icon: Tag, label: `SKU: ${baja.variante_codigo || 'S/N'}` },
+                    { icon: Hash, label: `Lote: ${baja.lote_codigo || 'S/L'}` }
                   ]}
                   onApprove={handleAprobar}
+                  onReject={handleRechazar}
+                  onEditHref={`/movimientos/bajas/${baja.id}`}
+                  isAprobando={isAprobando}
+                  isRechazando={isRechazando}
                   approveLabel="Aprobar"
                 />
               ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+                      <th className="py-4 px-6">ID</th>
+                      <th className="py-4 px-4">Estado</th>
+                      <th className="py-4 px-4">Producto / Variante</th>
+                      <th className="py-4 px-4">Motivo</th>
+                      <th className="py-4 px-4">Fecha</th>
+                      <th className="py-4 px-4">Depósito</th>
+                      <th className="py-4 px-4 text-center">Cant.</th>
+                      <th className="py-4 px-6 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                    {bajas.map((baja) => {
+                      const config = baja.estado === 'APROBADO' ? {
+                        badge: 'bg-emerald-100 text-emerald-700',
+                      } : baja.estado === 'RECHAZADO' ? {
+                        badge: 'bg-rose-100 text-rose-700',
+                      } : {
+                        badge: 'bg-amber-100 text-amber-700',
+                      };
+
+                      return (
+                        <tr
+                          key={baja.id}
+                          className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
+                          onClick={() => router.push(`/movimientos/bajas/${baja.id}/detalle`)}
+                        >
+                          <td className="py-4 px-6 text-slate-400 font-bold">#{baja.id}</td>
+                          <td className="py-4 px-4">
+                            <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${config.badge}`}>
+                              {baja.estado}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                            <div className="flex flex-col">
+                              <span>{baja.variante_nombre}</span>
+                              <span className="text-[10px] text-slate-400 font-medium">SKU: {baja.variante_codigo || 'S/N'}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className="text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest bg-amber-100 text-amber-700">
+                              {getMotivoLabel(baja.motivo)}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 text-slate-500">
+                            {new Date(baja.fecha).toLocaleDateString()}
+                          </td>
+                          <td className="py-4 px-4 text-slate-500">{baja.deposito_nombre}</td>
+                          <td className="py-4 px-4 text-center font-bold text-slate-900">{baja.cantidad}</td>
+                          <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                            {baja.estado === 'BORRADOR' ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <Link
+                                  href={`/movimientos/bajas/${baja.id}`}
+                                  className="p-1.5 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg border border-slate-200 hover:border-blue-100 transition-all"
+                                  title="Editar"
+                                >
+                                  <Edit3 size={14} />
+                                </Link>
+                                <button
+                                  onClick={(e) => handleAprobar(baja.id, e)}
+                                  disabled={isAprobando || isRechazando}
+                                  className="p-1.5 bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-lg border border-slate-200 hover:border-emerald-100 transition-all disabled:opacity-50"
+                                  title="Aprobar"
+                                >
+                                  <Check size={14} />
+                                </button>
+                                <button
+                                  onClick={(e) => handleRechazar(baja.id, e)}
+                                  disabled={isAprobando || isRechazando}
+                                  className="p-1.5 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg border border-slate-200 hover:border-rose-100 transition-all disabled:opacity-50"
+                                  title="Rechazar"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                Auditado
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
           {/* Paginación */}
           {!loading && totalCount > PAGE_SIZE && (
-            <Pagination 
+            <Pagination
               count={totalCount}
               pageSize={PAGE_SIZE}
               currentPage={page}

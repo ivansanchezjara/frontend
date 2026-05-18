@@ -1,6 +1,6 @@
 "use client";
+import { useToast } from '@/components/ui';
 import { useCallback } from 'react';
-import { useToast } from '@/components/ui/ToastContext';
 import { ApiError } from '@/services/api';
 
 export function useErrorHandler() {

@@ -1,3 +1,4 @@
+"use client";
 import { useState, useRef, useEffect } from 'react';
 
 export default function ResizableHeader({ children, defaultWidth = 150, minWidth = 50, className = "" }) {

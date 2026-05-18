@@ -1,6 +1,6 @@
 "use client";
+import { PageHeader } from '@/components/ui';
 import { useState, useEffect, useRef } from "react";
-import PageHeader from "@/components/ui/PageHeader";
 import {
   Upload,
   AlertCircle,

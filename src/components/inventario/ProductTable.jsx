@@ -1,5 +1,5 @@
 import { getFullImageUrl } from '@/services/apis/catalogo.js';
-import ResizableHeader from '../ui/ResizableHeader';
+import { ResizableHeader } from '../ui';
 
 export const COLUMNAS_INVENTARIO = [
     { id: 'foto', label: 'Foto' }, { id: 'codigo', label: 'Código SKU' },
