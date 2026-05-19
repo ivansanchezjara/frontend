@@ -1,5 +1,5 @@
 "use client";
-import { EmptyState, LoadingScreen, PageHeader } from '@/components/ui';
+import { EmptyState, LoadingScreen, PageHeader, Heading, Text, Button } from '@/components/ui';
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -130,14 +130,14 @@ export default function AjustesInventarioPage() {
                       </span>
                     </div>
 
-                    <h3 className="text-xl font-black text-slate-900 truncate tracking-tight">
+                    <Heading level={3} className="text-xl text-slate-900 truncate tracking-tight">
                       {ajuste.variante_nombre || "Producto Ajustado"}
-                    </h3>
+                    </Heading>
 
                     {ajuste.observaciones && (
-                      <p className="text-slate-500 font-medium text-sm mt-1 truncate">
+                      <Text variant="bodySm" className="text-slate-500 font-medium mt-1 truncate">
                         "{ajuste.observaciones}"
-                      </p>
+                      </Text>
                     )}
 
                     {ajuste.lotes_ajustados?.length > 0 && (
@@ -185,12 +185,12 @@ export default function AjustesInventarioPage() {
                   {/* Botón de Acción (Solo si es Borrador) */}
                   <div className="flex items-center gap-3">
                     {(ajuste.estado === "BORRADOR" || !ajuste.estado) && (
-                      <button
+                      <Button
                         onClick={(e) => handleAprobar(ajuste.id, e)}
-                        className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-amber-500 hover:shadow-amber-200 transition-all border border-transparent"
+                        className="bg-slate-900 hover:bg-amber-500 text-white hover:text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-slate-200 hover:shadow-amber-200 transition-all border-none"
                       >
                         Aprobar Ajuste
-                      </button>
+                      </Button>
                     )}
                     {ajuste.estado === "APROBADO" && (
                       <div className="flex items-center gap-2 text-emerald-600 font-black text-[10px] uppercase tracking-widest bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">

@@ -1,5 +1,5 @@
 "use client";
-import { PageHeader } from '@/components/ui';
+import { PageHeader, Button, Heading, Text, Input } from '@/components/ui';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -223,33 +223,23 @@ export default function NuevoAjusteInventarioPage() {
           </>
         }
       >
-        <button
-          disabled={
-            isSubmitting ||
-            !selectedVarianteInfo ||
-            !hasAnyChange ||
-            !totalsMatch
-          }
+        <Button
+          disabled={isSubmitting || !selectedVarianteInfo || !hasAnyChange || !totalsMatch}
           onClick={handleSubmit}
-          className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${isSubmitting ||
-            !selectedVarianteInfo ||
-            !hasAnyChange ||
-            !totalsMatch
-            ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
-            : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100"
-            }`}
+          variant="primary"
+          className="uppercase tracking-widest font-black"
         >
           {isSubmitting ? "GUARDANDO..." : "GUARDAR AJUSTE"}
-        </button>
+        </Button>
       </PageHeader>
 
       <main className="flex-1 overflow-y-auto p-8 min-w-0">
         <div className="max-w-[1200px] mx-auto space-y-6">
           {/* SECCIÓN 1: PRODUCTO */}
           <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm space-y-6">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+            <Heading level={3} className="text-xs text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
               <Package size={14} /> Producto a Ajustar
-            </h3>
+            </Heading>
 
             <div className="grid grid-cols-1 gap-6">
               {!selectedVarianteInfo ? (
@@ -272,12 +262,12 @@ export default function NuevoAjusteInventarioPage() {
                       <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
                         {selectedVarianteInfo.product_code}
                       </p>
-                      <h4 className="font-black text-slate-900 text-lg">
+                      <Heading level={4} className="text-slate-900 text-lg">
                         {selectedVarianteInfo.producto_nombre}
-                        <span className="text-slate-400 text-sm font-bold ml-2">
+                        <Text as="span" variant="muted" className="text-sm ml-2">
                           | {selectedVarianteInfo.nombre_variante}
-                        </span>
-                      </h4>
+                        </Text>
+                      </Heading>
                       <button
                         onClick={() => {
                           setSelectedVarianteInfo(null);
@@ -295,27 +285,21 @@ export default function NuevoAjusteInventarioPage() {
               {selectedVarianteInfo && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">
-                      Motivo del ajuste
-                    </label>
-                    <input
+                    <Input
+                      label="Motivo del ajuste"
                       name="motivo"
                       value={ajuste.motivo}
                       onChange={handleAjusteChange}
                       placeholder="Ej: Error de carga, Auditoría periódica..."
-                      className="w-full bg-slate-50 border border-slate-200 rounded-[20px] p-4 font-black text-sm outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">
-                      Observaciones adicionales
-                    </label>
-                    <input
+                    <Input
+                      label="Observaciones adicionales"
                       name="observaciones"
                       value={ajuste.observaciones}
                       onChange={handleAjusteChange}
                       placeholder="Comentarios adicionales opcionales..."
-                      className="w-full bg-slate-50 border border-slate-200 rounded-[20px] p-4 font-medium text-sm outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
                     />
                   </div>
                 </div>
@@ -327,12 +311,12 @@ export default function NuevoAjusteInventarioPage() {
           {selectedVarianteInfo && (
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-white p-6 rounded-[24px] border border-slate-200 shadow-sm text-center">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                <Text variant="muted" className="text-[10px] uppercase tracking-widest mb-2">
                   Total Actual
-                </p>
-                <p className="text-3xl font-black text-slate-900">
+                </Text>
+                <Text className="text-3xl text-slate-900">
                   {totalStockActual}
-                </p>
+                </Text>
               </div>
               <div
                 className={`p-6 rounded-[24px] border shadow-sm text-center flex flex-col justify-center transition-all ${totalsMatch
@@ -350,12 +334,12 @@ export default function NuevoAjusteInventarioPage() {
                 )}
               </div>
               <div className="bg-white p-6 rounded-[24px] border border-slate-200 shadow-sm text-center">
-                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">
+                <Text className="text-[10px] text-blue-400 uppercase tracking-widest mb-2">
                   Total Propuesto
-                </p>
-                <p className="text-3xl font-black text-blue-900">
+                </Text>
+                <Text className="text-3xl text-blue-900">
                   {totalStockPropuesto}
-                </p>
+                </Text>
               </div>
             </div>
           )}
@@ -363,9 +347,9 @@ export default function NuevoAjusteInventarioPage() {
           {/* SECCIÓN 3: DETALLE DE LOTES */}
           {selectedVarianteInfo && (
             <div className="space-y-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
+              <Heading level={3} className="text-xs text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
                 <Boxes size={14} /> Distribución por Lotes
-              </h3>
+              </Heading>
 
               <div className="space-y-4">
                 {lotes.filter((l) => l.cantidad_actual > 0).length === 0 ? (
@@ -427,10 +411,8 @@ export default function NuevoAjusteInventarioPage() {
 
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
-                                  Nueva Cantidad
-                                </label>
-                                <input
+                                <Input
+                                  label="Nueva Cantidad"
                                   type="number"
                                   min="0"
                                   value={lote.nueva_cantidad}
@@ -442,14 +424,11 @@ export default function NuevoAjusteInventarioPage() {
                                     )
                                   }
                                   placeholder={lote.cantidad_actual}
-                                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-black text-base outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
                                 />
                               </div>
                               <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase ml-1">
-                                  Nuevo Venc.
-                                </label>
-                                <input
+                                <Input
+                                  label="Nuevo Vencimiento"
                                   type="date"
                                   value={lote.nuevo_vencimiento}
                                   onChange={(e) =>
@@ -459,7 +438,6 @@ export default function NuevoAjusteInventarioPage() {
                                       e.target.value,
                                     )
                                   }
-                                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold text-xs outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
                                 />
                               </div>
                             </div>

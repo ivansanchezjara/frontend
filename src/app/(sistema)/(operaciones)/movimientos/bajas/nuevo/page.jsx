@@ -1,6 +1,6 @@
 "use client";
 
-import { PageHeader } from '@/components/ui';
+import { PageHeader, Button, Heading, Text, Input } from '@/components/ui';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Package, AlertCircle, Info } from "lucide-react";
@@ -102,13 +102,14 @@ export default function NuevaBajaPage() {
           </>
         }
       >
-        <button
+        <Button
           disabled={isSubmitting || !baja.lote || !!errorMsg || !baja.cantidad}
           onClick={handleSubmit}
-          className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${!baja.lote || !!errorMsg || !baja.cantidad ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100"}`}
+          variant="primary"
+          className="uppercase tracking-widest font-black"
         >
           {isSubmitting ? "GUARDANDO..." : "GUARDAR BAJA"}
-        </button>
+        </Button>
       </PageHeader>
 
       <main className="flex-1 overflow-y-auto p-8 min-w-0">
@@ -116,9 +117,9 @@ export default function NuevaBajaPage() {
           <div className="grid grid-cols-1 gap-6">
             {/* Selección de Producto/Lote */}
             <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm space-y-6">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+              <Heading level={3} className="text-xs text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                 <Package size={14} /> Producto y Lote a descontar
-              </h3>
+              </Heading>
 
               {!selectedLoteInfo ? (
                 <button
@@ -137,18 +138,18 @@ export default function NuevaBajaPage() {
                       <Package size={24} className="text-rose-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest">
+                      <Text className="text-[10px] text-rose-400 uppercase tracking-widest">
                         {selectedLoteInfo.lote_codigo}
-                      </p>
-                      <h4 className="font-black text-slate-900 text-lg">
+                      </Text>
+                      <Heading level={4} className="text-slate-900 text-lg">
                         {selectedLoteInfo.variante_nombre}{" "}
-                        <span className="text-slate-400 text-sm font-bold">
+                        <Text as="span" variant="muted" className="text-sm">
                           | {selectedLoteInfo.nombre_variante}
-                        </span>
-                      </h4>
-                      <p className="text-xs font-bold text-slate-500">
+                        </Text>
+                      </Heading>
+                      <Text className="text-xs text-slate-500 mb-1">
                         Depósito: {selectedLoteInfo.deposito_nombre}
-                      </p>
+                      </Text>
                       {selectedLoteInfo.vencimiento && (
                         <p
                           className={`text-[10px] font-black uppercase tracking-widest mt-1 ${new Date(selectedLoteInfo.vencimiento) < new Date()
@@ -176,13 +177,13 @@ export default function NuevaBajaPage() {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <Text variant="muted" className="text-[10px] uppercase tracking-widest">
                       Stock Disponible
-                    </p>
-                    <p className="text-2xl font-black text-slate-900">
+                    </Text>
+                    <Text className="text-2xl text-slate-900">
                       {selectedLoteInfo.cantidad}{" "}
-                      <span className="text-sm">unid.</span>
-                    </p>
+                      <Text as="span" className="text-sm">unid.</Text>
+                    </Text>
                     <button
                       onClick={() => setSelectedLoteInfo(null)}
                       className="text-[10px] font-black text-rose-600 uppercase tracking-widest mt-2 hover:underline"
@@ -198,27 +199,25 @@ export default function NuevaBajaPage() {
             <div
               className={`bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm transition-opacity ${!selectedLoteInfo ? "opacity-50 pointer-events-none" : "opacity-100"}`}
             >
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+              <Heading level={3} className="text-xs text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
                 <Info size={14} /> Detalles de la Operación
-              </h3>
+              </Heading>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">
-                    Cantidad a descontar
-                  </label>
-                  <input
+                  <Input
+                    label="Cantidad a descontar"
                     type="number"
                     name="cantidad"
                     value={baja.cantidad}
                     onChange={handleBajaChange}
                     min="1"
-                    className={`w-full bg-slate-50 border ${errorMsg ? "border-red-500 ring-2 ring-red-50" : "border-slate-200"} rounded-[20px] p-4 font-black text-lg outline-none focus:ring-4 focus:ring-rose-500/10 transition-all`}
+                    className={errorMsg ? "border-red-500 ring-2 ring-red-50" : ""}
                   />
                   {errorMsg && (
-                    <p className="text-red-500 text-[10px] font-black uppercase mt-2 ml-2 flex items-center gap-1">
+                    <Text className="text-red-500 text-[10px] uppercase mt-2 ml-2 flex items-center gap-1">
                       <AlertCircle size={12} /> {errorMsg}
-                    </p>
+                    </Text>
                   )}
                 </div>
 

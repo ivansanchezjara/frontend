@@ -1,5 +1,5 @@
 "use client";
-import { PageHeader } from '@/components/ui';
+import { PageHeader, Button, Heading, Text } from '@/components/ui';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -158,7 +158,7 @@ export default function NuevaConsignacionPage() {
           </>
         }
       >
-        <button
+        <Button
           onClick={handleSubmit}
           disabled={
             isSubmitting ||
@@ -166,10 +166,11 @@ export default function NuevaConsignacionPage() {
             !header.responsable ||
             !header.destino
           }
-          className={`px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${items.length === 0 || !header.responsable || !header.destino ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100"}`}
+          variant="primary"
+          className="uppercase tracking-widest font-black"
         >
           {isSubmitting ? "PROCESANDO..." : "REGISTRAR SALIDA"}
-        </button>
+        </Button>
       </PageHeader>
 
       <main className="flex-1 overflow-y-auto p-8 min-w-0">
@@ -178,9 +179,9 @@ export default function NuevaConsignacionPage() {
             {/* Panel lateral: Datos de Cabecera */}
             <div className="lg:col-span-1 space-y-6">
               <div className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm space-y-6">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Heading level={3} className="text-[10px] text-slate-400 uppercase tracking-widest flex items-center gap-2">
                   <Info size={14} /> Datos del receptor
-                </h3>
+                </Heading>
 
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -246,9 +247,9 @@ export default function NuevaConsignacionPage() {
 
               <div className="bg-slate-900 p-8 rounded-[40px] text-white shadow-xl relative overflow-hidden">
                 <LayoutGrid className="absolute -right-4 -bottom-4 text-white/5 w-24 h-24" />
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
+                <Heading level={3} className="text-[10px] text-slate-400 uppercase tracking-widest mb-4">
                   Notas Internas
-                </h3>
+                </Heading>
                 <textarea
                   name="observaciones"
                   value={header.observaciones}
@@ -264,23 +265,24 @@ export default function NuevaConsignacionPage() {
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm min-h-[400px]">
                 <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <Heading level={3} className="text-xs text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                     <Package size={16} /> Productos a enviar
-                  </h3>
-                  <button
+                  </Heading>
+                  <Button
                     onClick={() => setIsSearchOpen(true)}
-                    className="bg-purple-50 text-purple-600 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-purple-100 transition-all flex items-center gap-2"
+                    variant="outline"
+                    className="text-purple-600 border-purple-200 hover:bg-purple-50 uppercase tracking-widest text-[10px]"
                   >
                     <Plus size={14} /> Seleccionar de Stock
-                  </button>
+                  </Button>
                 </div>
 
                 {items.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 text-slate-300 border-2 border-dashed border-slate-100 rounded-[30px] bg-slate-50/50">
                     <Package size={48} className="opacity-20 mb-4" />
-                    <p className="font-black text-[10px] uppercase tracking-widest">
+                    <Text variant="muted" className="text-[10px] uppercase tracking-widest">
                       No hay productos seleccionados
-                    </p>
+                    </Text>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -293,23 +295,23 @@ export default function NuevaConsignacionPage() {
                           {idx + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest">
+                          <Text className="text-[9px] text-purple-400 uppercase tracking-widest">
                             {item.lote_codigo}
-                          </p>
-                          <h4 className="font-black text-slate-800 truncate">
+                          </Text>
+                          <Heading level={4} className="text-slate-800 truncate">
                             {item.variante_nombre}{" "}
-                            <span className="text-slate-400 font-bold text-xs">
+                            <Text as="span" variant="muted" className="text-xs">
                               | {item.nombre_variante}
-                            </span>
-                          </h4>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            </Text>
+                          </Heading>
+                          <Text variant="muted" className="text-[10px] uppercase tracking-widest">
                             En: {item.deposito_nombre}
-                          </p>
+                          </Text>
                         </div>
                         <div className="w-32">
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 text-center">
+                          <Text variant="muted" className="text-[9px] uppercase tracking-widest mb-1 text-center">
                             Cantidad
-                          </p>
+                          </Text>
                           <div className="bg-white border border-slate-200 rounded-xl p-2 flex items-center justify-center">
                             <input
                               type="number"
@@ -322,9 +324,9 @@ export default function NuevaConsignacionPage() {
                               max={item.stock_max}
                             />
                           </div>
-                          <p className="text-[8px] font-bold text-center mt-1 text-slate-400">
+                          <Text variant="muted" className="text-[8px] text-center mt-1">
                             Stock disp: {item.stock_max}
-                          </p>
+                          </Text>
                         </div>
                         <button
                           onClick={() => removeItem(idx)}

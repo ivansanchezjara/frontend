@@ -1,5 +1,5 @@
 "use client";
-import { LoadingScreen, PageHeader } from '@/components/ui';
+import { LoadingScreen, PageHeader, Button, Badge, Text, Heading } from '@/components/ui';
 import { useState, use } from "react";
 import {
   Package,
@@ -109,38 +109,39 @@ export default function DetalleConsignacionPage({ params }) {
         }
       >
         {consignacion.estado === "BORRADOR" && (
-          <button
+          <Button
             onClick={handleAprobarSalida}
             disabled={isAprobando}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-100 transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="primary"
+            className="uppercase tracking-widest font-black"
           >
             {isAprobando ? <Clock size={18} className="animate-spin" /> : <CheckCircle size={18} />}
             {isAprobando ? "Aprobando..." : "Aprobar Salida"}
-          </button>
+          </Button>
         )}
         {consignacion.estado === "APROBADO" && (
           <div className="flex items-center gap-3">
             {!resumen.completado && (
               <>
-                <button
+                <Button
                   onClick={() => setShowDevolucionModal(true)}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95 border border-slate-200"
+                  variant="secondary"
+                  className="uppercase tracking-widest text-[10px]"
                 >
                   <RotateCcw size={16} /> Devolución
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setShowLiquidacionModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-100 transition-all flex items-center gap-2 active:scale-95"
+                  variant="primary"
+                  className="uppercase tracking-widest text-[10px]"
                 >
                   <DollarSign size={16} /> Liquidar
-                </button>
+                </Button>
               </>
             )}
-            <span
-              className={`text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest ${resumen.completado ? "bg-emerald-500 text-white shadow-lg shadow-emerald-100" : "bg-emerald-100 text-emerald-700 border border-emerald-200"}`}
-            >
+            <Badge variant={resumen.completado ? "success" : "warning"} className="px-4 py-1.5">
               {resumen.completado ? "✓ COMPLETADO" : "EN CURSO"}
-            </span>
+            </Badge>
           </div>
         )}
       </PageHeader>
@@ -190,18 +191,18 @@ export default function DetalleConsignacionPage({ params }) {
                   {stat.icon}
                 </div>
                 <div className="relative z-10">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <Text variant="muted" className="text-[10px] uppercase tracking-widest">
                     {stat.label}
-                  </p>
-                  <h4 className="text-2xl font-black text-slate-900 leading-tight">
+                  </Text>
+                  <Heading level={4} className="text-2xl text-slate-900 leading-tight">
                     {stat.val}{" "}
-                    <span className="text-xs font-bold text-slate-300">
+                    <Text as="span" className="text-xs text-slate-300">
                       un.
-                    </span>
-                  </h4>
-                  <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.1em]">
+                    </Text>
+                  </Heading>
+                  <Text className="text-[9px] text-slate-300 uppercase tracking-[0.1em]">
                     {stat.sub}
-                  </p>
+                  </Text>
                 </div>
               </div>
             ))}

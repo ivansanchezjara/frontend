@@ -1,5 +1,5 @@
 "use client";
-import { EmptyState, LoadingScreen, PageHeader, Pagination } from '@/components/ui';
+import { EmptyState, LoadingScreen, PageHeader, Pagination, Badge } from '@/components/ui';
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -131,7 +131,7 @@ export default function TransferenciasPage() {
             <LoadingScreen message="Sincronizando transferencias..." />
           ) : transferencias.length === 0 ? (
             <EmptyState
-              icon="🔄"
+              icon={<ArrowRightLeft size={48} className="text-slate-300 mx-auto mb-4" />}
               title="No hay transferencias registradas"
               message="Aquí verás todos los movimientos de stock realizados entre tus depósitos."
               actionLabel="Nueva Transferencia"
@@ -180,11 +180,7 @@ export default function TransferenciasPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
                     {transferencias.map((transf) => {
-                      const config = transf.estado === 'APROBADO' ? {
-                        badge: 'bg-emerald-100 text-emerald-700',
-                      } : {
-                        badge: 'bg-amber-100 text-amber-700',
-                      };
+                      const badgeVariant = transf.estado === 'APROBADO' ? 'success' : 'warning';
 
                       return (
                         <tr
@@ -194,9 +190,9 @@ export default function TransferenciasPage() {
                         >
                           <td className="py-4 px-6 text-slate-400 font-bold">#{transf.id}</td>
                           <td className="py-4 px-4">
-                            <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${config.badge}`}>
+                            <Badge variant={badgeVariant}>
                               {transf.estado}
-                            </span>
+                            </Badge>
                           </td>
                           <td className="py-4 px-4 font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                             {transf.deposito_origen_nombre}

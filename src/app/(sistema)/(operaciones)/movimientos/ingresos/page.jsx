@@ -1,5 +1,5 @@
 "use client";
-import { EmptyState, LoadingScreen, PageHeader, Pagination } from '@/components/ui';
+import { EmptyState, LoadingScreen, PageHeader, Pagination, Badge } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -130,7 +130,7 @@ export default function IngresosPage() {
                         <LoadingScreen message="Sincronizando ingresos..." />
                     ) : ingresos.length === 0 ? (
                         <EmptyState
-                            icon="📥"
+                            icon={<Package size={48} className="text-slate-300 mx-auto mb-4" />}
                             title="No hay ingresos registrados"
                             message="Aquí verás toda la mercadería que llega a tus depósitos."
                             actionLabel="Nuevo Ingreso"
@@ -176,13 +176,9 @@ export default function IngresosPage() {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
                                         {ingresos.map((ing) => {
-                                            const config = ing.estado === 'APROBADO' ? {
-                                                badge: 'bg-emerald-100 text-emerald-700',
-                                            } : ing.estado === 'RECHAZADO' ? {
-                                                badge: 'bg-rose-100 text-rose-700',
-                                            } : {
-                                                badge: 'bg-amber-100 text-amber-700',
-                                            };
+                                            const badgeVariant = ing.estado === 'APROBADO' ? 'success'
+                                                : ing.estado === 'RECHAZADO' ? 'danger'
+                                                : 'warning';
 
                                             return (
                                                 <tr
@@ -192,9 +188,9 @@ export default function IngresosPage() {
                                                 >
                                                     <td className="py-4 px-6 text-slate-400 font-bold">#{ing.id}</td>
                                                     <td className="py-4 px-4">
-                                                        <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${config.badge}`}>
+                                                        <Badge variant={badgeVariant}>
                                                             {ing.estado}
-                                                        </span>
+                                                        </Badge>
                                                     </td>
                                                     <td className="py-4 px-4 font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                                                         {ing.descripcion}

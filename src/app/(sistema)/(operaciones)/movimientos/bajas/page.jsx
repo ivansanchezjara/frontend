@@ -1,5 +1,5 @@
 "use client";
-import { EmptyState, LoadingScreen, PageHeader, Pagination } from '@/components/ui';
+import { EmptyState, LoadingScreen, PageHeader, Pagination, Badge } from '@/components/ui';
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -156,7 +156,7 @@ export default function BajasPage() {
             <LoadingScreen message="Sincronizando bajas..." />
           ) : bajas.length === 0 ? (
             <EmptyState
-              icon="📤"
+              icon={<Trash2 size={48} className="text-slate-300 mx-auto mb-4" />}
               title="No hay bajas registradas"
               message="Aquí se listarán todos los productos descontados por rotura, vencimiento o pérdida."
               actionLabel="Nueva Baja"
@@ -212,13 +212,9 @@ export default function BajasPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
                     {bajas.map((baja) => {
-                      const config = baja.estado === 'APROBADO' ? {
-                        badge: 'bg-emerald-100 text-emerald-700',
-                      } : baja.estado === 'RECHAZADO' ? {
-                        badge: 'bg-rose-100 text-rose-700',
-                      } : {
-                        badge: 'bg-amber-100 text-amber-700',
-                      };
+                      const badgeVariant = baja.estado === 'APROBADO' ? 'success'
+                        : baja.estado === 'RECHAZADO' ? 'danger'
+                        : 'warning';
 
                       return (
                         <tr
@@ -228,9 +224,9 @@ export default function BajasPage() {
                         >
                           <td className="py-4 px-6 text-slate-400 font-bold">#{baja.id}</td>
                           <td className="py-4 px-4">
-                            <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${config.badge}`}>
+                            <Badge variant={badgeVariant}>
                               {baja.estado}
-                            </span>
+                            </Badge>
                           </td>
                           <td className="py-4 px-4 font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                             <div className="flex flex-col">
@@ -239,9 +235,9 @@ export default function BajasPage() {
                             </div>
                           </td>
                           <td className="py-4 px-4">
-                            <span className="text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest bg-amber-100 text-amber-700">
+                            <Badge variant="warning">
                               {getMotivoLabel(baja.motivo)}
-                            </span>
+                            </Badge>
                           </td>
                           <td className="py-4 px-4 text-slate-500">
                             {new Date(baja.fecha).toLocaleDateString()}

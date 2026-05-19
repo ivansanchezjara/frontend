@@ -1,7 +1,7 @@
 "use client";
-import { EmptyState, LoadingScreen, PageHeader } from '@/components/ui';
+import { EmptyState, LoadingScreen, PageHeader, Badge, Heading, Text } from '@/components/ui';
 import Link from 'next/link';
-import { ChevronRight, Package, User, Calendar, Plus, MapPin, Clock } from 'lucide-react';
+import { ChevronRight, Package, User, Calendar, Plus, MapPin, Clock, Truck } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { getConsignaciones } from '@/services/apis/movimientos';
 
@@ -42,7 +42,7 @@ export default function ConsignacionesPage() {
                         <LoadingScreen message="Cargando hojas de ruta de consignación..." />
                     ) : consignaciones.length === 0 ? (
                         <EmptyState
-                            icon="🚚"
+                            icon={<Truck size={48} className="text-slate-300 mx-auto mb-4" />}
                             title="No hay consignaciones activas"
                             message="Aquí podrás gestionar la mercadería enviada a clientes o vendedores de forma temporal."
                             actionLabel="Registrar Salida"
@@ -59,17 +59,17 @@ export default function ConsignacionesPage() {
                                     <div className={`absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-bl-[60px] -z-0 transition-transform group-hover:scale-110`}></div>
 
                                     <div className="flex items-center justify-between mb-4 relative z-10">
-                                        <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${cons.estado === 'APROBADO' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                        <Badge variant={cons.estado === 'APROBADO' ? 'success' : 'warning'}>
                                             {cons.estado}
-                                        </span>
+                                        </Badge>
                                         <span className="text-[10px] font-black text-slate-400">#{cons.id}</span>
                                     </div>
 
                                     <div className="space-y-4 relative z-10">
                                         <div>
-                                            <h3 className="text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-tight truncate">
+                                            <Heading level={3} className="text-lg text-slate-900 group-hover:text-blue-600 transition-colors leading-tight truncate">
                                                 {cons.responsable}
-                                            </h3>
+                                            </Heading>
                                             <p className="flex items-center gap-1.5 text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">
                                                 <MapPin size={12} className="text-blue-400" /> {cons.destino}
                                             </p>

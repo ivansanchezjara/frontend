@@ -1,4 +1,4 @@
-import { PageHeader } from '@/components/ui';
+import { PageHeader, Heading, Text } from '@/components/ui';
 import Link from 'next/link';
 import {
     ArrowDownCircle, ArrowUpCircle,
@@ -53,7 +53,6 @@ export default function MovimientosHubPage() {
                     <>
                         <Package size={12} />
                         <span>Operaciones y Logística de Inventario</span>
-
                     </>
                 }
                 subtitleClassName="text-blue-600"
@@ -62,8 +61,8 @@ export default function MovimientosHubPage() {
             <main className="flex-1 overflow-y-auto p-8 min-w-0">
                 <div className="max-w-[1600px] mx-auto">
                     <div className="mb-10">
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Centro de Operaciones</h2>
-                        <p className="text-slate-500 font-medium">Seleccioná el tipo de operación que deseás realizar sobre el stock.</p>
+                        <Heading level={2} className="text-slate-900 tracking-tight">Centro de Operaciones</Heading>
+                        <Text className="text-slate-500 font-medium">Seleccioná el tipo de operación que deseás realizar sobre el stock.</Text>
                     </div>
 
                     {/* Lista de operaciones */}
@@ -82,12 +81,12 @@ export default function MovimientosHubPage() {
 
                                     {/* Contenido */}
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="text-base md:text-xl font-black text-slate-900 tracking-tight mb-0.5 md:mb-1 group-hover:text-blue-600 transition-colors">
+                                        <Heading level={4} className="md:text-xl text-slate-900 tracking-tight mb-0.5 md:mb-1 group-hover:text-blue-600 transition-colors">
                                             {mov.title}
-                                        </h3>
-                                        <p className="text-slate-500 text-xs md:text-sm font-medium leading-relaxed max-w-2xl hidden md:block">
+                                        </Heading>
+                                        <Text variant="bodySm" className="text-slate-500 font-medium leading-relaxed max-w-2xl hidden md:block">
                                             {mov.desc}
-                                        </p>
+                                        </Text>
                                     </div>
 
                                     {/* Acción */}
