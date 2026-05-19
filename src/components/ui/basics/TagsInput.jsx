@@ -37,15 +37,15 @@ export default function TagsInput({ tags = [], onChange }) {
                 <Badge
                     key={tag}
                     variant="primary"
-                    className="gap-1 normal-case tracking-normal py-1"
+                    className="gap-1 normal-case tracking-normal py-0.5 text-[10px] px-2 rounded-lg"
                 >
-                    {tag}
+                    #{tag}
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); removeTag(tag); }}
-                        className="text-blue-400 hover:text-blue-700 transition-colors ml-0.5 flex items-center"
+                        className="text-blue-400 hover:text-blue-700 transition-colors ml-0.5 flex items-center cursor-pointer"
                     >
-                        <X size={12} />
+                        <X size={11} />
                     </button>
                 </Badge>
             ))}

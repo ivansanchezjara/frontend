@@ -1,8 +1,9 @@
 "use client";
-import { EmptyState, LoadingScreen, PageHeader, Pagination, SearchBar } from '@/components/ui';
+import { EmptyState, LoadingScreen, PageHeader, Pagination, SearchBar, ColumnSelector } from '@/components/ui';
 import { useState, useEffect } from "react";
 import ProductTable, {
   COLUMNAS_VISIBLES_POR_DEFECTO,
+  COLUMNAS_INVENTARIO,
 } from "@/components/inventario/ProductTable";
 import AuditoriaModal from "@/components/inventario/AuditoriaModal";
 import { getProductos, getProductosStats } from "@/services/apis/catalogo.js";
@@ -212,12 +213,21 @@ export default function StockPage() {
                 </button>
               ))}
             </div>
-            <div className="w-full xl:max-w-md">
-              <SearchBar
-                value={searchTerm}
-                onChange={setSearchTerm}
-                placeholder="Buscar código, nombre, marca..."
+            <div className="w-full xl:max-w-xl flex items-center gap-3">
+              <div className="flex-1">
+                <SearchBar
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                  placeholder="Buscar código, nombre, marca..."
+                />
+              </div>
+              <ColumnSelector
+                opciones={COLUMNAS_INVENTARIO}
+                visibles={columnasVisibles}
+                onChange={setColumnasVisibles}
+                defaultVisibles={COLUMNAS_VISIBLES_POR_DEFECTO}
               />
+
             </div>
           </div>
 

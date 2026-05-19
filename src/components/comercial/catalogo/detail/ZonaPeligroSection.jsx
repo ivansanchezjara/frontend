@@ -1,6 +1,11 @@
 "use client";
-import { Section } from "@/components/ui";
+import { Section, Button, Text } from "@/components/ui";
 
+/**
+ * ZonaPeligroSection estandarizado.
+ * Contenedor de acciones críticas (como desactivar/eliminar un producto),
+ * que utiliza los componentes del layout (Section) y atómicos (Button, Typography - Text).
+ */
 export default function ZonaPeligroSection({
   producto,
   isDeletingProd,
@@ -12,23 +17,24 @@ export default function ZonaPeligroSection({
         title="Zona de Peligro"
         subtitle="Acciones críticas que afectan la visibilidad del producto en el sistema."
       >
-        <div className="p-6 bg-red-50/30 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="p-6 dark:bg-red-950/5 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="text-center md:text-left">
-            <p className="text-sm font-bold text-slate-800">
+            <Text variant="bodySm" className="font-black text-slate-800">
               Desactivar Producto
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
+            </Text>
+            <Text variant="bodyXs" className="text-slate-500 mt-1 max-w-md">
               Archiva el producto y sus {producto.variants?.length || 0}{" "}
               variantes. Dejarán de estar visibles en el catálogo e inventario.
-            </p>
+            </Text>
           </div>
-          <button
+          <Button
+            variant="danger"
             onClick={onDeleteProducto}
             disabled={isDeletingProd}
-            className="bg-white border border-red-200 text-red-600 px-8 py-3 rounded-xl font-bold text-[11px] uppercase tracking-wider hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95 whitespace-nowrap disabled:opacity-50"
+            className="px-8 h-11 text-[10px] font-black uppercase tracking-widest rounded-xl whitespace-nowrap shadow-md shadow-red-200/20 active:scale-95 transition-all"
           >
             {isDeletingProd ? "PROCESANDO..." : "DESACTIVAR PRODUCTO"}
-          </button>
+          </Button>
         </div>
       </Section>
     </div>

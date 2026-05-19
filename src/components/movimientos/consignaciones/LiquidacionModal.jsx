@@ -1,6 +1,13 @@
 "use client";
-import { useState } from "react";
+import React, { useState } from "react";
+import { Button, Text } from '@/components/ui';
 
+/**
+ * LiquidacionModal estandarizado (Strict Light Mode).
+ * Modal interactivo que permite liquidar mercadería entregada en consignación,
+ * registrando ventas consumadas, pérdidas o muestras, asociando un número de comprobante.
+ * Reutiliza las piezas de interfaz (Button, Typography - Text).
+ */
 export default function LiquidacionModal({ consignacion, onClose, onConfirm, isSubmitting }) {
   const [motivo, setMotivo] = useState("VENTA");
   const [comprobante, setComprobante] = useState("");
@@ -32,32 +39,35 @@ export default function LiquidacionModal({ consignacion, onClose, onConfirm, isS
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-        <div className="p-8 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+      <div className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 font-sans">
+        <div className="p-8 border-b border-slate-100 bg-slate-50 flex justify-between items-center select-none">
           <div>
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+            <Text as="h2" className="text-xl font-black text-slate-900 uppercase tracking-tight">
               Liquidar Stock
-            </h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            </Text>
+            <Text variant="bodyXs" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
               Ventas y cierres parciales
-            </p>
+            </Text>
           </div>
-          <button
+          <Button
+            variant="outline"
+            size="icon"
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 transition-all"
+            className="w-10 h-10 rounded-xl border-slate-200 text-slate-400 hover:text-slate-900 shadow-sm shrink-0 font-extrabold"
+            title="Cerrar modal"
           >
             ✕
-          </button>
+          </Button>
         </div>
 
         <div className="p-8 overflow-y-auto space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+            <div className="space-y-2 select-none">
+              <Text variant="label" as="label" className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
                 Motivo
-              </label>
+              </Text>
               <select
-                className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
                 onChange={(e) => setMotivo(e.target.value)}
                 value={motivo}
               >
@@ -67,9 +77,9 @@ export default function LiquidacionModal({ consignacion, onClose, onConfirm, isS
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
+              <Text variant="label" as="label" className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block select-none">
                 Comprobante
-              </label>
+              </Text>
               <input
                 type="text"
                 placeholder="Nro Factura/Recibo"
@@ -81,9 +91,9 @@ export default function LiquidacionModal({ consignacion, onClose, onConfirm, isS
           </div>
 
           <div className="space-y-4">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+            <Text variant="label" as="label" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block select-none">
               Items a liquidar
-            </label>
+            </Text>
             {consignacion.items.map((item, i) => {
               const pendiente =
                 item.cantidad -
@@ -95,21 +105,21 @@ export default function LiquidacionModal({ consignacion, onClose, onConfirm, isS
                   key={i}
                   className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between"
                 >
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-slate-800">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <Text variant="bodySm" className="font-black text-slate-800 truncate">
                       {item.variante_nombre}
-                    </p>
-                    <p className="text-[10px] font-bold text-slate-400">
+                    </Text>
+                    <Text variant="bodyXs" className="text-slate-400 font-bold mt-0.5 select-none">
                       Restan: {pendiente} u.
-                    </p>
+                    </Text>
                   </div>
-                  <div className="w-24">
+                  <div className="w-24 shrink-0">
                     <input
                       type="number"
                       min="0"
                       max={pendiente}
                       placeholder="0"
-                      className="w-full h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                       onChange={(e) => {
                         const val = parseInt(e.target.value) || 0;
                         handleItemChange(item.id, val);
@@ -122,20 +132,21 @@ export default function LiquidacionModal({ consignacion, onClose, onConfirm, isS
           </div>
         </div>
 
-        <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-          <button
+        <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 select-none">
+          <Button
+            variant="ghost"
             onClick={onClose}
-            className="px-8 py-4 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 transition-all"
+            className="px-8 h-12 text-[10px] font-black uppercase text-slate-400 hover:text-slate-650 transition-all active:scale-95"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleConfirm}
             disabled={isSubmitting}
-            className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-10 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Procesando..." : "Confirmar Liquidación"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

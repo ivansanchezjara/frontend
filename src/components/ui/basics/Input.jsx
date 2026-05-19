@@ -1,5 +1,4 @@
 import { forwardRef, useId } from 'react';
-
 import { Text } from './Typography';
 
 export const Input = forwardRef(({

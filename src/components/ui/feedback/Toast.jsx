@@ -1,7 +1,14 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import Button from '../basics/Button';
+import { Text } from '../basics/Typography';
 
+/**
+ * Componente Toast estandarizado para notificaciones emergentes.
+ * Reutiliza las piezas de la interfaz (Button, Typography) y añade
+ * micro-animaciones e indicador de progreso interactivo.
+ */
 const Toast = ({ message, type = 'info', onClose }) => {
     const [isClosing, setIsClosing] = useState(false);
 
@@ -28,29 +35,35 @@ const Toast = ({ message, type = 'info', onClose }) => {
     return (
         <div 
             className={`
-                pointer-events-auto min-w-[300px] max-w-[400px] 
+                relative pointer-events-auto min-w-[300px] max-w-[400px] 
                 ${bgColor} backdrop-blur-md border ${borderColor} 
-                rounded-lg py-3 px-4 flex items-center justify-between gap-4
-                shadow-xl transition-all duration-300
+                rounded-xl py-3 px-4 flex items-center justify-between gap-4
+                shadow-xl transition-all duration-300 overflow-hidden
                 ${isClosing ? 'opacity-0 translate-x-8' : 'opacity-100 translate-x-0'}
             `}
         >
-            <div className="flex items-center gap-2 flex-1">
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
                 {/* Indicador minimalista lateral */}
-                <div className={`w-1 h-4 rounded-full ${accentColor}`} />
-                <span className={`${textColor} text-[13px] font-medium leading-tight`}>
+                <div className={`w-1 h-4 rounded-full shrink-0 ${accentColor}`} />
+                <Text 
+                    variant="bodyXs" 
+                    className={`${textColor} leading-tight truncate w-full text-left font-medium`}
+                >
                     {message}
-                </span>
+                </Text>
             </div>
             
-            <button 
+            {/* Reutilización del botón de cerrar atómico */}
+            <Button 
+                variant="ghost"
+                size="icon"
                 onClick={handleClose} 
-                className="text-white/40 hover:text-white transition-colors shrink-0"
-            >
-                <X size={14} />
-            </button>
+                icon={X}
+                className="text-white/40 hover:text-white hover:bg-white/10 w-6 h-6 rounded-lg p-0 shrink-0 border-none transition-all duration-200"
+                title="Cerrar notificación"
+            />
 
-            {/* Barra de progreso casi invisible */}
+            {/* Barra de progreso animada */}
             <div className="absolute bottom-0 left-0 w-full h-[2px] opacity-30">
                 <div 
                     className={`h-full origin-left ${accentColor}`}

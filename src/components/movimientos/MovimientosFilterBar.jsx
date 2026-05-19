@@ -1,5 +1,15 @@
-import { Search, Filter, ChevronDown, LayoutGrid, List } from 'lucide-react';
+"use client";
+import React from 'react';
+import { Filter, ChevronDown, LayoutGrid, List } from 'lucide-react';
+import { Button, Text, SearchBar } from '@/components/ui';
 
+/**
+ * MovimientosFilterBar estandarizado (Strict Light Mode).
+ * Barra de control de búsqueda y filtros avanzados para listados de movimientos.
+ * Integra el buscador premium unificado (SearchBar), controles de rangos de fechas,
+ * selección de estado por filtro y selector de vista interactiva (Grilla / Tabla).
+ * Reutiliza las piezas de interfaz (Button, Typography - Text, SearchBar).
+ */
 export default function MovimientosFilterBar({
     searchTerm,
     setSearchTerm,
@@ -17,65 +27,75 @@ export default function MovimientosFilterBar({
     setVista
 }) {
     return (
-        <div className="bg-white p-4 rounded-[24px] border border-slate-200 shadow-sm space-y-3">
+        <div className="bg-white p-4 rounded-[24px] border border-slate-200 shadow-sm space-y-3 font-sans">
             <div className="flex flex-col lg:flex-row gap-3">
                 {/* Contenedor del Buscador + Toggle siempre alineados horizontalmente */}
                 <div className="flex-1 flex items-center gap-3">
-                    {/* Buscador Principal */}
-                    <div className="flex-1 relative">
-                        <Search size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 ${loading ? 'text-blue-500 animate-pulse' : 'text-slate-400'}`} />
-                        <input 
-                            type="text" 
-                            placeholder={placeholder}
-                            className="w-full h-11 bg-slate-50 rounded-xl pl-11 pr-6 text-[11px] font-bold border border-transparent focus:border-blue-200 focus:bg-white focus:ring-4 focus:ring-blue-500/5 transition-all outline-none"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+                    {/* Buscador Principal Unificado */}
+                    <SearchBar 
+                        value={searchTerm}
+                        onChange={setSearchTerm}
+                        placeholder={placeholder}
+                        className="flex-1"
+                    />
 
                     {/* Toggle Grilla / Tabla */}
                     {vista && setVista && (
-                        <div className="flex items-center bg-slate-100 rounded-xl p-1 gap-1 shrink-0 h-11">
-                            <button
+                        <div className="flex items-center bg-slate-100 rounded-xl p-1 gap-1 shrink-0 h-11 select-none">
+                            <Button
+                                variant={vista === 'grilla' ? 'outline' : 'ghost'}
                                 onClick={() => setVista('grilla')}
                                 title="Vista grilla"
-                                className={`flex items-center justify-center outline-none focus:outline-none gap-1.5 px-3 h-9 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all select-none ${vista === 'grilla' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-blue-500'}`}
+                                className={`flex items-center justify-center gap-1.5 px-3 h-9 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all select-none border-none ${
+                                    vista === 'grilla' 
+                                        ? 'bg-white text-blue-600 shadow-sm' 
+                                        : 'text-slate-400 hover:text-blue-500'
+                                }`}
                             >
                                 <LayoutGrid size={13} />
                                 <span className="hidden sm:inline">Grilla</span>
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                variant={vista === 'tabla' ? 'outline' : 'ghost'}
                                 onClick={() => setVista('tabla')}
                                 title="Vista tabla"
-                                className={`flex items-center justify-center outline-none focus:outline-none gap-1.5 px-3 h-9 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all select-none ${vista === 'tabla' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-400 hover:text-blue-500'}`}
+                                className={`flex items-center justify-center gap-1.5 px-3 h-9 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all select-none border-none ${
+                                    vista === 'tabla' 
+                                        ? 'bg-white text-blue-600 shadow-sm' 
+                                        : 'text-slate-400 hover:text-blue-500'
+                                }`}
                             >
                                 <List size={13} />
                                 <span className="hidden sm:inline">Tabla</span>
-                            </button>
+                            </Button>
                         </div>
                     )}
                 </div>
 
                 {/* Filtros Secundarios */}
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-3 select-none">
                     <div className="flex items-center bg-slate-50 rounded-xl px-4 border border-slate-100 focus-within:border-blue-200 focus-within:bg-white transition-all">
                         <div className="flex items-center gap-2">
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Desde</span>
+                            <Text variant="label" className="text-[8px] text-slate-400 block tracking-widest">
+                                Desde
+                            </Text>
                             <input 
                                 type="date"
                                 name="fecha_inicio"
-                                className="bg-transparent h-11 text-[10px] font-bold outline-none text-slate-600"
+                                className="bg-transparent h-11 text-[10px] font-bold outline-none text-slate-600 cursor-pointer"
                                 value={filters.fecha_inicio}
                                 onChange={handleFilterChange}
                             />
                         </div>
                         <div className="w-px h-4 bg-slate-200 mx-4" />
                         <div className="flex items-center gap-2">
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Hasta</span>
+                            <Text variant="label" className="text-[8px] text-slate-400 block tracking-widest">
+                                Hasta
+                            </Text>
                             <input 
                                 type="date"
                                 name="fecha_fin"
-                                className="bg-transparent h-11 text-[10px] font-bold outline-none text-slate-600"
+                                className="bg-transparent h-11 text-[10px] font-bold outline-none text-slate-600 cursor-pointer"
                                 value={filters.fecha_fin}
                                 onChange={handleFilterChange}
                             />
@@ -98,12 +118,13 @@ export default function MovimientosFilterBar({
                         <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     </div>
 
-                    <button 
+                    <Button 
+                        variant="ghost"
                         onClick={onClear}
-                        className="h-11 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all border border-transparent hover:border-rose-100"
+                        className="h-11 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 active:scale-95 transition-all"
                     >
                         Limpiar
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

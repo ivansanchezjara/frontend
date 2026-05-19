@@ -1,6 +1,13 @@
 "use client";
-import { useState } from "react";
+import React, { useState } from "react";
+import { Button, Text } from '@/components/ui';
 
+/**
+ * DevolucionModal estandarizado (Strict Light Mode).
+ * Modal interactivo que permite registrar el retorno físico de mercadería en consignación
+ * hacia un depósito de destino seleccionado del listado.
+ * Reutiliza las piezas de interfaz (Button, Typography - Text).
+ */
 export default function DevolucionModal({ consignacion, depositos, onClose, onConfirm, isSubmitting }) {
   const [depositoDestino, setDepositoDestino] = useState(depositos[0]?.id || "");
   const [itemsDevolver, setItemsDevolver] = useState([]);
@@ -30,31 +37,34 @@ export default function DevolucionModal({ consignacion, depositos, onClose, onCo
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-        <div className="p-8 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+      <div className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 font-sans">
+        <div className="p-8 border-b border-slate-100 bg-slate-50 flex justify-between items-center select-none">
           <div>
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+            <Text as="h2" className="text-xl font-black text-slate-900 uppercase tracking-tight">
               Retorno de Mercadería
-            </h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            </Text>
+            <Text variant="bodyXs" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
               Registrar ingreso a depósito
-            </p>
+            </Text>
           </div>
-          <button
+          <Button
+            variant="outline"
+            size="icon"
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 transition-all"
+            className="w-10 h-10 rounded-xl border-slate-200 text-slate-400 hover:text-slate-900 shadow-sm shrink-0 font-extrabold"
+            title="Cerrar modal"
           >
             ✕
-          </button>
+          </Button>
         </div>
 
         <div className="p-8 overflow-y-auto space-y-6">
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+          <div className="space-y-2 select-none">
+            <Text variant="label" as="label" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
               Depósito de Destino
-            </label>
+            </Text>
             <select
-              className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-6 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none"
+              className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-6 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
               onChange={(e) => setDepositoDestino(e.target.value)}
               value={depositoDestino}
             >
@@ -67,9 +77,9 @@ export default function DevolucionModal({ consignacion, depositos, onClose, onCo
           </div>
 
           <div className="space-y-4">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+            <Text variant="label" as="label" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block select-none">
               Items a devolver
-            </label>
+            </Text>
             {consignacion.items.map((item, i) => {
               const pendiente =
                 item.cantidad -
@@ -81,24 +91,24 @@ export default function DevolucionModal({ consignacion, depositos, onClose, onCo
                   key={i}
                   className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between"
                 >
-                  <div className="flex-1">
-                    <p className="text-[9px] font-black text-blue-500 uppercase">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <Text variant="bodyXs" className="text-blue-500 font-black uppercase tracking-widest leading-none mb-1">
                       {item.lote_codigo}
-                    </p>
-                    <p className="text-sm font-black text-slate-800">
+                    </Text>
+                    <Text variant="bodySm" className="font-black text-slate-800 truncate">
                       {item.variante_nombre}
-                    </p>
-                    <p className="text-[10px] font-bold text-slate-400">
+                    </Text>
+                    <Text variant="bodyXs" className="text-slate-400 font-bold mt-0.5 select-none">
                       Pendiente: {pendiente} u.
-                    </p>
+                    </Text>
                   </div>
-                  <div className="w-24">
+                  <div className="w-24 shrink-0">
                     <input
                       type="number"
                       min="0"
                       max={pendiente}
                       placeholder="0"
-                      className="w-full h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-10 bg-white border border-slate-200 rounded-xl text-center font-black text-blue-600 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                       onChange={(e) => {
                         const val = parseInt(e.target.value) || 0;
                         handleItemChange(item.id, val);
@@ -111,20 +121,21 @@ export default function DevolucionModal({ consignacion, depositos, onClose, onCo
           </div>
         </div>
 
-        <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-          <button
+        <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 select-none">
+          <Button
+            variant="ghost"
             onClick={onClose}
-            className="px-8 py-4 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 transition-all"
+            className="px-8 h-12 text-[10px] font-black uppercase text-slate-400 hover:text-slate-650 transition-all active:scale-95"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleConfirm}
             disabled={isSubmitting}
-            className="px-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-10 h-12 bg-slate-900 hover:bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Procesando..." : "Confirmar Retorno"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

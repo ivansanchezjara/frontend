@@ -170,12 +170,14 @@ export default function NuevoProductoPage() {
           >
             Cargar JSON
           </Button>
-          <Link
+          <Button
+            as={Link}
             href="/catalogo"
-            className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-50"
+            variant="outline"
+            className="text-xs text-slate-600 hover:bg-slate-50"
           >
             Cancelar
-          </Link>
+          </Button>
           <Button
             id="btn-crear-producto"
             onClick={handleSubmit}

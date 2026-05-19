@@ -153,7 +153,7 @@ export default function CatalogoPage() {
                                 titulo={hayFiltrosActivos ? "Sin resultados" : "Catálogo vacío"}
                                 descripcion={hayFiltrosActivos ? "Intentá con otros términos o cambiá el filtro de categoría." : "Creá tu primer producto para empezar a armar el catálogo."}
                                 textoBoton={hayFiltrosActivos ? "Limpiar filtros" : undefined}
-                                onAction={hayFiltrosActivos ? () => { setBusqueda(''); setCategoriaSeleccionada('todas'); } : undefined}
+                                onAction={hayFiltrosActivos ? () => { setBusqueda(''); } : undefined}
                             />
                         ) : vista === 'grilla' ? (
 

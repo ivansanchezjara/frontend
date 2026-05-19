@@ -1,8 +1,13 @@
 "use client";
 import { useState } from 'react';
-import { Text } from '@/components/ui';
+import { Button, Input, Text } from '@/components/ui';
 import { X, Plus } from 'lucide-react';
 
+/**
+ * AttributesEditor estandarizado.
+ * Permite editar una estructura clave-valor (objeto JSON) de forma interactiva,
+ * reutilizando los componentes atómicos del sistema (Input, Button, Typography - Text).
+ */
 export default function AttributesEditor({ attributes = {}, onChange }) {
     const [newKey, setNewKey] = useState('');
     const [newValue, setNewValue] = useState('');
@@ -33,24 +38,28 @@ export default function AttributesEditor({ attributes = {}, onChange }) {
             {/* Lista de atributos existentes */}
             <div className="space-y-2">
                 {entries.length === 0 && (
-                    <Text variant="bodySm" className="text-xs font-black text-slate-400 uppercase tracking-tight block px-1 truncate" >Sin atributos técnicos todavía.</Text>
+                    <Text variant="bodySm" className="text-xs font-black text-slate-400 uppercase tracking-tight block px-1 truncate select-none">
+                        Sin atributos técnicos todavía.
+                    </Text>
                 )}
                 {entries.map(([k, v]) => (
-                    <div key={k} className="flex gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-100 group">
-                        <div className="w-1/3 shrink-0">
+                    <div key={k} className="flex gap-2 items-center bg-slate-50 rounded-xl p-2 border border-slate-100 group transition-all duration-200 hover:bg-slate-100/30">
+                        <div className="w-1/3 shrink-0 select-none">
                             <Text variant="bodySm" className="text-[10px] font-black text-slate-400 uppercase tracking-tight block px-1 truncate" title={k}>
                                 {k}
                             </Text>
                         </div>
                         <input
-                            className="flex-1 bg-transparent border-none text-xs font-bold text-slate-700 focus:ring-0 p-0"
+                            className="flex-1 bg-transparent border-none text-xs font-bold text-slate-700 focus:ring-0 p-0 outline-none placeholder:text-slate-300"
                             value={v}
                             onChange={(e) => handleEditValue(k, e.target.value)}
+                            placeholder="Valor del atributo..."
                         />
                         <button
                             type="button"
                             onClick={() => handleRemove(k)}
-                            className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                            className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer"
+                            title="Eliminar atributo"
                         >
                             <X className="w-3.5 h-3.5" />
                         </button>
@@ -58,35 +67,35 @@ export default function AttributesEditor({ attributes = {}, onChange }) {
                 ))}
             </div>
 
-            {/* Selector para nuevo atributo */}
-            <div className="flex gap-2 items-end pt-2 border-t border-slate-100">
-                <div className="flex-1">
-                    <Text variant="bodySm" className="text-[9px] font-black text-slate-400 uppercase mb-1 block px-1" as="label">Nueva Clave</Text>
-                    <input
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            {/* Formulario para nuevo atributo */}
+            <div className="flex gap-3 items-end pt-3 border-t border-slate-100 flex-wrap sm:flex-nowrap">
+                <div className="flex-1 min-w-[140px]">
+                    <Input
+                        label="Nueva Clave"
                         placeholder="Ej: Material"
                         value={newKey}
                         onChange={(e) => setNewKey(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                        className="text-xs font-bold py-1.5 focus:ring-blue-500/10 focus:border-blue-500 rounded-lg bg-slate-50 focus:bg-white"
                     />
                 </div>
-                <div className="flex-[1.5]">
-                    <Text variant="bodySm" className="text-[9px] font-black text-slate-400 uppercase mb-1 block px-1" as="label">Valor</Text>
-                    <input
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                <div className="flex-[1.5] min-w-[180px]">
+                    <Input
+                        label="Valor"
                         placeholder="Ej: Acero 316L"
                         value={newValue}
                         onChange={(e) => setNewValue(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                        className="text-xs font-bold py-1.5 focus:ring-blue-500/10 focus:border-blue-500 rounded-lg bg-slate-50 focus:bg-white"
                     />
                 </div>
-                <button
+                <Button
                     onClick={handleAdd}
                     disabled={!newKey.trim()}
-                    className="h-[34px] px-3 bg-slate-900 text-white rounded-lg font-bold text-xs hover:bg-blue-600 transition-all disabled:opacity-30 flex items-center justify-center cursor-pointer"
-                >
-                    <Plus className="w-4 h-4" />
-                </button>
+                    icon={Plus}
+                    className="bg-slate-900 hover:bg-slate-800 text-white border-none shrink-0 h-9.5 rounded-lg px-3 shadow-md shadow-slate-900/5 active:scale-95 transition-all"
+                    title="Agregar atributo"
+                />
             </div>
         </div>
     );

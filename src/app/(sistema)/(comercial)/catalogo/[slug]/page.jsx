@@ -11,7 +11,7 @@ import ProductoHeader from "@/components/comercial/catalogo/list/ProductoHeader"
 import VariantesSection from "@/components/comercial/catalogo/detail/VariantesSection";
 import VisibilidadSection from "@/components/comercial/catalogo/detail/VisibilidadSection";
 import ZonaPeligroSection from "@/components/comercial/catalogo/detail/ZonaPeligroSection";
-import { FilerModal, Heading, LoadingScreen, Text, useConfirm } from "@/components/ui";
+import { Button, FilerModal, Heading, LoadingScreen, Text, useConfirm } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import {
   actualizarProducto,
@@ -217,12 +217,13 @@ export default function FichaProductoPage() {
           <Text className="mt-2">
             El producto &quot;{slug}&quot; no existe en el catálogo.
           </Text>
-          <Link
+          <Button
+            as={Link}
             href="/catalogo"
-            className="mt-6 inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition-colors hover:bg-emerald-600 active:scale-[0.98]"
+            className="mt-6 bg-slate-900 text-white font-black hover:bg-slate-800 shadow-lg active:scale-[0.98]"
           >
             Volver al Catálogo
-          </Link>
+          </Button>
         </div>
       </main>
     );

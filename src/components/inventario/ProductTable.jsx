@@ -1,9 +1,12 @@
+"use client";
+import React from 'react';
 import { getFullImageUrl } from '@/services/apis/catalogo.js';
-import { ResizableHeader } from '../ui';
+import { ResizableHeader, Text, Badge } from '@/components/ui';
 
 export const COLUMNAS_INVENTARIO = [
-    { id: 'foto', label: 'Foto' }, { id: 'codigo', label: 'Código SKU' },
-    { id: 'producto', label: 'Producto / Variante' },
+    { id: 'foto', label: 'Foto' }, 
+    { id: 'codigo', label: 'Código SKU', required: true },
+    { id: 'producto', label: 'Producto / Variante', required: true },
     { id: 'categoria', label: 'Categoría' },
     { id: 'stock', label: 'Disp.' },
     { id: 'consignacion', label: 'Consig.' },
@@ -17,6 +20,12 @@ export const COLUMNAS_VISIBLES_POR_DEFECTO = [
     'codigo', 'producto', 'stock', 'consignacion', 'reserva', 'vencido', 'precio'
 ];
 
+/**
+ * ProductTable estandarizado (Strict Light Mode).
+ * Tabla interactiva que presenta el inventario aplanado por variantes (SKU),
+ * con soporte para redimensionamiento de columnas, colores semafóricos de stock,
+ * y reutilización de componentes atómicos (ResizableHeader, Typography - Text, Badge).
+ */
 export default function ProductTable({ productos, columnasVisibles, onSelectSKU }) {
 
     const formatCurrency = (amount) => {
@@ -35,12 +44,12 @@ export default function ProductTable({ productos, columnasVisibles, onSelectSKU 
             categoria_nombre: prod.categoria?.nombre || 'S/C',
             brand: prod.brand,
             imagen_url: v.imagen_variante_url || prod.imagen_principal_url,
-            raw_producto: prod // Guardamos el objeto original para el modal de auditoría
+            raw_producto: prod
         }))
     );
 
     return (
-        <div className="w-full min-w-0 bg-white rounded-[32px] shadow-sm border border-slate-200 overflow-hidden">
+        <div className="w-full min-w-0 bg-white rounded-[32px] shadow-sm border border-slate-200 overflow-hidden select-none">
             <div className="w-full overflow-x-auto">
                 <table className="w-max min-w-full text-left border-collapse table-fixed">
                     <thead className="bg-slate-50 border-b border-slate-200">
@@ -123,58 +132,80 @@ export default function ProductTable({ productos, columnasVisibles, onSelectSKU 
                                     )}
                                     {columnasVisibles.includes('codigo') && (
                                         <td className="px-3 py-2 text-left truncate max-w-0">
-                                            <span className="font-mono text-[10px] font-black text-slate-600 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 uppercase truncate inline-block max-w-full group-hover:bg-blue-100 group-hover:border-blue-200 transition-colors">
+                                            <Text variant="bodyXs" className="font-mono text-[10px] font-black text-slate-600 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 uppercase truncate inline-block max-w-full group-hover:bg-blue-100 group-hover:border-blue-200 transition-colors">
                                                 {sku.product_code}
-                                            </span>
+                                            </Text>
                                         </td>
                                     )}
                                     {columnasVisibles.includes('producto') && (
                                         <td className="px-3 py-2 max-w-0 text-left">
-                                            <div className="text-xs font-black text-slate-800 truncate leading-tight group-hover:text-blue-600 transition-colors">{sku.producto_nombre_general}</div>
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate mt-0.5">{sku.nombre_variante}</div>
+                                            <Text variant="bodyXs" className="font-black text-slate-800 truncate leading-tight group-hover:text-blue-600 transition-colors">
+                                                {sku.producto_nombre_general}
+                                            </Text>
+                                            <Text variant="bodyXs" className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate mt-0.5">
+                                                {sku.nombre_variante}
+                                            </Text>
                                         </td>
                                     )}
                                     {columnasVisibles.includes('categoria') && (
                                         <td className="px-3 py-2 text-left truncate max-w-0">
-                                            <span className="text-[9px] font-black text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-full uppercase tracking-widest truncate inline-block max-w-full">
+                                            <Badge className="bg-slate-50 text-slate-400 border border-slate-100 py-1 px-2.5 rounded-full uppercase tracking-widest text-[9px] font-extrabold truncate inline-block max-w-full">
                                                 {sku.categoria_nombre}
-                                            </span>
+                                            </Badge>
                                         </td>
                                     )}
                                     {columnasVisibles.includes('stock') && (
                                         <td className="px-3 py-1.5 text-left">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap shadow-sm ${stock === 0 ? 'bg-rose-50 text-rose-600 border-rose-100' : stock <= 5 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+                                            <Badge className={`px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap shadow-sm ${
+                                                stock === 0 
+                                                    ? 'bg-rose-50 text-rose-600 border-rose-100' 
+                                                    : stock <= 5 
+                                                        ? 'bg-amber-50 text-amber-600 border-amber-100' 
+                                                        : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                            }`}>
                                                 {stock}
-                                            </span>
+                                            </Badge>
                                         </td>
                                     )}
                                     {columnasVisibles.includes('consignacion') && (
                                         <td className="px-3 py-1.5 text-left">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap ${sku.stock_en_consignacion > 0 ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-slate-50 text-slate-300 border-slate-100 opacity-40'}`}>
+                                            <Badge className={`px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap ${
+                                                sku.stock_en_consignacion > 0 
+                                                    ? 'bg-purple-50 text-purple-600 border-purple-100 font-bold' 
+                                                    : 'bg-slate-50 text-slate-300 border-slate-100 opacity-40'
+                                            }`}>
                                                 {sku.stock_en_consignacion || 0}
-                                            </span>
+                                            </Badge>
                                         </td>
                                     )}
                                     {columnasVisibles.includes('reserva') && (
                                         <td className="px-3 py-1.5 text-left">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap ${sku.stock_reservado > 0 ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-slate-50 text-slate-300 border-slate-100 opacity-40'}`}>
+                                            <Badge className={`px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap ${
+                                                sku.stock_reservado > 0 
+                                                    ? 'bg-blue-50 text-blue-600 border-blue-100 font-bold' 
+                                                    : 'bg-slate-50 text-slate-300 border-slate-100 opacity-40'
+                                            }`}>
                                                 {sku.stock_reservado || 0}
-                                            </span>
+                                            </Badge>
                                         </td>
                                     )}
                                     {columnasVisibles.includes('vencido') && (
                                         <td className="px-3 py-1.5 text-left">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap ${sku.stock_vencido > 0 ? 'bg-red-50 text-red-600 border-red-100 font-bold' : 'bg-slate-50 text-slate-300 border-slate-100 opacity-40'}`}>
+                                            <Badge className={`px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap ${
+                                                sku.stock_vencido > 0 
+                                                    ? 'bg-red-50 text-red-600 border-red-100 font-bold' 
+                                                    : 'bg-slate-50 text-slate-300 border-slate-100 opacity-40'
+                                            }`}>
                                                 {sku.stock_vencido || 0}
-                                            </span>
+                                            </Badge>
                                         </td>
                                     )}
                                     {columnasVisibles.includes('vencimiento') && (
                                         <td className="px-3 py-2 text-left truncate max-w-0">
-                                            <span className="font-black text-[9px] text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                            <Text variant="bodyXs" className="font-black text-[9px] text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                                                 <div className={`w-1.5 h-1.5 rounded-full ${stock > 0 ? 'bg-blue-400' : 'bg-slate-300'}`}></div>
                                                 {vencimiento}
-                                            </span>
+                                            </Text>
                                         </td>
                                     )}
                                     {columnasVisibles.includes('precio') && (

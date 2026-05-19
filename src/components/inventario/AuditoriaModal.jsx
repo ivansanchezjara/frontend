@@ -1,5 +1,14 @@
+"use client";
+import React from 'react';
 import { MapPin, Info } from "lucide-react";
+import { Button, Text } from '@/components/ui';
 
+/**
+ * AuditoriaModal estandarizado (Strict Light Mode).
+ * Modal interactivo que detalla el stock de un SKU desglosado por lotes,
+ * fechas de vencimiento y ubicaciones físicas (depósitos).
+ * Reutiliza las piezas atómicas de interfaz (Button, Typography - Text).
+ */
 export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
     const getSemaforoVencimiento = (vencimiento) => {
         if (!vencimiento)
@@ -35,69 +44,72 @@ export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
     return (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto">
             <div className="bg-white w-full max-w-4xl rounded-[40px] shadow-2xl overflow-hidden flex flex-col my-8 animate-in zoom-in-95 duration-200">
-                <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50 select-none">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 uppercase tracking-widest">
+                            <Text variant="bodyXs" className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 uppercase tracking-widest font-black shrink-0 inline-block">
                                 {selectedSKU.product_code}
-                            </span>
-                            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                            </Text>
+                            <Text as="h2" className="text-2xl font-black text-slate-900 tracking-tight">
                                 Auditando SKU
-                            </h2>
+                            </Text>
                         </div>
-                        <p className="text-slate-500 font-bold text-sm uppercase mt-1 tracking-widest leading-none">
+                        <Text variant="bodySm" className="text-slate-500 font-bold uppercase mt-1 tracking-widest leading-none">
                             {selectedSKU.producto_nombre_general}{" "}
                             <span className="text-slate-300 ml-2">
                                 / {selectedSKU.nombre_variante}
                             </span>
-                        </p>
+                        </Text>
                     </div>
-                    <button
+                    <Button
+                        variant="outline"
+                        size="icon"
                         onClick={onClose}
-                        className="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl font-bold text-slate-400 hover:text-slate-800 transition-all shadow-sm"
+                        className="w-12 h-12 rounded-2xl border-slate-200 text-slate-400 hover:text-slate-800 shadow-sm shrink-0 font-extrabold"
+                        title="Cerrar modal"
                     >
                         ✕
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto font-sans">
                     {/* Resumen de Estados Stock */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                        <div className="bg-emerald-50 p-4 rounded-3xl border border-emerald-100">
-                            <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 select-none">
+                        <div className="bg-emerald-50/70 p-4 rounded-3xl border border-emerald-100">
+                            <Text variant="label" className="text-emerald-600 block mb-1">
                                 Disponible
-                            </p>
-                            <p className="text-xl font-black text-emerald-700">
+                            </Text>
+                            <Text className="text-xl font-black text-emerald-700">
                                 {selectedSKU.stock || 0}{" "}
-                                <span className="text-xs">u.</span>
-                            </p>
+                                <span className="text-xs font-normal">u.</span>
+                            </Text>
                         </div>
-                        <div className="bg-purple-50 p-4 rounded-3xl border border-purple-100">
-                            <p className="text-[9px] font-black text-purple-600 uppercase tracking-widest mb-1">
+                        <div className="bg-purple-50/70 p-4 rounded-3xl border border-purple-100">
+                            <Text variant="label" className="text-purple-600 block mb-1">
                                 Consignación
-                            </p>
-                            <p className="text-xl font-black text-purple-700">
+                            </Text>
+                            <Text className="text-xl font-black text-purple-700">
                                 {selectedSKU.stock_en_consignacion || 0}{" "}
-                                <span className="text-xs">u.</span>
-                            </p>
+                                <span className="text-xs font-normal">u.</span>
+                            </Text>
                         </div>
-                        <div className="bg-blue-50 p-4 rounded-3xl border border-blue-100">
-                            <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">
+                        <div className="bg-blue-50/70 p-4 rounded-3xl border border-blue-100">
+                            <Text variant="label" className="text-blue-600 block mb-1">
                                 Reservado
-                            </p>
-                            <p className="text-xl font-black text-blue-700">
+                            </Text>
+                            <Text className="text-xl font-black text-blue-700">
                                 {selectedSKU.stock_reservado || 0}{" "}
-                                <span className="text-xs">u.</span>
-                            </p>
+                                <span className="text-xs font-normal">u.</span>
+                            </Text>
                         </div>
-                        <div className="bg-red-50 p-4 rounded-3xl border border-red-100">
-                            <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-1">
+                        <div className="bg-red-50/70 p-4 rounded-3xl border border-red-100">
+                            <Text variant="label" className="text-red-600 block mb-1">
                                 Vencido
-                            </p>
-                            <p className="text-xl font-black text-red-700">
+                            </Text>
+                            <Text className="text-xl font-black text-red-700">
                                 {selectedSKU.stock_vencido || 0}{" "}
-                                <span className="text-xs">u.</span>
-                            </p>
+                                <span className="text-xs font-normal">u.</span>
+                            </Text>
                         </div>
                     </div>
 
@@ -111,8 +123,10 @@ export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
 
                                 if (validLotes.length === 0) {
                                     return (
-                                        <div className="col-span-2 py-10 text-center text-slate-400 font-bold uppercase tracking-widest text-xs italic bg-slate-50 rounded-[30px] border border-dashed border-slate-200">
-                                            No hay lotes con stock para este SKU.
+                                        <div className="col-span-2 py-12 text-center bg-slate-50 rounded-[30px] border border-dashed border-slate-200 select-none">
+                                            <Text variant="bodyXs" className="text-slate-400 font-bold uppercase tracking-widest italic">
+                                                No hay lotes con stock para este SKU.
+                                            </Text>
                                         </div>
                                     );
                                 }
@@ -145,64 +159,64 @@ export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
                                         key={idx}
                                         className="p-5 rounded-3xl border transition-all bg-white border-slate-100 hover:border-slate-300 flex flex-col"
                                     >
-                                        <div className="flex justify-between items-start mb-4">
+                                        <div className="flex justify-between items-start mb-4 select-none">
                                             <div>
-                                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">
+                                                <Text variant="label" as="label" className="ml-1 mb-1 block text-slate-400">
                                                     Código de Lote
-                                                </label>
-                                                <span className="text-lg font-black text-slate-800 ml-1">
+                                                </Text>
+                                                <Text className="text-lg font-black text-slate-800 ml-1">
                                                     {grupo.lote_codigo}
-                                                </span>
+                                                </Text>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-xl font-black text-slate-900">
-                                                    {grupo.total_cantidad} <span className="text-xs">u.</span>
-                                                </div>
+                                                <Text className="text-xl font-black text-slate-900">
+                                                    {grupo.total_cantidad} <span className="text-xs font-normal">u.</span>
+                                                </Text>
                                                 {grupo.total_vencida > 0 && (
-                                                    <div className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full mt-1">
+                                                    <div className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full mt-1 inline-block">
                                                         {grupo.total_vencida} u. Vencidas
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
 
-                                        <div className="mb-4">
-                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">
+                                        <div className="mb-4 select-none">
+                                            <Text variant="label" as="label" className="ml-1 mb-1 block text-slate-400">
                                                 Vencimiento
-                                            </label>
+                                            </Text>
                                             <div className="flex items-center gap-2 ml-1">
                                                 <div
                                                     className={`w-2 h-2 rounded-full ${getSemaforoVencimiento(grupo.vencimiento).dot}`}
                                                 ></div>
-                                                <span
+                                                <Text
                                                     className={`text-[11px] font-black uppercase tracking-tight ${getSemaforoVencimiento(grupo.vencimiento).color}`}
                                                 >
                                                     {grupo.vencimiento || "Sin fecha"}
-                                                </span>
+                                                </Text>
                                             </div>
                                         </div>
 
                                         <div className="mt-auto bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                            <Text variant="label" className="text-slate-400 mb-2 flex items-center gap-1.5 select-none">
                                                 <MapPin size={10} /> Ubicaciones
-                                            </label>
+                                            </Text>
                                             <div className="space-y-2">
                                                 {grupo.ubicaciones.map((ubi) => (
                                                     <div
                                                         key={ubi.id}
                                                         className="flex justify-between items-center text-xs"
                                                     >
-                                                        <span className="font-bold text-slate-600">
+                                                        <Text variant="bodyXs" className="font-bold text-slate-600">
                                                             {ubi.deposito_nombre || "Depósito"}
-                                                        </span>
+                                                        </Text>
                                                         <div className="flex items-center gap-2">
                                                             {ubi.cantidad > 0 && (
-                                                                <span className="font-black text-slate-800">
+                                                                <Text variant="bodyXs" className="font-black text-slate-800">
                                                                     {ubi.cantidad} u.
-                                                                </span>
+                                                                </Text>
                                                             )}
                                                             {ubi.cantidad_vencida > 0 && (
-                                                                <span className="font-bold text-red-500 bg-white px-1.5 rounded-md border border-red-100">
+                                                                <span className="font-bold text-red-500 bg-white px-1.5 rounded-md border border-red-100 text-[10px]">
                                                                     {ubi.cantidad_vencida} u. vencidas
                                                                 </span>
                                                             )}
@@ -218,13 +232,13 @@ export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
                     </div>
                 </div>
 
-                <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-between items-center select-none">
                     <div className="flex items-start gap-3 max-w-md">
                         <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
-                        <p className="text-[10px] font-medium text-blue-700 leading-normal">
+                        <Text variant="bodyXs" className="text-blue-700 font-medium leading-normal">
                             Para realizar correcciones o mover unidades entre lotes, dirígete
                             al módulo de <strong>Ajustes de Inventario</strong>.
-                        </p>
+                        </Text>
                     </div>
                 </div>
             </div>

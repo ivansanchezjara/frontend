@@ -1,6 +1,12 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
+import { Text } from '../basics/Typography';
 
+/**
+ * ResizableHeader estandarizado.
+ * Representa una celda de encabezado de tabla (th) ajustable en ancho,
+ * que reutiliza el componente tipográfico Text en su variante label para las columnas.
+ */
 export default function ResizableHeader({ children, defaultWidth = 150, minWidth = 50, className = "" }) {
     const [width, setWidth] = useState(defaultWidth);
     const [isResizing, setIsResizing] = useState(false);
@@ -62,9 +68,14 @@ export default function ResizableHeader({ children, defaultWidth = 150, minWidth
             className={`relative group/header align-middle ${className} ${isResizing ? 'bg-slate-100/50' : 'transition-colors'}`}
         >
             <div className="w-full h-full flex flex-col justify-center truncate pr-4 relative z-0">
-                <span className="truncate w-full inline-block text-left">
+                {/* Reutilización del componente atómico Text en su variante label para consistencia */}
+                <Text
+                    as="span"
+                    variant="label"
+                    className="truncate w-full inline-block text-left text-inherit font-black"
+                >
                     {children}
-                </span>
+                </Text>
             </div>
             <div
                 onMouseDown={handleMouseDown}

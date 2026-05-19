@@ -1,21 +1,38 @@
+"use client";
+import { forwardRef } from 'react';
 import { Search, X } from 'lucide-react';
+import Button from '../basics/Button';
 
-export default function SearchBar({
+/**
+ * SearchBar estandarizada para listados, tablas y modales del ERP.
+ * Proporciona una entrada de búsqueda refinada con micro-animaciones en el icono,
+ * botón para limpiar y soporte para referencias (ref).
+ * 
+ * @param {Object} props
+ * @param {String} props.value - Valor del término de búsqueda
+ * @param {Function} props.onChange - Callback llamado con el nuevo string al escribir o limpiar
+ * @param {String} props.placeholder - Marcador de posición (default: 'Buscar...')
+ * @param {String} props.className - Clases CSS adicionales para el contenedor exterior
+ * @param {String} props.inputClassName - Clases CSS adicionales para el input nativo
+ */
+export const SearchBar = forwardRef(({
     value,
     onChange,
     placeholder = 'Buscar...',
     className = '',
     inputClassName = '',
     ...props
-}) {
+}, ref) => {
     return (
         <div className={`relative group w-full ${className}`}>
-            {/* Icono de búsqueda: sutil, centrado y con micro-animación al hacer foco */}
+            {/* Icono de búsqueda: sutil, centrado y con micro-animación de escala y color al hacer foco */}
             <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 group-focus-within:scale-105 transition-all duration-300 pointer-events-none">
                 <Search size={16} className="shrink-0" />
             </div>
 
+            {/* Input nativo con estilos premium y anillos de enfoque consistentes */}
             <input
+                ref={ref}
                 type="text"
                 placeholder={placeholder}
                 value={value}
@@ -24,17 +41,21 @@ export default function SearchBar({
                 {...props}
             />
 
-            {/* Botón limpiar: diseño minimalista y dinámico con icono estandarizado */}
+            {/* Botón limpiar: Reutiliza el componente atómico Button en variante ghost */}
             {value && (
-                <button
+                <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => onChange('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-all duration-200 cursor-pointer p-1 rounded-lg hover:bg-slate-100 active:scale-95"
+                    icon={X}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 hover:bg-slate-100/80 w-7 h-7 rounded-lg active:scale-95 shrink-0 transition-all duration-200"
                     title="Limpiar búsqueda"
-                >
-                    <X size={14} className="shrink-0" />
-                </button>
+                />
             )}
         </div>
     );
-}
+});
+
+SearchBar.displayName = 'SearchBar';
+export default SearchBar;
