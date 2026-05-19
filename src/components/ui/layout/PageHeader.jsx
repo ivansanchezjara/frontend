@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 
@@ -19,7 +20,7 @@ export default function PageHeader({ title, breadcrumbs = [], subtitle, subtitle
 
     return (
         <header
-            className={`bg-white border-b border-slate-200 px-10 py-4 shrink-0 z-10 flex items-center justify-between gap-6 no-print ${className}`}
+            className={cn("bg-white border-b border-slate-200 px-10 py-4 shrink-0 z-10 flex items-center justify-between gap-6 no-print", className)}
         >
             {/* Left: Title / Breadcrumbs + Subtitle */}
             <div className="min-w-0">
@@ -73,7 +74,7 @@ export default function PageHeader({ title, breadcrumbs = [], subtitle, subtitle
 
                 {/* Subtítulo */}
                 {subtitle && (
-                    <div className={`text-[10px] font-bold uppercase flex items-center gap-1.5 mt-1 ${subtitleClassName}`}>
+                    <div className={cn("text-[10px] font-bold uppercase flex items-center gap-1.5 mt-1", subtitleClassName)}>
                         {subtitle}
                     </div>
                 )}

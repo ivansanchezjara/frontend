@@ -15,6 +15,7 @@ import {
   PageHeader,
   Text,
   Field,
+  Input,
   Section,
   TagsInput,
   Toggle,
@@ -236,39 +237,30 @@ export default function NuevoProductoPage() {
 
               <div className="grid w-full grid-cols-1 gap-5 md:grid-cols-2">
                 <div className="md:col-span-2">
-                  <Field label="Nombre del Producto *">
-                    <input
-                      autoFocus
-                      className={inputClass}
-                      value={formData.nombre_general}
-                      onChange={(e) => field("nombre_general")(e.target.value)}
-                      placeholder="Ej: Cureta Sinus"
-                    />
-                  </Field>
+                  <Input
+                    autoFocus
+                    label="Nombre del Producto *"
+                    value={formData.nombre_general}
+                    onChange={(e) => field("nombre_general")(e.target.value)}
+                    placeholder="Ej: Cureta Sinus"
+                  />
                 </div>
 
-                <Field
+                <Input
                   label="Código General *"
-                  hint="Debe ser único en todo el catálogo."
-                >
-                  <input
-                    className={`${inputClass} font-mono uppercase`}
-                    value={formData.general_code}
-                    onChange={(e) =>
-                      field("general_code")(e.target.value.toUpperCase())
-                    }
-                    placeholder="Ej: TH-CU-SIN"
-                  />
-                </Field>
+                  helperText="Debe ser único en todo el catálogo."
+                  className="font-mono uppercase"
+                  value={formData.general_code}
+                  onChange={(e) => field("general_code")(e.target.value.toUpperCase())}
+                  placeholder="Ej: TH-CU-SIN"
+                />
 
-                <Field label="Marca">
-                  <input
-                    className={inputClass}
-                    value={formData.brand}
-                    onChange={(e) => field("brand")(e.target.value)}
-                    placeholder="Ej: Thalys"
-                  />
-                </Field>
+                <Input
+                  label="Marca"
+                  value={formData.brand}
+                  onChange={(e) => field("brand")(e.target.value)}
+                  placeholder="Ej: Thalys"
+                />
 
                 <Field label="Categoría">
                   {!isCreatingCat ? (
@@ -285,14 +277,14 @@ export default function NuevoProductoPage() {
                           </option>
                         ))}
                       </select>
-                      <button
+                      <Button
                         type="button"
                         onClick={() => setIsCreatingCat(true)}
-                        className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xl font-bold text-emerald-600 hover:bg-emerald-100"
+                        className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-xl font-bold text-emerald-600 hover:bg-emerald-100 shadow-none h-11"
                         title="Nueva Categoría"
                       >
                         +
-                      </button>
+                      </Button>
                     </div>
                   ) : (
                     <div className="flex gap-2">
@@ -307,48 +299,43 @@ export default function NuevoProductoPage() {
                           if (e.key === "Enter") handleCrearCategoriaConfirm();
                         }}
                       />
-                      <button
+                      <Button
                         type="button"
                         disabled={savingCat}
                         onClick={handleCrearCategoriaConfirm}
-                        className="rounded-xl bg-emerald-600 px-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                        className="rounded-xl bg-emerald-600 px-4 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50 shrink-0 h-11"
                       >
                         <Check size={16} />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
                         onClick={() => {
                           setIsCreatingCat(false);
                           setNewCatName("");
                         }}
-                        className="rounded-xl bg-slate-100 px-3 text-sm font-bold text-slate-500 hover:bg-slate-200"
+                        variant="ghost"
+                        className="rounded-xl bg-slate-100 hover:bg-slate-200 px-4 text-slate-500 border-none shrink-0 h-11"
                       >
                         <X size={16} />
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </Field>
 
-                <Field label="Sub-Categoría">
-                  <input
-                    className={inputClass}
-                    value={formData.sub_category}
-                    onChange={(e) => field("sub_category")(e.target.value)}
-                    placeholder="Ej: Micro-cirugía"
-                  />
-                </Field>
+                <Input
+                  label="Sub-Categoría"
+                  value={formData.sub_category}
+                  onChange={(e) => field("sub_category")(e.target.value)}
+                  placeholder="Ej: Micro-cirugía"
+                />
 
                 <div className="md:col-span-2">
-                  <Field label="Área Profesional">
-                    <input
-                      className={inputClass}
-                      value={formData.professional_area}
-                      onChange={(e) =>
-                        field("professional_area")(e.target.value)
-                      }
-                      placeholder="Ej: Odontología, Cirugía general..."
-                    />
-                  </Field>
+                  <Input
+                    label="Área Profesional"
+                    value={formData.professional_area}
+                    onChange={(e) => field("professional_area")(e.target.value)}
+                    placeholder="Ej: Odontología, Cirugía general..."
+                  />
                 </div>
               </div>
             </div>

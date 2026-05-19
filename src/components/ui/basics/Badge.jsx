@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 export function Badge({ children, variant = 'default', className = '', ...props }) {
   const baseStyles = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider";
 
@@ -13,7 +15,7 @@ export function Badge({ children, variant = 'default', className = '', ...props 
   const variantStyles = variants[variant] || variants.default;
 
   return (
-    <span className={`${baseStyles} ${variantStyles} ${className}`} {...props}>
+    <span className={cn(baseStyles, variantStyles, className)} {...props}>
       {children}
     </span>
   );

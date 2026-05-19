@@ -1,4 +1,5 @@
 "use client";
+import { cn } from "@/lib/utils";
 import { forwardRef } from 'react';
 import { Search, X } from 'lucide-react';
 import Button from '../basics/Button';
@@ -24,7 +25,7 @@ export const SearchBar = forwardRef(({
     ...props
 }, ref) => {
     return (
-        <div className={`relative group w-full ${className}`}>
+        <div className={cn("relative group w-full", className)}>
             {/* Icono de búsqueda: sutil, centrado y con micro-animación de escala y color al hacer foco */}
             <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 group-focus-within:scale-105 transition-all duration-300 pointer-events-none">
                 <Search size={16} className="shrink-0" />
@@ -37,7 +38,7 @@ export const SearchBar = forwardRef(({
                 placeholder={placeholder}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className={`w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/50 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all duration-200 text-sm font-medium text-slate-700 placeholder:text-slate-400 shadow-inner focus:shadow-none ${inputClassName}`}
+                className={cn("w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/50 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all duration-200 text-sm font-medium text-slate-700 placeholder:text-slate-400 shadow-inner focus:shadow-none", inputClassName)}
                 {...props}
             />
 

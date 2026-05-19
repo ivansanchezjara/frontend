@@ -91,21 +91,20 @@ export default function DirectoriesPanel({
                                 onClick={() => navigateToFolder(c)}
                                 onDragOver={handleDragOver}
                                 onDrop={(e) => handleDrop(e, c.id)}
-                                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all text-left group cursor-pointer border ${
-                                    carpetaActual === c.id 
-                                        ? 'bg-emerald-50 border-emerald-200 shadow-sm' 
-                                        : 'hover:bg-slate-50 border-transparent'
-                                }`}
+                                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all text-left group cursor-pointer border ${carpetaActual === c.id
+                                    ? 'bg-emerald-50 border-emerald-200 shadow-sm'
+                                    : 'hover:bg-slate-50 border-transparent'
+                                    }`}
                             >
                                 <div className="flex items-center gap-3 min-w-0">
-                                    <Folder 
-                                        size={18} 
-                                        className={carpetaActual === c.id ? 'text-emerald-500 fill-emerald-500/20' : 'text-slate-400'} 
+                                    <Folder
+                                        size={18}
+                                        className={carpetaActual === c.id ? 'text-emerald-500 fill-emerald-500/20' : 'text-slate-400'}
                                     />
                                     <div className="min-w-0">
-                                        <Text 
-                                            variant="bodySm" 
-                                            className={`font-bold capitalize truncate ${carpetaActual === c.id ? 'text-emerald-700' : 'text-slate-700'}`}
+                                        <Text
+                                            variant="bodySm"
+                                            className={`font-bold capitalize truncate ${carpetaActual === c.id ? 'text-emerald-800' : 'text-slate-700'}`}
                                         >
                                             {c.name}
                                         </Text>
@@ -114,13 +113,14 @@ export default function DirectoriesPanel({
                                         </Text>
                                     </div>
                                 </div>
-                                <button
+                                <Button
+                                    variant="ghost"
                                     onClick={(e) => onDeleteFolder(e, c.id)}
-                                    className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer"
+                                    className="w-6 h-6 p-0 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 border-none shrink-0"
                                     title="Eliminar carpeta"
                                 >
-                                    <Trash2 size={12} />
-                                </button>
+                                    <Trash2 size={14} />
+                                </Button>
                             </div>
                         ))}
                         {carpetas.length === 0 && (
@@ -138,11 +138,10 @@ export default function DirectoriesPanel({
                 <Button
                     onClick={handleAuditOrphans}
                     icon={AlertCircle}
-                    className={`w-full text-[10px] font-black uppercase tracking-wider h-11 rounded-xl shadow-sm border transition-all active:scale-95 ${
-                        isAuditing 
-                            ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600' 
-                            : 'bg-white border-slate-200 text-slate-600 hover:border-amber-300 hover:text-amber-600 hover:bg-amber-50'
-                    }`}
+                    className={`w-full text-[10px] font-black uppercase tracking-wider h-11 rounded-xl shadow-sm border transition-all active:scale-95 ${isAuditing
+                        ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-amber-300 hover:text-amber-600 hover:bg-amber-50'
+                        }`}
                 >
                     AUDITAR HUÉRFANAS
                 </Button>

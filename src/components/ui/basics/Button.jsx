@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 export function Button({
   children,
   variant = 'primary',
@@ -32,7 +34,7 @@ export function Button({
 
   return (
     <button
-      className={`${baseStyles} ${variantStyles} ${sizeStyles} ${className}`}
+      className={cn(baseStyles, variantStyles, sizeStyles, className)}
       disabled={disabled}
       type={type}
       {...props}

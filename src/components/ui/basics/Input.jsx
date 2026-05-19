@@ -1,5 +1,6 @@
 import { forwardRef, useId } from 'react';
 import { Text } from './Typography';
+import { cn } from "@/lib/utils";
 
 export const Input = forwardRef(({
   label,
@@ -12,16 +13,16 @@ export const Input = forwardRef(({
 }, ref) => {
   const id = useId();
 
-  const baseInputStyles = "block rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:bg-slate-50";
+  const baseInputStyles = "block rounded-xl border outline-none transition-all text-sm font-medium disabled:opacity-50 disabled:bg-slate-50";
   const errorStyles = error
-    ? "border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500"
-    : "border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-blue-500";
+    ? "border-red-300 bg-red-50 text-red-900 placeholder:text-red-300 focus:bg-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+    : "border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500";
 
-  const paddingStyles = Icon ? "pl-10 pr-4 py-2.5" : "px-4 py-2.5";
+  const paddingStyles = Icon ? "pl-10 pr-3.5 py-2.5" : "px-3.5 py-2.5";
   const widthStyles = fullWidth ? "w-full" : "";
 
   return (
-    <div className={`${widthStyles} flex flex-col gap-1.5`}>
+    <div className={cn("flex flex-col gap-1.5", widthStyles)}>
       {label && (
         <Text as="label" variant="label" htmlFor={id}>
           {label}
@@ -36,14 +37,14 @@ export const Input = forwardRef(({
         <input
           id={id}
           ref={ref}
-          className={`${baseInputStyles} ${errorStyles} ${paddingStyles} ${widthStyles} ${className}`}
+          className={cn(baseInputStyles, errorStyles, paddingStyles, widthStyles, className)}
           {...props}
         />
       </div>
       {(error || helperText) && (
         <Text
           variant="bodySm"
-          className={`mt-1 text-xs ${error ? 'text-red-500' : 'text-slate-500'}`}
+          className={cn("mt-1 text-xs", error ? 'text-red-500' : 'text-slate-500')}
         >
           {error || helperText}
         </Text>

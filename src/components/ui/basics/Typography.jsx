@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 export function Heading({ children, level = 1, className = '', ...props }) {
   const Tag = `h${level}`;
 
@@ -14,7 +16,7 @@ export function Heading({ children, level = 1, className = '', ...props }) {
   const sizeStyles = sizes[level] || sizes[1];
 
   return (
-    <Tag className={`${baseStyles} ${sizeStyles} ${className}`} {...props}>
+    <Tag className={cn(baseStyles, sizeStyles, className)} {...props}>
       {children}
     </Tag>
   );
@@ -45,7 +47,7 @@ export function Text({
   const variantStyle = styles[variant] || styles.body;
 
   return (
-    <Tag className={`${variantStyle} ${className}`} {...props}>
+    <Tag className={cn(variantStyle, className)} {...props}>
       {children}
     </Tag>
   );

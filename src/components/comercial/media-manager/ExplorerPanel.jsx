@@ -154,16 +154,17 @@ export default function ExplorerPanel({
 
                                         {!isSelectionMode && (
                                             <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    className="w-7 h-7 bg-white/90 backdrop-blur rounded-md flex items-center justify-center text-slate-600 hover:text-red-600 shadow-sm transition-colors cursor-pointer"
+                                                <Button
+                                                    variant="ghost"
+                                                    className="w-7 h-7 p-0 bg-white/90 backdrop-blur rounded-md flex items-center justify-center text-slate-600 hover:text-red-600 hover:bg-white shadow-sm transition-colors border-none shrink-0"
                                                     title="Eliminar permanentemente"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleDelete(archivo.id);
                                                     }}
                                                 >
-                                                    <Trash2 size={12} />
-                                                </button>
+                                                    <Trash2 size={14} />
+                                                </Button>
                                             </div>
                                         )}
                                     </div>
@@ -220,21 +221,23 @@ export default function ExplorerPanel({
                         </Text>
                         <div className="flex items-center gap-2">
                             {!isEditingImage && (
-                                <button
+                                <Button
+                                    variant="ghost"
                                     onClick={startEditingImage}
-                                    className="p-1.5 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors cursor-pointer"
+                                    className="w-8 h-8 p-0 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors border-none shrink-0"
                                     title="Editar"
                                 >
-                                    <Edit2 size={14} />
-                                </button>
+                                    <Edit2 size={16} />
+                                </Button>
                             )}
-                            <button
+                            <Button
+                                variant="ghost"
                                 onClick={() => { setArchivoSeleccionado(null); setIsEditingImage(false); }}
-                                className="p-1 hover:bg-slate-200 rounded-full transition-colors cursor-pointer"
+                                className="w-7 h-7 p-0 hover:bg-slate-200 rounded-full transition-colors border-none shrink-0"
                                 title="Cerrar panel"
                             >
-                                <ChevronRight size={16} className="text-slate-400" />
-                            </button>
+                                <ChevronRight size={18} className="text-slate-400" />
+                            </Button>
                         </div>
                     </div>
 
@@ -326,19 +329,19 @@ export default function ExplorerPanel({
                                 <div>
                                     <Text variant="label" className="block mb-1 text-slate-400">URL Pública</Text>
                                     <div className="flex gap-2">
-                                        <input
-                                            type="text"
+                                        <Input
                                             readOnly
                                             value={getFullImageUrl(archivoSeleccionado.url)}
-                                            className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[10px] font-medium text-slate-500 outline-none select-all"
+                                            className="text-[10px] py-1.5 font-medium flex-1"
                                         />
-                                        <button
+                                        <Button
+                                            variant="ghost"
                                             onClick={() => copyToClipboard(getFullImageUrl(archivoSeleccionado.url))}
-                                            className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                                            className="w-8 h-8 p-0 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors border-none shrink-0"
                                             title="Copiar URL"
                                         >
-                                            <LinkIcon size={14} />
-                                        </button>
+                                            <LinkIcon size={16} />
+                                        </Button>
                                     </div>
                                 </div>
 
@@ -405,12 +408,13 @@ export default function ExplorerPanel({
                             <Text variant="bodyXs" className="font-black uppercase tracking-widest text-slate-100">
                                 Seleccionados
                             </Text>
-                            <button
+                            <Button
+                                variant="ghost"
                                 onClick={() => setSelectedItems([])}
-                                className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors cursor-pointer block mt-0.5"
+                                className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors block mt-0.5 p-0 h-auto border-none hover:bg-transparent"
                             >
                                 Deseleccionar todo
-                            </button>
+                            </Button>
                         </div>
                     </div>
 
@@ -434,13 +438,14 @@ export default function ExplorerPanel({
                         </Button>
                     </div>
 
-                    <button
+                    <Button
+                        variant="ghost"
                         onClick={toggleSelectionMode}
-                        className="ml-4 p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer flex items-center justify-center text-slate-400 hover:text-white"
+                        className="ml-4 w-10 h-10 p-0 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center text-slate-400 hover:text-white border-none shrink-0"
                         title="Cerrar modo selección"
                     >
                         <X size={20} />
-                    </button>
+                    </Button>
                 </div>
             )}
 

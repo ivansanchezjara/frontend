@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 export default function BrandMark({
   showIcon = true,
   showText = true,
@@ -40,17 +42,17 @@ export default function BrandMark({
   const toneStyles = tones[tone] || tones.dark;
 
   return (
-    <span className={`inline-flex items-center ${sizeStyles.gap} ${className}`}>
+    <span className={cn("inline-flex items-center", sizeStyles.gap, className)}>
       {showIcon && (
         <span
-          className={`flex shrink-0 items-center justify-center rounded-md font-black shadow-lg ${sizeStyles.icon} ${toneStyles.icon} ${iconClassName}`}
+          className={cn("flex shrink-0 items-center justify-center rounded-md font-black shadow-lg", sizeStyles.icon, toneStyles.icon, iconClassName)}
         >
           E
         </span>
       )}
       {showText && (
         <span
-          className={`font-black tracking-tight ${sizeStyles.text} ${toneStyles.text} ${textClassName}`}
+          className={cn("font-black tracking-tight", sizeStyles.text, toneStyles.text, textClassName)}
         >
           ERP<span className="text-blue-500">.</span>CORE
         </span>
