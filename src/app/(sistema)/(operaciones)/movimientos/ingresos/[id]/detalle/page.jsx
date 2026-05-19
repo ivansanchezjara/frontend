@@ -1,5 +1,5 @@
 "use client";
-import { LoadingScreen, PageHeader, ResizableHeader } from '@/components/ui';
+import { LoadingScreen, PageHeader, ResizableHeader, Badge, Button, Text } from '@/components/ui';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -87,24 +87,26 @@ export default function DetalleIngresoPage() {
                         <Package size={12} />
                         <span>Detalle de Ingreso</span>
                         <span className="mx-2 text-slate-300">|</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase border ${ingreso.estado === 'APROBADO' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
+                        <Badge variant={ingreso.estado === 'APROBADO' ? 'success' : 'warning'}>
                             {ingreso.estado}
-                        </span>
+                        </Badge>
                     </>
                 }
                 subtitleClassName="text-blue-600"
             >
                 <div className="flex items-center gap-3 relative no-print">
-                    <button
+                    <Button
+                        variant={showConfig ? "primary" : "outline"}
                         onClick={() => setShowConfig(!showConfig)}
-                        className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all shadow-sm border ${showConfig ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                        icon={Settings2Icon}
+                        className="uppercase text-[10px] tracking-widest"
                     >
-                        <Settings2Icon size={14} /> Vista
-                    </button>
+                        Vista
+                    </Button>
 
                     {showConfig && (
                         <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-2xl z-[50] p-3 flex flex-col gap-0.5 animate-in slide-in-from-top-2 duration-200">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 px-2">Columnas</p>
+                            <Text variant="label" className="mb-2 px-2 block">Columnas</Text>
                             {COLUMNAS_CONFIG.map(col => (
                                 <button key={col.id} onClick={() => toggleCol(col.id)} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 text-left transition-all">
                                     <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${colsVisibles.includes(col.id) ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-transparent'}`}><CheckIcon size={12} strokeWidth={4} /></div>
@@ -114,14 +116,23 @@ export default function DetalleIngresoPage() {
                         </div>
                     )}
 
-                    <button onClick={handleExportExcel} className="bg-emerald-600 text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 transition-all">
-                        <DownloadIcon size={14} /> Excel
-                    </button>
+                    <Button
+                        variant="success"
+                        onClick={handleExportExcel}
+                        icon={DownloadIcon}
+                        className="uppercase text-[10px] tracking-widest"
+                    >
+                        Excel
+                    </Button>
 
                     {ingreso.estado === 'BORRADOR' && (
-                        <Link href={`/movimientos/ingresos/${id}`} className="bg-blue-600 text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all">
+                        <Button
+                            variant="primary"
+                            onClick={() => router.push(`/movimientos/ingresos/${id}`)}
+                            className="uppercase text-[10px] tracking-widest"
+                        >
                             Editar
-                        </Link>
+                        </Button>
                     )}
                 </div>
             </PageHeader>
@@ -165,8 +176,8 @@ export default function DetalleIngresoPage() {
                                                         </div>
                                                     )}
                                                     <div className="min-w-0">
-                                                        <div className="text-[11px] font-black text-slate-800 leading-tight truncate">{item.variante_nombre}</div>
-                                                        <div className="text-[9px] font-bold text-slate-400 mt-0.5">{item.variante_codigo}</div>
+                                                        <Text variant="bodyBold" className="text-[11px] leading-tight truncate">{item.variante_nombre}</Text>
+                                                        <Text variant="mutedXs" className="text-[9px] mt-0.5">{item.variante_codigo}</Text>
                                                     </div>
                                                 </div>
                                             </td>
@@ -205,16 +216,16 @@ export default function DetalleIngresoPage() {
                         <div className="p-8 bg-slate-900 text-white flex justify-between items-center no-print rounded-b-[40px]">
                             <div className="flex items-center gap-3">
                                 <CheckCircle2Icon size={24} className="text-emerald-400" />
-                                <span className="text-sm font-medium italic text-slate-300">"{ingreso.descripcion || 'Sin observaciones'}"</span>
+                                <Text variant="bodySm" className="italic text-slate-300">"{ingreso.descripcion || 'Sin observaciones'}"</Text>
                             </div>
 
                             <div className="flex items-center gap-6">
                                 {/* TOTAL FOB */}
                                 <div className="text-right">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Total FOB</p>
-                                    <p className="text-xl font-black text-slate-300">
+                                    <Text variant="caption" className="text-[9px] text-slate-500 mb-0.5 block">Total FOB</Text>
+                                    <Text variant="bodyBold" className="text-xl text-slate-300">
                                         {formatCurrency(ingreso.items?.reduce((s, i) => s + (i.cantidad * (i.costo_fob_unitario || 0)), 0))}
-                                    </p>
+                                    </Text>
                                 </div>
 
                                 {/* SEPARADOR VERTICAL */}
@@ -222,10 +233,10 @@ export default function DetalleIngresoPage() {
 
                                 {/* TOTAL LANDED */}
                                 <div className="text-right">
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Costo Total Arribo (Landed)</p>
-                                    <p className="text-2xl font-black text-emerald-400">
+                                    <Text variant="caption" className="text-[9px] text-slate-400 mb-0.5 block">Costo Total Arribo (Landed)</Text>
+                                    <Text variant="bodyBold" className="text-2xl text-emerald-400">
                                         {formatCurrency(ingreso.items?.reduce((s, i) => s + (i.cantidad * (i.costo_landed_unitario || 0)), 0))}
-                                    </p>
+                                    </Text>
                                 </div>
                             </div>
                         </div>

@@ -1,5 +1,5 @@
 "use client";
-import { PageHeader, Button, Heading, Text } from '@/components/ui';
+import { PageHeader, Button, Heading, Text, Input } from '@/components/ui';
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -179,75 +179,45 @@ export default function NuevaConsignacionPage() {
             {/* Panel lateral: Datos de Cabecera */}
             <div className="lg:col-span-1 space-y-6">
               <div className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm space-y-6">
-                <Heading level={3} className="text-[10px] text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Heading level={6} className="flex items-center gap-2">
                   <Info size={14} /> Datos del receptor
                 </Heading>
 
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                      Responsable / Cliente
-                    </label>
-                    <div className="relative">
-                      <User
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
-                        size={18}
-                      />
-                      <input
-                        type="text"
-                        name="responsable"
-                        value={header.responsable}
-                        onChange={handleChangeHeader}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 font-bold text-slate-800 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all placeholder:text-slate-300"
-                        placeholder="Nombre de la persona..."
-                      />
-                    </div>
-                  </div>
+                  <Input
+                    label="Responsable / Cliente"
+                    icon={User}
+                    type="text"
+                    name="responsable"
+                    value={header.responsable}
+                    onChange={handleChangeHeader}
+                    placeholder="Nombre de la persona..."
+                  />
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                      Destino / Lugar
-                    </label>
-                    <div className="relative">
-                      <MapPin
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
-                        size={18}
-                      />
-                      <input
-                        type="text"
-                        name="destino"
-                        value={header.destino}
-                        onChange={handleChangeHeader}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 font-bold text-slate-800 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all placeholder:text-slate-300"
-                        placeholder="Ej: Clínica X, Vendedor Juan..."
-                      />
-                    </div>
-                  </div>
+                  <Input
+                    label="Destino / Lugar"
+                    icon={MapPin}
+                    type="text"
+                    name="destino"
+                    value={header.destino}
+                    onChange={handleChangeHeader}
+                    placeholder="Ej: Clínica X, Vendedor Juan..."
+                  />
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                      Fecha Retorno (Est.)
-                    </label>
-                    <div className="relative">
-                      <Calendar
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
-                        size={18}
-                      />
-                      <input
-                        type="date"
-                        name="fecha_esperada_devolucion"
-                        value={header.fecha_esperada_devolucion}
-                        onChange={handleChangeHeader}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 font-bold text-slate-800 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
+                  <Input
+                    label="Fecha Retorno (Est.)"
+                    icon={Calendar}
+                    type="date"
+                    name="fecha_esperada_devolucion"
+                    value={header.fecha_esperada_devolucion}
+                    onChange={handleChangeHeader}
+                  />
                 </div>
               </div>
 
               <div className="bg-slate-900 p-8 rounded-[40px] text-white shadow-xl relative overflow-hidden">
                 <LayoutGrid className="absolute -right-4 -bottom-4 text-white/5 w-24 h-24" />
-                <Heading level={3} className="text-[10px] text-slate-400 uppercase tracking-widest mb-4">
+                <Heading level={6} className="mb-4 text-slate-400">
                   Notas Internas
                 </Heading>
                 <textarea
@@ -265,7 +235,7 @@ export default function NuevaConsignacionPage() {
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm min-h-[400px]">
                 <div className="flex justify-between items-center mb-8">
-                  <Heading level={3} className="text-xs text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <Heading level={6} className="flex items-center gap-2 text-slate-400">
                     <Package size={16} /> Productos a enviar
                   </Heading>
                   <Button
@@ -312,28 +282,27 @@ export default function NuevaConsignacionPage() {
                           <Text variant="muted" className="text-[9px] uppercase tracking-widest mb-1 text-center">
                             Cantidad
                           </Text>
-                          <div className="bg-white border border-slate-200 rounded-xl p-2 flex items-center justify-center">
-                            <input
-                              type="number"
-                              value={item.cantidad}
-                              onChange={(e) =>
-                                updateItemCantidad(idx, e.target.value)
-                              }
-                              className="w-full text-center font-black text-slate-800 outline-none"
-                              min="1"
-                              max={item.stock_max}
-                            />
-                          </div>
+                          <Input
+                            type="number"
+                            value={item.cantidad}
+                            onChange={(e) =>
+                              updateItemCantidad(idx, e.target.value)
+                            }
+                            className="text-center font-black"
+                            min="1"
+                            max={item.stock_max}
+                          />
                           <Text variant="muted" className="text-[8px] text-center mt-1">
                             Stock disp: {item.stock_max}
                           </Text>
                         </div>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          icon={Trash2}
                           onClick={() => removeItem(idx)}
-                          className="text-slate-300 hover:text-rose-500 transition-colors bg-white hover:bg-rose-50 p-3 rounded-xl border border-transparent hover:border-rose-100 shadow-sm"
-                        >
-                          <Trash2 size={20} />
-                        </button>
+                          className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 hover:border-rose-100"
+                        />
                       </div>
                     ))}
                   </div>

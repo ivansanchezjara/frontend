@@ -43,9 +43,9 @@ export default function ConsignacionesPage() {
                     ) : consignaciones.length === 0 ? (
                         <EmptyState
                             icon={<Truck size={48} className="text-slate-300 mx-auto mb-4" />}
-                            title="No hay consignaciones activas"
-                            message="Aquí podrás gestionar la mercadería enviada a clientes o vendedores de forma temporal."
-                            actionLabel="Registrar Salida"
+                            titulo="No hay consignaciones activas"
+                            descripcion="Aquí podrás gestionar la mercadería enviada a clientes o vendedores de forma temporal."
+                            textoBoton="Registrar Salida"
                             onAction={() => window.location.href = '/movimientos/consignaciones/nuevo'}
                         />
                     ) : (
@@ -67,37 +67,35 @@ export default function ConsignacionesPage() {
 
                                     <div className="space-y-4 relative z-10">
                                         <div>
-                                            <Heading level={3} className="text-lg text-slate-900 group-hover:text-blue-600 transition-colors leading-tight truncate">
+                                            <Heading level={5} className="group-hover:text-blue-600 transition-colors leading-tight truncate text-slate-900">
                                                 {cons.responsable}
                                             </Heading>
-                                            <p className="flex items-center gap-1.5 text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">
+                                            <Text variant="label" className="flex items-center gap-1.5 mt-1 font-bold">
                                                 <MapPin size={12} className="text-blue-400" /> {cons.destino}
-                                            </p>
+                                            </Text>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4 border-y border-slate-50 py-4">
                                             <div>
-                                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Enviado</p>
-                                                <p className="font-black text-slate-700">{cons.resumen_stock?.enviado} un.</p>
+                                                <Text variant="caption" className="text-[9px] mb-1 text-slate-300">Enviado</Text>
+                                                <Text variant="bodyBold" className="font-black">{cons.resumen_stock?.enviado} un.</Text>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Pendiente</p>
-                                                <p className={`font-black ${cons.resumen_stock?.pendiente > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                <Text variant="caption" className="text-[9px] mb-1 text-slate-300">Pendiente</Text>
+                                                <Text variant="bodyBold" className={`font-black ${cons.resumen_stock?.pendiente > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
                                                     {cons.resumen_stock?.pendiente} un.
-                                                </p>
+                                                </Text>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                            <span className="flex items-center gap-1.5"><Calendar size={14} /> {new Date(cons.fecha_salida).toLocaleDateString()}</span>
-                                            <span className="flex items-center gap-1.5 text-blue-500 font-black"><User size={14} /> {cons.usuario_nombre}</span>
+                                        <div className="flex items-center justify-between">
+                                            <Text variant="label" className="flex items-center gap-1.5 font-bold"><Calendar size={14} /> {new Date(cons.fecha_salida).toLocaleDateString()}</Text>
+                                            <Text variant="label" className="flex items-center gap-1.5 text-blue-500 font-black"><User size={14} /> {cons.usuario_nombre}</Text>
                                         </div>
                                         {cons.fecha_esperada_devolucion && (
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                                                <span className={`flex items-center gap-1.5 ${new Date(cons.fecha_esperada_devolucion) < new Date() ? 'text-rose-500' : ''}`}>
-                                                    <Clock size={14} /> Retorno: {new Date(cons.fecha_esperada_devolucion).toLocaleDateString()}
-                                                </span>
-                                            </div>
+                                            <Text variant="label" className={`flex items-center gap-1.5 mt-3 font-bold ${new Date(cons.fecha_esperada_devolucion) < new Date() ? 'text-rose-500' : 'text-slate-400'}`}>
+                                                <Clock size={14} /> Retorno: {new Date(cons.fecha_esperada_devolucion).toLocaleDateString()}
+                                            </Text>
                                         )}
                                     </div>
 
