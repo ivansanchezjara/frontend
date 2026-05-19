@@ -54,6 +54,10 @@ export default function ProfilePage() {
         email: profile.email,
       });
       setProfile(updated);
+      
+      // Dispatch standard event to sync user profile changes with the Sidebar Layout immediately
+      window.dispatchEvent(new Event("user-updated"));
+      
       setSuccessMsg("Perfil actualizado correctamente.");
       setTimeout(() => setSuccessMsg(""), 3000);
     } catch {
@@ -76,7 +80,7 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         <aside className="space-y-6 md:col-span-1">
-          <section className="flex flex-col items-center rounded-[40px] border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <section className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
             <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-blue-600 text-3xl font-black text-white shadow-xl shadow-blue-100">
               {getInitial(profile)}
             </div>
@@ -99,7 +103,7 @@ export default function ProfilePage() {
             </div>
           </section>
 
-          <section className="rounded-[40px] bg-slate-900 p-8 text-white shadow-xl">
+          <section className="rounded-2xl bg-slate-900 p-8 text-white shadow-xl">
             <div className="mb-6 flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500">
                 <Shield size={18} />
@@ -131,7 +135,7 @@ export default function ProfilePage() {
         <section className="md:col-span-2">
           <form
             onSubmit={handleSave}
-            className="space-y-8 rounded-[40px] border border-slate-200 bg-white p-8 shadow-sm md:p-10"
+            className="space-y-8 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm md:p-10"
           >
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Input
@@ -142,7 +146,6 @@ export default function ProfilePage() {
                 onChange={handleChange}
                 icon={User}
                 placeholder="Tu nombre..."
-                className="rounded-2xl bg-slate-50 py-4 font-bold text-slate-800 placeholder:text-slate-300"
               />
 
               <Input
@@ -153,7 +156,6 @@ export default function ProfilePage() {
                 onChange={handleChange}
                 icon={User}
                 placeholder="Tu apellido..."
-                className="rounded-2xl bg-slate-50 py-4 font-bold text-slate-800 placeholder:text-slate-300"
               />
 
               <Input
@@ -164,7 +166,6 @@ export default function ProfilePage() {
                 onChange={handleChange}
                 icon={Mail}
                 placeholder="tu@email.com"
-                className="rounded-2xl bg-slate-50 py-4 font-bold text-slate-800 placeholder:text-slate-300"
                 fullWidth
               />
             </div>

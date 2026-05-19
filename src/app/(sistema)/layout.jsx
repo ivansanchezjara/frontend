@@ -18,6 +18,14 @@ export default function SistemaLayout({ children }) {
         // Solo se ejecuta en el cliente
         const userData = getUser();
         setUser(userData);
+
+        const handleUserUpdate = () => {
+            setUser(getUser());
+        };
+        window.addEventListener('user-updated', handleUserUpdate);
+        return () => {
+            window.removeEventListener('user-updated', handleUserUpdate);
+        };
     }, []);
 
     const initials = user
