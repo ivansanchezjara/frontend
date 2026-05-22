@@ -17,6 +17,8 @@ import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
 export default function IngresosPage() {
     const router = useRouter();
+    const { confirm, danger } = useConfirm();
+    const { showToast } = useToast();
 
     // Estados de filtros y paginación
     const [searchTerm, setSearchTerm] = useState('');
@@ -59,26 +61,36 @@ export default function IngresosPage() {
     const handleAprobar = async (id, e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!confirm("¿Confirmar aprobación de este ingreso? El stock se cargará inmediatamente.")) return;
+        const isConfirmed = await confirm(
+            "¿Confirmar aprobación de este ingreso? El stock se cargará inmediatamente.",
+            "Aprobar Ingreso"
+        );
+        if (!isConfirmed) return;
 
         try {
             await approveIngresoAction(id);
+            showToast("Ingreso aprobado con éxito", "success");
             fetchIngresos();
         } catch (error) {
-            // useErrorHandler will show the notification
+            showToast("Error al aprobar el ingreso", "error");
         }
     };
 
     const handleRechazar = async (id, e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!confirm("¿Confirmar rechazo de este ingreso? Esta acción es irreversible.")) return;
+        const isConfirmed = await danger(
+            "¿Confirmar rechazo de este ingreso? Esta acción es irreversible.",
+            "Rechazar Ingreso"
+        );
+        if (!isConfirmed) return;
 
         try {
             await rejectIngresoAction(id);
+            showToast("Ingreso rechazado", "info");
             fetchIngresos();
         } catch (error) {
-            // useErrorHandler will show the notification
+            showToast("Error al rechazar el ingreso", "error");
         }
     };
 
@@ -92,8 +104,7 @@ export default function IngresosPage() {
                 subtitle={
                     <>
                         <Package size={12} />
-                        <span>Podés registrar borradores y aprobarlos para cargar stock.</span>
-
+                        <Text as="span" variant="bodySm">Podés registrar borradores y aprobarlos para cargar stock.</Text>
                     </>
                 }
             >
@@ -180,7 +191,7 @@ export default function IngresosPage() {
                                         {ingresos.map((ing) => {
                                             const badgeVariant = ing.estado === 'APROBADO' ? 'success'
                                                 : ing.estado === 'RECHAZADO' ? 'danger'
-                                                : 'warning';
+                                                    : 'warning';
 
                                             return (
                                                 <tr
@@ -188,21 +199,25 @@ export default function IngresosPage() {
                                                     className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
                                                     onClick={() => router.push(`/movimientos/ingresos/${ing.id}/detalle`)}
                                                 >
-                                                    <td className="py-4 px-6 text-slate-400 font-bold">#{ing.id}</td>
+                                                    <td className="py-4 px-6">
+                                                        <Text variant="bodyXs" className="text-slate-400 font-bold">#{ing.id}</Text>
+                                                    </td>
                                                     <td className="py-4 px-4">
                                                         <Badge variant={badgeVariant}>
                                                             {ing.estado}
                                                         </Badge>
                                                     </td>
-                                                    <td className="py-4 px-4 font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                                                        {ing.descripcion}
+                                                    <td className="py-4 px-4">
+                                                        <Text variant="bodySmBold" className="group-hover:text-blue-600 transition-colors">{ing.descripcion}</Text>
                                                     </td>
-                                                    <td className="py-4 px-4 text-slate-500">
-                                                        {new Date(ing.fecha_arribo).toLocaleDateString()}
+                                                    <td className="py-4 px-4">
+                                                        <Text variant="bodyXs" className="text-slate-500">{new Date(ing.fecha_arribo).toLocaleDateString()}</Text>
                                                     </td>
-                                                    <td className="py-4 px-4 text-slate-500">{ing.deposito_nombre}</td>
-                                                    <td className="py-4 px-4 text-slate-500">
-                                                        {ing.usuario_nombre?.split(' ')[0]}
+                                                    <td className="py-4 px-4">
+                                                        <Text variant="bodyXs" className="text-slate-500">{ing.deposito_nombre}</Text>
+                                                    </td>
+                                                    <td className="py-4 px-4">
+                                                        <Text variant="bodyXs" className="text-slate-500">{ing.usuario_nombre?.split(' ')[0]}</Text>
                                                     </td>
                                                     <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
                                                         {ing.estado === 'BORRADOR' ? (
@@ -232,9 +247,9 @@ export default function IngresosPage() {
                                                                 </button>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                            <Text variant="label" className="uppercase tracking-wider">
                                                                 Auditado
-                                                            </span>
+                                                            </Text>
                                                         )}
                                                     </td>
                                                 </tr>

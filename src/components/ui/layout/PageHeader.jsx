@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
+import { Text } from '@/components/ui/basics/Typography';
 
 /**
  * Unified header for all pages.
@@ -26,32 +27,32 @@ export default function PageHeader({ title, breadcrumbs = [], subtitle, subtitle
             <div className="min-w-0">
                 {/* Título simple (sin breadcrumbs) */}
                 {hasTitle && (
-                    <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">
+                    <Text variant="label" as="h2" className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">
                         {title}
-                    </h2>
+                    </Text>
                 )}
 
                 {/* Breadcrumbs */}
                 {hasBreadcrumbs && (
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
                         {breadcrumbs.length > 2 ? (
                             <>
                                 <span className="flex items-center gap-2">
-                                    <span className="text-slate-300">...</span>
+                                    <Text as="span" variant="mutedXs">...</Text>
                                     <ChevronRight size={12} className="text-slate-300" />
                                 </span>
                                 <span className="flex items-center gap-2">
                                     {breadcrumbs[breadcrumbs.length - 2].href ? (
                                         <Link href={breadcrumbs[breadcrumbs.length - 2].href} className="hover:text-blue-600 transition-colors">
-                                            {breadcrumbs[breadcrumbs.length - 2].label}
+                                            <Text as="span" variant="mutedXs">{breadcrumbs[breadcrumbs.length - 2].label}</Text>
                                         </Link>
                                     ) : (
-                                        <span>{breadcrumbs[breadcrumbs.length - 2].label}</span>
+                                        <Text as="span" variant="mutedXs">{breadcrumbs[breadcrumbs.length - 2].label}</Text>
                                     )}
                                     <ChevronRight size={12} className="text-slate-300" />
                                 </span>
                                 <span className="flex items-center gap-2">
-                                    <span className="text-slate-700">{breadcrumbs[breadcrumbs.length - 1].label}</span>
+                                    <Text as="span" variant="bodyXsBold" className="text-slate-700">{breadcrumbs[breadcrumbs.length - 1].label}</Text>
                                 </span>
                             </>
                         ) : (
@@ -61,9 +62,13 @@ export default function PageHeader({ title, breadcrumbs = [], subtitle, subtitle
                                     <span key={i} className="flex items-center gap-2">
                                         {i > 0 && <ChevronRight size={12} className="text-slate-300" />}
                                         {isLast || !crumb.href ? (
-                                            <span className={isLast ? 'text-slate-700' : ''}>{crumb.label}</span>
+                                            <Text as="span" variant={isLast ? "bodyXsBold" : "mutedXs"} className={isLast ? "text-slate-700" : ""}>
+                                                {crumb.label}
+                                            </Text>
                                         ) : (
-                                            <Link href={crumb.href} className="hover:text-blue-600 transition-colors">{crumb.label}</Link>
+                                            <Link href={crumb.href} className="hover:text-blue-600 transition-colors">
+                                                <Text as="span" variant="mutedXs">{crumb.label}</Text>
+                                            </Link>
                                         )}
                                     </span>
                                 );

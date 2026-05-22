@@ -1,5 +1,5 @@
 "use client";
-import { PageHeader } from '@/components/ui';
+import { PageHeader, Text, Heading } from '@/components/ui';
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Check, MapPin, Trash2, Package } from "lucide-react";
@@ -7,6 +7,8 @@ import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
 import { useApi } from "@/hooks/useApi";
 import { getDepositos, crearTransferencia } from "@/services/apis/movimientos";
 import { getStockLotes } from "@/services/apis/inventario";
+import { useToast } from "@/components/ui/feedback/ToastContext";
+import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
 export default function NuevaTransferenciaPage() {
   const router = useRouter();
@@ -28,6 +30,8 @@ export default function NuevaTransferenciaPage() {
     crearTransferencia,
     { auto: false },
   );
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
 
   useEffect(() => {
     async function loadData() {
@@ -71,7 +75,7 @@ export default function NuevaTransferenciaPage() {
   const addItem = (lote) => {
     // Verificar si ya está
     if (items.some((i) => i.lote_origen === lote.id)) {
-      alert("Este lote ya ha sido agregado.");
+      showToast("Este lote ya ha sido agregado.", "info");
       return;
     }
 
@@ -101,23 +105,30 @@ export default function NuevaTransferenciaPage() {
       return;
 
     if (transf.deposito_origen === transf.deposito_destino) {
-      alert("El depósito de destino no puede ser el mismo que el de origen.");
+      showToast("El depósito de destino no puede ser el mismo que el de origen.", "error");
       return;
     }
 
     // Validar cantidades
     for (const item of items) {
       if (!item.cantidad || item.cantidad <= 0) {
-        alert(`La cantidad para ${item.lote_codigo} debe ser mayor a 0.`);
+        showToast(`La cantidad para ${item.lote_codigo} debe ser mayor a 0.`, "error");
         return;
       }
       if (item.cantidad > item.stock_disponible) {
-        alert(
+        showToast(
           `Stock insuficiente para ${item.lote_codigo}. Máximo: ${item.stock_disponible}`,
+          "error",
         );
         return;
       }
     }
+
+    const confirmed = await confirm(
+      "¿Estás seguro de crear esta transferencia?",
+      "Confirmar Transferencia"
+    );
+    if (!confirmed) return;
 
     try {
       const payload = {
@@ -129,6 +140,7 @@ export default function NuevaTransferenciaPage() {
       };
 
       await createTransferAction(payload);
+      showToast("Transferencia creada con éxito.", "success");
       router.push("/movimientos/transferencias");
     } catch (error) {
       // Error handling is managed by useApi / useErrorHandler
@@ -148,9 +160,9 @@ export default function NuevaTransferenciaPage() {
         subtitle={
           <>
             <Package size={12} />
-            <span>
+            <Text as="span" variant="bodySm">
               Mové stock entre depósitos de forma controlada y auditada.
-            </span>
+            </Text>
           </>
         }
       >
@@ -172,16 +184,15 @@ export default function NuevaTransferenciaPage() {
         <div className="max-w-[1800px] mx-auto space-y-6">
           {/* Cabecera: Depósitos */}
           <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-              <MapPin size={14} className="text-slate-400" /> Definición de
-              Depósitos
-            </h3>
+            <Heading level={6} className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+              <MapPin size={14} className="text-slate-400" /> Definición de Depósitos
+            </Heading>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-700">
               <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                <Text variant="label" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">
                   Depósito de Origen
-                </label>
+                </Text>
                 <select
                   name="deposito_origen"
                   value={transf.deposito_origen}
@@ -198,9 +209,9 @@ export default function NuevaTransferenciaPage() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                <Text variant="label" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">
                   Depósito de Destino
-                </label>
+                </Text>
                 <select
                   name="deposito_destino"
                   value={transf.deposito_destino}
@@ -219,9 +230,9 @@ export default function NuevaTransferenciaPage() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                <Text variant="label" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">
                   Notas del movimiento
-                </label>
+                </Text>
                 <textarea
                   name="observaciones"
                   value={transf.observaciones}
@@ -244,15 +255,16 @@ export default function NuevaTransferenciaPage() {
                   <Check size={18} />
                 </div>
                 <div>
-                  <h2 className="text-slate-800 font-black">
+                  <Heading level={4} className="text-slate-800 font-black">
                     Productos a Transferir
-                  </h2>
-                  <p className="text-[11px] text-slate-500 uppercase tracking-widest mt-1">
+                  </Heading>
+                  {/* Use span-based text to avoid <p> inside <p> hydration error */}
+                  <Text as="span" variant="label" className="block text-[11px] text-slate-500 uppercase tracking-widest mt-1">
                     Ítems agregados:{" "}
-                    <span className="font-black text-slate-900">
+                    <Text as="span" variant="label" className="font-black text-slate-900">
                       {items.length}
-                    </span>
-                  </p>
+                    </Text>
+                  </Text>
                 </div>
               </div>
               <button
@@ -281,7 +293,7 @@ export default function NuevaTransferenciaPage() {
                         colSpan="4"
                         className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]"
                       >
-                        Usa el botón "Buscar Productos" para agregar ítems de{" "}
+                        Usa el botón &quot;Buscar Productos&quot; para agregar ítems de{" "}
                         {depositos.find(
                           (d) => d.id === parseInt(transf.deposito_origen),
                         )?.nombre || "origen"}
@@ -299,9 +311,9 @@ export default function NuevaTransferenciaPage() {
                           </div>
                           <div className="font-black text-slate-800 text-sm">
                             {item.variante_nombre}{" "}
-                            <span className="text-slate-400 font-bold text-xs">
+                            <Text as="span" variant="bodySm" className="text-slate-400 font-bold">
                               | {item.nombre_variante}
-                            </span>
+                            </Text>
                           </div>
                         </td>
                         <td className="p-4 text-center">
@@ -318,7 +330,6 @@ export default function NuevaTransferenciaPage() {
                               value={item.cantidad}
                               onChange={(e) => {
                                 const val = e.target.value;
-                                // Permitir string vacío temporalmente, de lo contrario parsear a número
                                 handleItemChange(
                                   idx,
                                   "cantidad",
@@ -345,33 +356,22 @@ export default function NuevaTransferenciaPage() {
             </div>
           </div>
         </div>
-
-        {/* Modal de búsqueda */}
-        <ProductSearchModal
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-          onSelect={addItem}
-          lotes={(stockLotes || []).filter((l) => {
-            const depositoId =
-              typeof l.deposito === "object" ? l.deposito.id : l.deposito;
-            const origenId = parseInt(transf.deposito_origen);
-            const match = depositoId === origenId;
-            console.log(
-              "Filtrando lote:",
-              l.lote_codigo,
-              "depositoId:",
-              depositoId,
-              "origenId:",
-              origenId,
-              "match:",
-              match,
-            );
-            return match;
-          })}
-          placeholder={`Buscar stock en ${(depositos || []).find((d) => d.id === parseInt(transf.deposito_origen))?.nombre || "depósito"}...`}
-          emptyMessage="No se encontró stock disponible en este depósito."
-        />
       </main>
+
+      {/* Modal de búsqueda */}
+      <ProductSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onSelect={addItem}
+        lotes={(stockLotes || []).filter((l) => {
+          const depositoId =
+            typeof l.deposito === "object" ? l.deposito.id : l.deposito;
+          const origenId = parseInt(transf.deposito_origen);
+          return depositoId === origenId;
+        })}
+        placeholder={`Buscar stock en ${(depositos || []).find((d) => d.id === parseInt(transf.deposito_origen))?.nombre || "depósito"}...`}
+        emptyMessage="No se encontró stock disponible en este depósito."
+      />
     </div>
   );
 }

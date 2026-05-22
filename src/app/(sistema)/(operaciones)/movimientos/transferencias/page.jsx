@@ -1,5 +1,5 @@
 "use client";
-import { EmptyState, LoadingScreen, PageHeader, Pagination, Badge } from '@/components/ui';
+import { EmptyState, LoadingScreen, PageHeader, Pagination, Badge, Text } from '@/components/ui';
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -19,9 +19,13 @@ import {
 } from "@/services/apis/movimientos";
 import MovimientoCard from "@/components/movimientos/MovimientoCard";
 import MovimientosFilterBar from "@/components/movimientos/MovimientosFilterBar";
+import { useToast } from "@/components/ui/feedback/ToastContext";
+import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
 export default function TransferenciasPage() {
   const router = useRouter();
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
 
   // Estados de filtros y paginación
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,7 +63,7 @@ export default function TransferenciasPage() {
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
-    setPage(1); // Volver a la primera página al filtrar
+    setPage(1);
   };
 
   const { execute: aprobarAction } = useApi(aprobarTransferencia, {
@@ -69,16 +73,17 @@ export default function TransferenciasPage() {
   const handleAprobar = async (id, e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (
-      !confirm(
-        "¿Confirmar aprobación de esta transferencia? El stock se moverá inmediatamente entre depósitos.",
-      )
-    )
-      return;
+
+    const confirmed = await confirm(
+      "¿Confirmar aprobación de esta transferencia? El stock se moverá inmediatamente entre depósitos.",
+      "Aprobar Transferencia"
+    );
+    if (!confirmed) return;
 
     try {
       await aprobarAction(id);
-      await fetchTransferencias();
+      showToast("Transferencia aprobada con éxito.", "success");
+      await fetchTransferencias({ page, search: debouncedSearch, ...filters });
     } catch (error) {
       // Error handling is managed by useApi / useErrorHandler
     }
@@ -94,7 +99,7 @@ export default function TransferenciasPage() {
         subtitle={
           <>
             <Package size={12} />
-            <span>Movilizá stock entre depósitos de forma auditada.</span>
+            <Text as="span" variant="bodySm">Movilizá stock entre depósitos de forma auditada.</Text>
           </>
         }
       >
@@ -188,7 +193,9 @@ export default function TransferenciasPage() {
                           className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
                           onClick={() => router.push(`/movimientos/transferencias/${transf.id}/detalle`)}
                         >
-                          <td className="py-4 px-6 text-slate-400 font-bold">#{transf.id}</td>
+                          <td className="py-4 px-6">
+                            <Text as="span" variant="label" className="text-slate-400 font-bold">#{transf.id}</Text>
+                          </td>
                           <td className="py-4 px-4">
                             <Badge variant={badgeVariant}>
                               {transf.estado}
@@ -200,11 +207,15 @@ export default function TransferenciasPage() {
                           <td className="py-4 px-4 font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                             {transf.deposito_destino_nombre}
                           </td>
-                          <td className="py-4 px-4 text-slate-500">
-                            {new Date(transf.fecha).toLocaleDateString()}
+                          <td className="py-4 px-4">
+                            <Text as="span" variant="bodySm" className="text-slate-500">
+                              {new Date(transf.fecha).toLocaleDateString()}
+                            </Text>
                           </td>
                           <td className="py-4 px-4 text-center font-bold text-slate-900">{transf.items?.length || 0}</td>
-                          <td className="py-4 px-4 text-slate-500">{transf.usuario_nombre}</td>
+                          <td className="py-4 px-4">
+                            <Text as="span" variant="bodySm" className="text-slate-500">{transf.usuario_nombre}</Text>
+                          </td>
                           <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
                             {transf.estado === 'BORRADOR' ? (
                               <div className="flex items-center justify-end gap-2">
@@ -217,9 +228,9 @@ export default function TransferenciasPage() {
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              <Text as="span" variant="label" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                 Auditado
-                              </span>
+                              </Text>
                             )}
                           </td>
                         </tr>
