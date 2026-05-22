@@ -237,7 +237,7 @@ export default function EditarIngresoPage() {
                 subtitle={
                     <>
                         <Package size={12} />
-                        <Text variant="bodySm">Modificá los datos del arribo o los ítems antes de la aprobación definitiva.</Text>
+                        Modificá los datos del arribo o los ítems antes de la aprobación definitiva.
                     </>
                 }
             >

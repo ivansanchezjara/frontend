@@ -186,10 +186,8 @@ export default function EditarBajaPage({ params }) {
         subtitle={
           <>
             <Package size={12} />
-            <span>
-              Registrá pérdidas, mermas o productos vencidos para darlos de
-              baja.
-            </span>
+            Registrá pérdidas, mermas o productos vencidos para darlos de
+            baja.
           </>
         }
       >

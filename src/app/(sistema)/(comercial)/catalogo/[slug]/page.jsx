@@ -11,7 +11,7 @@ import ProductoHeader from "@/components/comercial/catalogo/list/ProductoHeader"
 import VariantesSection from "@/components/comercial/catalogo/detail/VariantesSection";
 import VisibilidadSection from "@/components/comercial/catalogo/detail/VisibilidadSection";
 import ZonaPeligroSection from "@/components/comercial/catalogo/detail/ZonaPeligroSection";
-import { Button, FilerModal, Heading, LoadingScreen, Text, useConfirm } from "@/components/ui";
+import { Button, FilerModal, Heading, LoadingScreen, Text, useConfirm, HistorialCambios } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import {
   actualizarProducto,
@@ -19,6 +19,7 @@ import {
   eliminarVariante,
   getCategorias,
   getProducto,
+  getHistorialProducto,
 } from "@/services/apis/catalogo.js";
 
 function getInitialFormData(producto) {
@@ -88,12 +89,23 @@ export default function FichaProductoPage() {
     initialData: [],
   });
 
+  const {
+    data: historialData,
+    loading: historialLoading,
+    execute: refetchHistorial,
+  } = useApi(getHistorialProducto, {
+    auto: false,
+    initialData: [],
+    args: [slug],
+  });
+
   useEffect(() => {
     if (slug) {
       setNotFound(false);
       refetchProducto();
+      refetchHistorial();
     }
-  }, [slug, refetchProducto]);
+  }, [slug, refetchProducto, refetchHistorial]);
 
   useEffect(() => {
     if (!productoData) return;
@@ -140,6 +152,7 @@ export default function FichaProductoPage() {
       setIsDirty(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+      refetchHistorial();
     } catch (err) {
       setSaveError(formatSaveError(err));
     } finally {
@@ -278,6 +291,12 @@ export default function FichaProductoPage() {
               onEdit={(variant) => setVarianteModal(variant)}
               onDelete={handleDeleteVariante}
               deletingId={deletingId}
+            />
+            <HistorialCambios
+              entradas={historialData || []}
+              loading={historialLoading}
+              title="Historial de Cambios"
+              subtitle="Últimas 50 modificaciones registradas sobre este producto."
             />
             <ZonaPeligroSection
               producto={producto}

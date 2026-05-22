@@ -14,13 +14,6 @@ import {
 } from 'lucide-react';
 import { Button, Text, Badge } from '@/components/ui';
 
-/**
- * MovimientoCard estandarizado (Strict Light Mode).
- * Tarjeta interactiva que representa un movimiento o ajuste de inventario,
- * con soporte para pre-visualizar detalles rápidos, gestionar aprobaciones/rechazos
- * a través de un modal atómico integrado, y enlace directo a edición de borradores.
- * Reutiliza las piezas de interfaz (Button, Typography - Text, Badge).
- */
 export default function MovimientoCard({
     id,
     estado,

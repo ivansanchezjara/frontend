@@ -231,9 +231,7 @@ export default function NuevoAjusteInventarioPage() {
         subtitle={
           <>
             <Package size={12} />
-            <span>
-              Auditoría y redistribución de stock por lotes y depósitos.
-            </span>
+            Auditoría y redistribución de stock por lotes y depósitos.
           </>
         }
       >

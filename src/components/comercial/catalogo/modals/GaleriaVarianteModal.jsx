@@ -1,5 +1,5 @@
 "use client";
-import { FilerModal, Button, Heading, Text } from '@/components/ui';
+import { FilerModal, Button, Heading, Text, useConfirm, useToast } from '@/components/ui';
 import { useState } from "react";
 import { Trash2, X, Plus, Loader2 } from "lucide-react";
 import {
@@ -11,6 +11,8 @@ import {
 export default function GaleriaVarianteModal({ variante, onClose, onRefresh }) {
   const [isFilerOpen, setIsFilerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { danger: showConfirm } = useConfirm();
+  const { showToast } = useToast();
 
   const handleAddImage = async (img) => {
     setSaving(true);
@@ -22,19 +24,24 @@ export default function GaleriaVarianteModal({ variante, onClose, onRefresh }) {
       });
       onRefresh();
     } catch (e) {
-      alert("Error al agregar imagen a la galería.");
+      showToast("Error al agregar imagen a la galería.", "error");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("¿Quitar esta imagen de la galería?")) return;
+    const confirmed = await showConfirm(
+      "¿Quitar esta imagen de la galería?",
+      "Quitar imagen",
+      { confirmText: "Quitar" }
+    );
+    if (!confirmed) return;
     try {
       await eliminarImagenProducto(id);
       onRefresh();
     } catch (e) {
-      alert("Error al eliminar.");
+      showToast("Error al eliminar imagen.", "error");
     }
   };
 

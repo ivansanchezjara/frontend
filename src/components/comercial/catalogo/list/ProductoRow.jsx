@@ -5,7 +5,7 @@ import { ChevronRight } from 'lucide-react';
 
 export default function ProductoRow({ producto }) {
     const router = useRouter();
-    const { nombre_general, general_code, brand, categoria, imagen_principal_url, variants, slug, featured } = producto;
+    const { nombre_general, general_code, brand, imagen_principal_url, variants, slug, featured } = producto;
 
     const cantidadVariantes = variants?.length ?? 0;
     const imagenUrl = getFullImageUrl(imagen_principal_url);
@@ -31,7 +31,7 @@ export default function ProductoRow({ producto }) {
                             {nombre_general}
                             {featured && <span className="ml-2 text-amber-500 text-xs">⭐</span>}
                         </Text>
-                        <Text variant="mono" className="lowercase leading-none">{general_code}</Text>
+                        <Text variant="mono" className="leading-none">{general_code}</Text>
                     </div>
                 </div>
             </td>
@@ -41,17 +41,6 @@ export default function ProductoRow({ producto }) {
                 <Text variant="bodySm">
                     {brand}
                 </Text>
-            </td>
-
-            {/* Categoría */}
-            <td className="py-3 px-4">
-                {categoria ? (
-                    <Text variant="tag">
-                        {categoria.nombre}
-                    </Text>
-                ) : (
-                    <Text variant="bodySm">-</Text>
-                )}
             </td>
 
             {/* Variantes */}

@@ -80,7 +80,7 @@ export default function NuevaBajaPage() {
       "¿Estás seguro de registrar esta baja de inventario?",
       "Registrar Baja"
     );
-    
+
     if (!isConfirmed) return;
 
     try {
@@ -107,10 +107,8 @@ export default function NuevaBajaPage() {
         subtitle={
           <>
             <Package size={12} />
-            <span>
-              Registrá pérdidas, mermas o productos vencidos para darlos de
-              baja.
-            </span>
+            Registrá pérdidas, mermas o productos vencidos para darlos de
+            baja.
           </>
         }
       >

@@ -27,7 +27,7 @@ export default function ConsignacionesPage() {
                 subtitle={
                     <>
                         <Package size={12} />
-                        <Text as="span" variant="bodySm">Gestioná mercadería enviada a clientes en calidad de préstamo o consignación.</Text>
+                        Gestioná mercadería enviada a clientes en calidad de préstamo o consignación.
                     </>
                 }
             >

@@ -185,3 +185,16 @@ export async function getProductosStats() {
     "ver estadísticas de productos",
   );
 }
+
+// ─── Historial ────────────────────────────────────────────────────
+
+export async function getHistorialProducto(slug) {
+  return request(
+    `${API_URL}/catalogo/productos/${slug}/historial/`,
+    {
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver historial del producto",
+  );
+}

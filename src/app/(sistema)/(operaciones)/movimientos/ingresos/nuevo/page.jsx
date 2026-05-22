@@ -222,7 +222,7 @@ export default function NuevoIngresoPage() {
                 subtitle={
                     <>
                         <Package size={12} />
-                        <Text as="span" variant="bodySm">Completá los datos del arribo y cargá los ítems para generar un borrador.</Text>
+                        Completá los datos del arribo y cargá los ítems para generar un borrador.
                     </>
                 }
             >

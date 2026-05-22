@@ -24,6 +24,7 @@ export { default as Section } from './layout/Section';
 // Data Controls
 export { default as ColumnSelector } from './data/ColumnSelector';
 export { default as FilerModal } from './data/FilerModal';
+export { default as HistorialCambios } from './data/HistorialCambios';
 export { default as Pagination } from './data/Pagination';
 export { default as ResizableHeader } from './data/ResizableHeader';
 export { default as SearchBar } from './data/SearchBar';

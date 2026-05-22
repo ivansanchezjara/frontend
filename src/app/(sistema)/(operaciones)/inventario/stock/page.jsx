@@ -229,7 +229,6 @@ export default function StockPage() {
               <EmptyState
                 icon="📦"
                 title="No hay resultados"
-                onAction={() => setSearchTerm("")}
               />
             ) : (
               <>

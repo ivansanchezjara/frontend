@@ -1,5 +1,5 @@
 "use client";
-import { FilerModal, Button, Heading, Text, Input, Field } from '@/components/ui';
+import { FilerModal, Button, Heading, Text, Input, Field, useConfirm, useToast } from '@/components/ui';
 import { useState } from "react";
 import { Trash2, Plus, Loader2 } from "lucide-react";
 import {
@@ -18,6 +18,8 @@ export default function VarianteModal({
   onRefresh,
 }) {
   const isNew = !variante?.id;
+  const { danger: showConfirm } = useConfirm();
+  const { showToast } = useToast();
   const autoSlugify = (text) =>
     text
       .toLowerCase()
@@ -51,19 +53,24 @@ export default function VarianteModal({
       });
       onRefresh();
     } catch (e) {
-      alert("Error al agregar imagen a la galería.");
+      showToast("Error al agregar imagen a la galería.", "error");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteImage = async (id) => {
-    if (!confirm("¿Quitar esta imagen de la galería?")) return;
+    const confirmed = await showConfirm(
+      "¿Quitar esta imagen de la galería?",
+      "Quitar imagen",
+      { confirmText: "Quitar" }
+    );
+    if (!confirmed) return;
     try {
       await eliminarImagenProducto(id);
       onRefresh();
     } catch (e) {
-      alert("Error al eliminar.");
+      showToast("Error al eliminar imagen.", "error");
     }
   };
 

@@ -104,7 +104,7 @@ export default function IngresosPage() {
                 subtitle={
                     <>
                         <Package size={12} />
-                        <Text as="span" variant="bodySm">Podés registrar borradores y aprobarlos para cargar stock.</Text>
+                        Podés registrar borradores y aprobarlos para cargar stock.
                     </>
                 }
             >

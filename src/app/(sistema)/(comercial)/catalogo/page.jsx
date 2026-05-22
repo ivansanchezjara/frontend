@@ -170,7 +170,6 @@ export default function CatalogoPage() {
                                         <tr className="bg-slate-50 text-slate-500">
                                             <th className="py-3 pl-6 pr-4 text-[11px] font-black uppercase tracking-widest">Producto</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Marca</th>
-                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Categoría</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Variantes</th>
                                             <th className="py-3 pr-6 pl-4"></th>
                                         </tr>

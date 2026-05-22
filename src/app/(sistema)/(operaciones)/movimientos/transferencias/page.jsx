@@ -99,7 +99,7 @@ export default function TransferenciasPage() {
         subtitle={
           <>
             <Package size={12} />
-            <Text as="span" variant="bodySm">Movilizá stock entre depósitos de forma auditada.</Text>
+            Movilizá stock entre depósitos de forma auditada.
           </>
         }
       >

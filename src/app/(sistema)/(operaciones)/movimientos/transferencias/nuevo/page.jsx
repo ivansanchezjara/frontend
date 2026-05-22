@@ -160,9 +160,7 @@ export default function NuevaTransferenciaPage() {
         subtitle={
           <>
             <Package size={12} />
-            <Text as="span" variant="bodySm">
-              Mové stock entre depósitos de forma controlada y auditada.
-            </Text>
+            Mové stock entre depósitos de forma controlada y auditada.
           </>
         }
       >

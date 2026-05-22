@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Badge, Heading, Text } from '@/components/ui';
 
 export default function ProductoCard({ producto }) {
-    const { nombre_general, general_code, brand, categoria, imagen_principal_url, variants, slug, featured } = producto;
+    const { nombre_general, general_code, brand, imagen_principal_url, variants, slug, featured } = producto;
     const cantidadVariantes = variants?.length ?? 0;
     const imagenUrl = getFullImageUrl(imagen_principal_url);
 
@@ -29,13 +29,6 @@ export default function ProductoCard({ producto }) {
                     {featured && (
                         <Badge variant="warning" className="absolute top-2 left-2 text-[10px]">
                             ⭐ Destacado
-                        </Badge>
-                    )}
-
-                    {/* Badge categoría */}
-                    {categoria && (
-                        <Badge variant="default" className="absolute top-2 right-2 bg-white/90 backdrop-blur text-slate-600 text-[10px] border border-slate-200/50">
-                            {categoria.nombre}
                         </Badge>
                     )}
                 </div>

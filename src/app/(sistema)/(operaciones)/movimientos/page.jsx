@@ -52,7 +52,7 @@ export default function MovimientosHubPage() {
                 subtitle={
                     <>
                         <Package size={12} />
-                        <Text as="span" variant="bodySm">Operaciones y Logística de Inventario</Text>
+                        Operaciones y Logística de Inventario
                     </>
                 }
                 subtitleClassName="text-blue-600"

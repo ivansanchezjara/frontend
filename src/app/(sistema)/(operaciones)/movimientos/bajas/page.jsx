@@ -120,10 +120,8 @@ export default function BajasPage() {
         subtitle={
           <>
             <Package size={12} />
-            <Text as="span" variant="bodySm">
-              Registrá pérdidas, mermas o productos vencidos para darlos de
+            Registrá pérdidas, mermas o productos vencidos para darlos de
               baja.
-            </Text>
           </>
         }
       >

@@ -67,10 +67,8 @@ export default function AjustesInventarioPage() {
         subtitle={
           <>
             <Package size={12} />
-            <span>
-              Corregir discrepancias de stock, lotes y fechas de vencimiento de
-              forma auditada.
-            </span>
+            Corregir discrepancias de stock, lotes y fechas de vencimiento de
+            forma auditada.
           </>
         }
       >

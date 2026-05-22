@@ -131,7 +131,7 @@ export default function NuevaConsignacionPage() {
       "¿Estás seguro de registrar esta consignación?",
       "Registrar Salida"
     );
-    
+
     if (!isConfirmed) return;
 
     try {
@@ -162,10 +162,8 @@ export default function NuevaConsignacionPage() {
         subtitle={
           <>
             <Package size={12} />
-            <Text as="span" variant="bodySm">
-              Registrá mercadería enviada a clientes o vendedores en calidad de
-              préstamo.
-            </Text>
+            Registrá mercadería enviada a clientes o vendedores en calidad de
+            préstamo.
           </>
         }
       >
