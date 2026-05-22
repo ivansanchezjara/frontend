@@ -59,7 +59,7 @@ function formatApiError(err, fallback) {
 
 export default function NuevoProductoPage() {
   const router = useRouter();
-  const { data: categoriasData } = useApi(getCategorias, {
+  const { data: categoriasData, loading: loadingCategorias } = useApi(getCategorias, {
     auto: true,
     initialData: [],
   });
@@ -139,7 +139,7 @@ export default function NuevoProductoPage() {
     formData.general_code.trim() !== "" &&
     !saving;
 
-  if (!categoriasData || categorias.length === 0) {
+  if (loadingCategorias) {
     return <LoadingScreen texto="Preparando formulario..." />;
   }
 
@@ -163,27 +163,33 @@ export default function NuevoProductoPage() {
               {error}
             </Badge>
           )}
+
           <Button
             variant="secondary"
+            size="sm" // <-- Usamos el tamaño estandarizado
             onClick={() => setIsJSONModalOpen(true)}
             icon={FileJson}
-            className="text-xs text-blue-600"
+            className="text-blue-600" // Quitamos el text-xs de aquí
           >
             Cargar JSON
           </Button>
+
           <Button
             as={Link}
             href="/catalogo"
             variant="outline"
-            className="text-xs text-slate-600 hover:bg-slate-50"
+            size="sm" // <-- Usamos el tamaño estandarizado
+            className="text-slate-600 hover:bg-slate-50" // Quitamos el text-xs de aquí
           >
             Cancelar
           </Button>
+
           <Button
             id="btn-crear-producto"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="bg-slate-900 text-xs hover:bg-emerald-600"
+            size="sm" // <-- Usamos el tamaño estandarizado
+            className="bg-slate-900 hover:bg-emerald-600" // Quitamos el text-xs de aquí
           >
             {saving ? "Creando..." : "Crear Producto"}
           </Button>

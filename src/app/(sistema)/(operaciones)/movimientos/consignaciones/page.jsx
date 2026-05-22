@@ -4,8 +4,12 @@ import Link from 'next/link';
 import { ChevronRight, Package, User, Calendar, Plus, MapPin, Clock, Truck } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { getConsignaciones } from '@/services/apis/movimientos';
+import { useToast } from "@/components/ui/feedback/ToastContext";
+import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
 export default function ConsignacionesPage() {
+    const { confirm } = useConfirm();
+    const { showToast } = useToast();
     const { data: consignacionesData, loading } = useApi(getConsignaciones, {
         auto: true,
         initialData: []
@@ -23,7 +27,7 @@ export default function ConsignacionesPage() {
                 subtitle={
                     <>
                         <Package size={12} />
-                        <span>Gestioná mercadería enviada a clientes en calidad de préstamo o consignación.</span>
+                        <Text as="span" variant="bodySm">Gestioná mercadería enviada a clientes en calidad de préstamo o consignación.</Text>
                     </>
                 }
             >
@@ -62,7 +66,7 @@ export default function ConsignacionesPage() {
                                         <Badge variant={cons.estado === 'APROBADO' ? 'success' : 'warning'}>
                                             {cons.estado}
                                         </Badge>
-                                        <span className="text-[10px] font-black text-slate-400">#{cons.id}</span>
+                                        <Text variant="label" className="uppercase tracking-widest">#{cons.id}</Text>
                                     </div>
 
                                     <div className="space-y-4 relative z-10">

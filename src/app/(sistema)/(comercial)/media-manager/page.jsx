@@ -1,5 +1,5 @@
 "use client";
-import { PageHeader } from '@/components/ui';
+import { PageHeader, Button } from '@/components/ui';
 import { useState, useEffect, useRef } from "react";
 import {
   Upload,
@@ -19,10 +19,14 @@ import {
   updateImage,
 } from "@/services/apis/media.js";
 import { getFullImageUrl } from "@/services/apis/catalogo.js";
+import { useToast } from "@/components/ui/feedback/ToastContext";
+import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 import DirectoriesPanel from "@/components/comercial/media-manager/DirectoriesPanel";
 import ExplorerPanel from "@/components/comercial/media-manager/ExplorerPanel";
 
 export default function MediaManagerPage() {
+  const { showToast } = useToast();
+  const { confirm, danger } = useConfirm();
   const [carpetaActual, setCarpetaActual] = useState("root");
   const [breadcrumbs, setBreadcrumbs] = useState([
     { id: "root", nombre: "Raíz" },
@@ -133,15 +137,18 @@ export default function MediaManagerPage() {
       }
 
       if (failures > 0) {
-        alert(
-          `Proceso de subida completado:\n✅ ${successes} archivos subidos con éxito.\n❌ ${failures} archivos fallaron.`,
+        showToast(
+          `Proceso de subida completada: ${successes} archivos subidos, ${failures} fallaron.`,
+          "info"
         );
+      } else {
+        showToast(`✅ ${successes} archivos subidos con éxito`, "success");
       }
 
       loadArchivos(carpetaActual, { page, search: searchTermDebounced });
     } catch (error) {
       console.error("Error crítico subiendo archivos:", error);
-      alert("Ocurrió un error inesperado durante la subida.");
+      showToast("Ocurrió un error inesperado durante la subida.", "error");
     } finally {
       setLoading(false);
       setUploadProgress({ current: 0, total: 0 });
@@ -150,13 +157,20 @@ export default function MediaManagerPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("¿Estás seguro de eliminar este archivo?")) return;
+    const isConfirmed = await danger(
+      "¿Estás seguro de eliminar este archivo?",
+      "Eliminar archivo"
+    );
+    
+    if (!isConfirmed) return;
+    
     try {
       await deleteImage(id);
       if (archivoSeleccionado?.id === id) setArchivoSeleccionado(null);
       loadArchivos(isAuditing ? null : carpetaActual, { page, search: searchTermDebounced });
+      showToast("Archivo eliminado con éxito", "success");
     } catch (error) {
-      alert("Error al eliminar el archivo");
+      showToast("Error al eliminar el archivo", "error");
     }
   };
 
@@ -184,16 +198,22 @@ export default function MediaManagerPage() {
   };
 
   const handleBulkDelete = async () => {
-    if (!confirm(`¿Estás seguro de eliminar ${selectedItems.length} archivos?`))
-      return;
+    const isConfirmed = await danger(
+      `¿Estás seguro de eliminar ${selectedItems.length} archivos?`,
+      "Eliminar múltiples archivos"
+    );
+    
+    if (!isConfirmed) return;
+    
     setLoading(true);
     try {
       await Promise.all(selectedItems.map((id) => deleteImage(id)));
       setSelectedItems([]);
       setIsSelectionMode(false);
       loadArchivos(isAuditing ? null : carpetaActual, { page, search: searchTermDebounced });
+      showToast(`${selectedItems.length} archivos eliminados con éxito`, "success");
     } catch (error) {
-      alert("Error al eliminar algunos archivos");
+      showToast("Error al eliminar algunos archivos", "error");
       loadArchivos(isAuditing ? null : carpetaActual, { page, search: searchTermDebounced });
     } finally {
       setLoading(false);
@@ -201,10 +221,17 @@ export default function MediaManagerPage() {
   };
 
   const handleBulkAssign = async (varianteId, targetType) => {
+    const isConfirmed = await confirm(
+      `¿Estás seguro de asignar ${selectedItems.length} imágenes a la variante ${varianteId}?`,
+      "Asignar imágenes"
+    );
+    
+    if (!isConfirmed) return;
+    
     setLoading(true);
     try {
       await bulkAssignImages(selectedItems, varianteId, targetType);
-      alert("Acción completada con éxito");
+      showToast("Acción completada con éxito", "success");
       setShowBulkAssignModal(false);
       setSelectedItems([]);
       setIsSelectionMode(false);
@@ -212,7 +239,7 @@ export default function MediaManagerPage() {
     } catch (error) {
       console.error("Error al asignar imágenes:", error);
       const msg = typeof error === "object" ? JSON.stringify(error) : error;
-      alert(`Error al asignar imágenes: ${msg}`);
+      showToast(`Error al asignar imágenes: ${msg}`, "error");
     } finally {
       setLoading(false);
     }
@@ -237,11 +264,12 @@ export default function MediaManagerPage() {
       const updated = await updateImage(archivoSeleccionado.id, dataToSave);
       setArchivoSeleccionado(updated);
       setIsEditingImage(false);
+      showToast("Información de la imagen actualizada", "success");
       loadArchivos(carpetaActual, { page, search: searchTermDebounced });
     } catch (error) {
       console.error("Error actualizando imagen:", error);
       const msg = typeof error === "object" ? JSON.stringify(error) : error;
-      alert(`Error al actualizar la información de la imagen: ${msg}`);
+      showToast(`Error al actualizar la información de la imagen: ${msg}`, "error");
     } finally {
       setLoading(false);
     }
@@ -271,10 +299,11 @@ export default function MediaManagerPage() {
 
       setSelectedItems([]);
       setIsSelectionMode(false);
+      showToast("Archivos movidos con éxito", "success");
       loadArchivos(carpetaActual, { page, search: searchTermDebounced });
     } catch (error) {
       console.error("Error moviendo archivos:", error);
-      alert("Error al mover los archivos seleccionados");
+      showToast("Error al mover los archivos seleccionados", "error");
     } finally {
       setLoading(false);
     }
@@ -294,7 +323,7 @@ export default function MediaManagerPage() {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    alert("URL copiada al portapapeles");
+    showToast("URL copiada al portapapeles", "success");
   };
 
   return (
@@ -309,12 +338,14 @@ export default function MediaManagerPage() {
         }
         subtitleClassName="text-emerald-600"
       >
-        <button
+        <Button
           onClick={handleUploadClick}
-          className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-800 transition-all shadow-sm active:scale-95"
+          icon={Upload}
+          size="sm"
+          className="bg-slate-900 hover:bg-slate-800 text-white border-none shadow-sm rounded-xl px-5 py-2.5 font-bold active:scale-95"
         >
-          <Upload size={14} /> SUBIR ARCHIVO
-        </button>
+          SUBIR ARCHIVO
+        </Button>
         <input
           type="file"
           ref={fileInputRef}

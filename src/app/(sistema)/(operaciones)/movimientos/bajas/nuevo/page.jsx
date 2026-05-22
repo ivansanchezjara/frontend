@@ -8,9 +8,13 @@ import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
 import { useApi } from "@/hooks/useApi";
 import { getAllStockLotes } from "@/services/apis/inventario";
 import { crearBaja } from "@/services/apis/movimientos";
+import { useToast } from "@/components/ui/feedback/ToastContext";
+import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
 export default function NuevaBajaPage() {
   const router = useRouter();
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
@@ -72,6 +76,13 @@ export default function NuevaBajaPage() {
       return;
     }
 
+    const isConfirmed = await confirm(
+      "¿Estás seguro de registrar esta baja de inventario?",
+      "Registrar Baja"
+    );
+    
+    if (!isConfirmed) return;
+
     try {
       await submitBaja({
         lote: baja.lote,
@@ -79,9 +90,10 @@ export default function NuevaBajaPage() {
         motivo: baja.motivo,
         observaciones: baja.observaciones,
       });
+      showToast("Baja registrada con éxito", "success");
       router.push("/movimientos/bajas");
     } catch (error) {
-      // useErrorHandler ya muestra el mensaje
+      showToast("Error al registrar la baja", "error");
     }
   };
 
@@ -127,9 +139,9 @@ export default function NuevaBajaPage() {
                   className="w-full p-10 border-2 border-dashed border-slate-200 rounded-[24px] text-slate-400 hover:border-rose-400 hover:text-rose-500 transition-all flex flex-col items-center gap-4 bg-slate-50/50"
                 >
                   <Search size={40} className="opacity-20" />
-                  <span className="font-black uppercase tracking-widest text-xs">
+                  <Text variant="label" className="uppercase tracking-widest">
                     Click para buscar producto en stock
-                  </span>
+                  </Text>
                 </button>
               ) : (
                 <div className="flex items-center justify-between p-6 bg-rose-50/50 border border-rose-100 rounded-[24px]">
@@ -138,20 +150,18 @@ export default function NuevaBajaPage() {
                       <Package size={24} className="text-rose-600" />
                     </div>
                     <div className="flex-1">
-                      <Text className="text-[10px] text-rose-400 uppercase tracking-widest">
-                        {selectedLoteInfo.lote_codigo}
-                      </Text>
+                      <Text variant="label" className="uppercase tracking-widest">{selectedLoteInfo.lote_codigo}</Text>
                       <Heading level={4} className="text-slate-900 text-lg">
                         {selectedLoteInfo.variante_nombre}{" "}
                         <Text as="span" variant="muted" className="text-sm">
                           | {selectedLoteInfo.nombre_variante}
                         </Text>
                       </Heading>
-                      <Text className="text-xs text-slate-500 mb-1">
+                      <Text variant="bodyXs" className="text-slate-500 mb-1">
                         Depósito: {selectedLoteInfo.deposito_nombre}
                       </Text>
                       {selectedLoteInfo.vencimiento && (
-                        <p
+                        <Text
                           className={`text-[10px] font-black uppercase tracking-widest mt-1 ${new Date(selectedLoteInfo.vencimiento) < new Date()
                             ? "text-red-600"
                             : new Date(selectedLoteInfo.vencimiento) -
@@ -172,7 +182,7 @@ export default function NuevaBajaPage() {
                           {new Date(
                             selectedLoteInfo.vencimiento,
                           ).toLocaleDateString("es-AR")}
-                        </p>
+                        </Text>
                       )}
                     </div>
                   </div>
@@ -215,7 +225,7 @@ export default function NuevaBajaPage() {
                     className={errorMsg ? "border-red-500 ring-2 ring-red-50" : ""}
                   />
                   {errorMsg && (
-                    <Text className="text-red-500 text-[10px] uppercase mt-2 ml-2 flex items-center gap-1">
+                    <Text variant="bodyXs" className="text-red-500 mt-2 ml-2 flex items-center gap-1">
                       <AlertCircle size={12} /> {errorMsg}
                     </Text>
                   )}

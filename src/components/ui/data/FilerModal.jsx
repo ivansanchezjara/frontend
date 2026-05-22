@@ -8,6 +8,8 @@ import SearchBar from './SearchBar';
 import Button from '../basics/Button';
 import { Text, Heading } from '../basics/Typography';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useConfirm } from '../feedback/ConfirmContext';
+import { useToast } from '../feedback/ToastContext';
 
 /**
  * FilerModal estandarizado.
@@ -26,6 +28,8 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
     const [count, setCount] = useState(0);
     const pageSize = 24;
     const fileInputRef = useRef(null);
+    const { prompt: showPrompt } = useConfirm();
+    const { showToast } = useToast();
 
     // Navigation breadcrumbs
     const [breadcrumbs, setBreadcrumbs] = useState([{ id: 'root', nombre: 'Raíz' }]);
@@ -66,14 +70,19 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
     }, [currentFolder, searchTermDebounced]);
 
     const handleCreateFolder = async () => {
-        const name = prompt("Nombre de nueva carpeta:");
-        if (!name) return;
+        const name = await showPrompt("Nombre de nueva carpeta:", "Nueva Carpeta", {
+            placeholder: "Ej: Instrumental",
+            confirmText: "Crear",
+            cancelText: "Cancelar"
+        });
+        if (!name || !name.trim()) return;
 
         try {
-            await createFolder(name, currentFolder === 'root' ? null : currentFolder);
+            await createFolder(name.trim(), currentFolder === 'root' ? null : currentFolder);
+            showToast("Carpeta creada con éxito", "success");
             loadContents(currentFolder);
         } catch (e) {
-            alert("Error creando carpeta");
+            showToast("Error creando carpeta", "error");
         }
     };
 
@@ -88,9 +97,10 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
         setUploading(true);
         try {
             await uploadImage(file, currentFolder);
+            showToast("Imagen subida con éxito", "success");
             loadContents(currentFolder);
         } catch (e) {
-            alert("Error subiendo imagen");
+            showToast("Error subiendo imagen", "error");
         } finally {
             setUploading(false);
             e.target.value = ''; // Reset

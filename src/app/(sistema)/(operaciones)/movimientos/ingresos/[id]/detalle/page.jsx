@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { getIngreso } from '@/services/apis/movimientos';
+import { useToast } from "@/components/ui/feedback/ToastContext";
+import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
 const COLUMNAS_CONFIG = [
     { id: 'foto', label: 'Fotos' },
@@ -28,6 +30,8 @@ const COLUMNAS_CONFIG = [
 export default function DetalleIngresoPage() {
     const { id } = useParams();
     const router = useRouter();
+    const { confirm } = useConfirm();
+    const { showToast } = useToast();
 
     const { data: ingreso, loading } = useApi(() => getIngreso(id), {
         auto: true,
@@ -85,8 +89,8 @@ export default function DetalleIngresoPage() {
                 subtitle={
                     <>
                         <Package size={12} />
-                        <span>Detalle de Ingreso</span>
-                        <span className="mx-2 text-slate-300">|</span>
+                        <Text as="span" variant="bodySm">Detalle de Ingreso</Text>
+                        <Text as="span" variant="bodyXs" className="mx-2 text-slate-300">|</Text>
                         <Badge variant={ingreso.estado === 'APROBADO' ? 'success' : 'warning'}>
                             {ingreso.estado}
                         </Badge>
@@ -181,15 +185,15 @@ export default function DetalleIngresoPage() {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-4 text-center"><span className="inline-flex min-w-[32px] px-2 h-8 items-center justify-center bg-slate-900 text-white rounded-lg text-xs font-black">{item.cantidad}</span></td>
-                                            {colsVisibles.includes('lote') && <td className="px-6 py-4 text-[10px] font-bold text-slate-700 uppercase whitespace-nowrap"><InboxIcon size={12} className="inline mr-1 text-slate-300" /> {item.lote_codigo || 'S/L'}</td>}
+                                            <td className="px-4 py-4 text-center"><Text variant="bodyXsBold" className="inline-flex min-w-[32px] px-2 h-8 items-center justify-center bg-slate-900 text-white rounded-lg">{item.cantidad}</Text></td>
+                                            {colsVisibles.includes('lote') && <td className="px-6 py-4"><Text variant="bodyXs" className="uppercase whitespace-nowrap"><InboxIcon size={12} className="inline mr-1 text-slate-300" /> {item.lote_codigo || 'S/L'}</Text></td>}
                                             {colsVisibles.includes('vencimiento') && (
                                                 <td className="px-6 py-4">
                                                     {item.vencimiento ? (
-                                                        <div className="text-[9px] font-black text-amber-600 uppercase flex items-center gap-1.5 whitespace-nowrap bg-amber-50 px-2 py-1 rounded-lg">
+                                                        <Text variant="label" className="uppercase flex items-center gap-1.5 whitespace-nowrap bg-amber-50 px-2 py-1 rounded-lg">
                                                             <ClockIcon size={12} /> {new Date(item.vencimiento).toLocaleDateString()}
-                                                        </div>
-                                                    ) : <span className="text-[9px] font-bold text-slate-300 italic uppercase">Sin Venc.</span>}
+                                                        </Text>
+                                                    ) : <Text variant="label" className="italic uppercase">Sin Venc.</Text>}
                                                 </td>
                                             )}
                                             {colsVisibles.includes('costos') && (

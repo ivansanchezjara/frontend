@@ -27,9 +27,13 @@ import ConsignacionResumen from "@/components/movimientos/consignaciones/tabs/Co
 import ConsignacionDevoluciones from "@/components/movimientos/consignaciones/tabs/ConsignacionDevoluciones";
 import ConsignacionLiquidaciones from "@/components/movimientos/consignaciones/tabs/ConsignacionLiquidaciones";
 import ConsignacionHistorial from "@/components/movimientos/consignaciones/tabs/ConsignacionHistorial";
+import { useToast } from "@/components/ui/feedback/ToastContext";
+import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
 export default function DetalleConsignacionPage({ params }) {
   const { id } = use(params);
+  const { confirm } = useConfirm();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState("resumen"); // resumen, devoluciones, liquidaciones
 
   // Estados para modales
@@ -37,7 +41,7 @@ export default function DetalleConsignacionPage({ params }) {
   const [showLiquidacionModal, setShowLiquidacionModal] = useState(false);
 
   // Cargar consignación con useApi
-  const { data: consignacion, loading, execute: fetchDetail, setData: setConsignacion } = useApi(
+  const { data: consignacion, loading, execute: fetchDetail } = useApi(
     getConsignacion,
     {
       auto: true,
@@ -60,17 +64,18 @@ export default function DetalleConsignacionPage({ params }) {
   const { execute: crearLiquidacionAction, loading: isCreandoLiq } = useApi(crearLiquidacion, { auto: false });
 
   const handleAprobarSalida = async () => {
-    if (
-      !confirm(
-        "¿Aprobar esta consignación? El stock se descontará de los depósitos seleccionados.",
-      )
-    )
-      return;
+    const isConfirmed = await confirm(
+      "¿Aprobar esta consignación? El stock se descontará de los depósitos seleccionados.",
+      "Aprobar Salida"
+    );
+    if (!isConfirmed) return;
+
     try {
       await aprobarConsignacionAction(id);
+      showToast("Consignación aprobada con éxito", "success");
       fetchDetail(id);
     } catch (err) {
-      // useErrorHandler ya muestra el mensaje
+      showToast("Error al aprobar la consignación", "error");
     }
   };
 
@@ -97,13 +102,13 @@ export default function DetalleConsignacionPage({ params }) {
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <Package size={12} className="text-slate-400" />
-              <span className="font-bold text-slate-600">{`${consignacion.responsable} • ${consignacion.destino}`}</span>
+              <Text variant="bodySm" className="font-bold text-slate-600">{`${consignacion.responsable} • ${consignacion.destino}`}</Text>
             </div>
             <div className="flex items-center gap-2">
               <User size={12} className="text-blue-500" />
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                Registrado por: <span className="text-blue-600">{consignacion.usuario_nombre}</span>
-              </span>
+              <Text variant="label" className="uppercase tracking-widest">
+                Registrado por: <Text variant="bodyXs" className="text-blue-600">{consignacion.usuario_nombre}</Text>
+              </Text>
             </div>
           </div>
         }
@@ -253,11 +258,19 @@ export default function DetalleConsignacionPage({ params }) {
                   devoluciones={consignacion.devoluciones}
                   isAprobandoDev={isAprobandoDev}
                   onAprobarDevolucion={async (devId) => {
-                    if (!confirm("¿Aprobar ingreso de stock?")) return;
+                    const isConfirmed = await confirm(
+                      "¿Aprobar ingreso de stock?",
+                      "Aprobar Devolución"
+                    );
+                    if (!isConfirmed) return;
+
                     try {
                       await aprobarDevolucionAction(devId);
+                      showToast("Devolución aprobada con éxito", "success");
                       fetchDetail(id);
-                    } catch (err) { }
+                    } catch (err) {
+                      showToast("Error al aprobar la devolución", "error");
+                    }
                   }}
                 />
               )}

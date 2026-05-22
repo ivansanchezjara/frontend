@@ -17,7 +17,7 @@ export default function ZonaPeligroSection({
         title="Zona de Peligro"
         subtitle="Acciones críticas que afectan la visibilidad del producto en el sistema."
       >
-        <div className="p-6 dark:bg-red-950/5 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="text-center md:text-left">
             <Text variant="bodySm" className="font-black text-slate-800">
               Desactivar Producto

@@ -1,5 +1,5 @@
 "use client";
-import { EmptyState, LoadingScreen, PageHeader, Pagination, Badge } from '@/components/ui';
+import { EmptyState, LoadingScreen, PageHeader, Pagination, Badge, Text } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -12,6 +12,8 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { getIngresos, aprobarIngreso, rechazarIngreso } from '@/services/apis/movimientos';
 import MovimientosFilterBar from '@/components/movimientos/MovimientosFilterBar';
 import MovimientoCard from '@/components/movimientos/MovimientoCard';
+import { useToast } from "@/components/ui/feedback/ToastContext";
+import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
 export default function IngresosPage() {
     const router = useRouter();

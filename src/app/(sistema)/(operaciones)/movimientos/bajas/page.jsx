@@ -1,5 +1,5 @@
 "use client";
-import { EmptyState, LoadingScreen, PageHeader, Pagination, Badge } from '@/components/ui';
+import { EmptyState, LoadingScreen, PageHeader, Pagination, Badge, Text } from '@/components/ui';
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,9 +9,13 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { getBajas, aprobarBaja, rechazarBaja } from "@/services/apis/movimientos";
 import MovimientosFilterBar from "@/components/movimientos/MovimientosFilterBar";
 import MovimientoCard from "@/components/movimientos/MovimientoCard";
+import { useToast } from "@/components/ui/feedback/ToastContext";
+import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
 export default function BajasPage() {
   const router = useRouter();
+  const { confirm, danger } = useConfirm();
+  const { showToast } = useToast();
   // Estados de filtros y paginación
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 500);
@@ -63,36 +67,36 @@ export default function BajasPage() {
   const handleAprobar = async (id, e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (
-      !confirm(
-        "¿Confirmar aprobación de esta baja? El stock se descontará inmediatamente.",
-      )
-    )
-      return;
+    const isConfirmed = await confirm(
+      "¿Confirmar aprobación de esta baja? El stock se descontará inmediatamente.",
+      "Aprobar Baja"
+    );
+    if (!isConfirmed) return;
 
     try {
       await aprobarBajaAction(id);
+      showToast("Baja aprobada con éxito", "success");
       fetchBajas();
     } catch (error) {
-      // useErrorHandler ya muestra el mensaje
+      showToast("Error al aprobar la baja", "error");
     }
   };
 
   const handleRechazar = async (id, e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (
-      !confirm(
-        "¿Confirmar rechazo de esta baja? Esta acción es irreversible.",
-      )
-    )
-      return;
+    const isConfirmed = await danger(
+      "¿Confirmar rechazo de esta baja? Esta acción es irreversible.",
+      "Rechazar Baja"
+    );
+    if (!isConfirmed) return;
 
     try {
       await rechazarBajaAction(id);
+      showToast("Baja rechazada", "info");
       fetchBajas();
     } catch (error) {
-      // useErrorHandler ya muestra el mensaje
+      showToast("Error al rechazar la baja", "error");
     }
   };
 
@@ -116,10 +120,10 @@ export default function BajasPage() {
         subtitle={
           <>
             <Package size={12} />
-            <span>
+            <Text as="span" variant="bodySm">
               Registrá pérdidas, mermas o productos vencidos para darlos de
               baja.
-            </span>
+            </Text>
           </>
         }
       >
@@ -214,7 +218,7 @@ export default function BajasPage() {
                     {bajas.map((baja) => {
                       const badgeVariant = baja.estado === 'APROBADO' ? 'success'
                         : baja.estado === 'RECHAZADO' ? 'danger'
-                        : 'warning';
+                          : 'warning';
 
                       return (
                         <tr
@@ -222,7 +226,9 @@ export default function BajasPage() {
                           className="hover:bg-slate-50/50 transition-colors cursor-pointer group"
                           onClick={() => router.push(`/movimientos/bajas/${baja.id}/detalle`)}
                         >
-                          <td className="py-4 px-6 text-slate-400 font-bold">#{baja.id}</td>
+                          <td className="py-4 px-6">
+                            <Text variant="bodyXs" className="text-slate-400 font-bold">#{baja.id}</Text>
+                          </td>
                           <td className="py-4 px-4">
                             <Badge variant={badgeVariant}>
                               {baja.estado}
@@ -230,8 +236,8 @@ export default function BajasPage() {
                           </td>
                           <td className="py-4 px-4 font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                             <div className="flex flex-col">
-                              <span>{baja.variante_nombre}</span>
-                              <span className="text-[10px] text-slate-400 font-medium">SKU: {baja.variante_codigo || 'S/N'}</span>
+                              <Text variant="bodySmBold" className="group-hover:text-blue-600 transition-colors">{baja.variante_nombre}</Text>
+                              <Text variant="bodyXs" className="text-slate-400">SKU: {baja.variante_codigo || 'S/N'}</Text>
                             </div>
                           </td>
                           <td className="py-4 px-4">
@@ -239,11 +245,17 @@ export default function BajasPage() {
                               {getMotivoLabel(baja.motivo)}
                             </Badge>
                           </td>
-                          <td className="py-4 px-4 text-slate-500">
-                            {new Date(baja.fecha).toLocaleDateString()}
+                          <td className="py-4 px-4">
+                            <Text variant="bodyXs" className="text-slate-500">
+                              {new Date(baja.fecha).toLocaleDateString()}
+                            </Text>
                           </td>
-                          <td className="py-4 px-4 text-slate-500">{baja.deposito_nombre}</td>
-                          <td className="py-4 px-4 text-center font-bold text-slate-900">{baja.cantidad}</td>
+                          <td className="py-4 px-4">
+                            <Text variant="bodyXs" className="text-slate-500">{baja.deposito_nombre}</Text>
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            <Text variant="bodyXsBold" className="text-slate-900">{baja.cantidad}</Text>
+                          </td>
                           <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
                             {baja.estado === 'BORRADOR' ? (
                               <div className="flex items-center justify-end gap-2">
@@ -272,9 +284,9 @@ export default function BajasPage() {
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              <Text variant="label" className="uppercase tracking-wider">
                                 Auditado
-                              </span>
+                              </Text>
                             )}
                           </td>
                         </tr>

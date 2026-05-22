@@ -1,5 +1,5 @@
 "use client";
-import { EmptyState, LoadingScreen, PageHeader, Pagination, SearchBar, ColumnSelector } from '@/components/ui';
+import { EmptyState, LoadingScreen, PageHeader, Pagination, SearchBar, ColumnSelector, Text, Heading } from '@/components/ui';
 import { useState, useEffect } from "react";
 import ProductTable, {
   COLUMNAS_VISIBLES_POR_DEFECTO,
@@ -130,16 +130,14 @@ export default function StockPage() {
                 <Package size={16} />
               </div>
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
-                  Total Piezas
-                </p>
-                <h4 className="text-lg font-black text-slate-800 leading-none">
+                <Text variant="label" className="mb-1">Total Piezas</Text>
+                <Heading level={4} className="leading-none">
                   {(
                     stats.total_piezas ||
                     stats.totalPiezas ||
                     0
                   ).toLocaleString()}
-                </h4>
+                </Heading>
               </div>
             </div>
 
@@ -148,12 +146,10 @@ export default function StockPage() {
                 <Calendar size={16} />
               </div>
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
-                  Próximos Venc.
-                </p>
-                <h4 className="text-lg font-black text-slate-800 leading-none">
+                <Text variant="label" className="mb-1">Próximos Venc.</Text>
+                <Heading level={4} className="leading-none">
                   {stats.alertas_vencimiento}
-                </h4>
+                </Heading>
               </div>
             </div>
 
@@ -162,12 +158,10 @@ export default function StockPage() {
                 <AlertTriangle size={16} />
               </div>
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
-                  Agotados
-                </p>
-                <h4 className="text-lg font-black text-slate-800 leading-none">
+                <Text variant="label" className="mb-1">Agotados</Text>
+                <Heading level={4} className="leading-none">
                   {stats.skus_agotados}
-                </h4>
+                </Heading>
               </div>
             </div>
 
@@ -176,12 +170,10 @@ export default function StockPage() {
                 <AlertCircle size={16} />
               </div>
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
-                  Vencidos
-                </p>
-                <h4 className="text-lg font-black text-slate-800 leading-none">
+                <Text variant="label" className="mb-1">Vencidos</Text>
+                <Heading level={4} className="leading-none">
                   {stats.unidades_vencidas}
-                </h4>
+                </Heading>
               </div>
             </div>
 
@@ -190,12 +182,10 @@ export default function StockPage() {
                 <LayoutGrid size={16} />
               </div>
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
-                  Total SKUs
-                </p>
-                <h4 className="text-lg font-black text-slate-800 leading-none">
+                <Text variant="label" className="mb-1">Total SKUs</Text>
+                <Heading level={4} className="leading-none">
                   {stats.total_skus}
-                </h4>
+                </Heading>
               </div>
             </div>
           </div>

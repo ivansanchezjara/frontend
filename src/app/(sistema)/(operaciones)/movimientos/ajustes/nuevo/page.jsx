@@ -14,9 +14,13 @@ import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
 import { useApi } from "@/hooks/useApi";
 import { getStockLotes } from "@/services/apis/inventario";
 import { crearAjuste } from "@/services/apis/movimientos";
+import { useToast } from "@/components/ui/feedback/ToastContext";
+import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
 export default function NuevoAjusteInventarioPage() {
   const router = useRouter();
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // 2. Lotes para la variante seleccionada
@@ -141,7 +145,7 @@ export default function NuevoAjusteInventarioPage() {
     if (!ajuste.variante || isSubmitting) return;
 
     if (!ajuste.motivo || ajuste.motivo.trim() === "") {
-      alert("Debes describir el motivo del ajuste antes de continuar.");
+      showToast("Debes describir el motivo del ajuste antes de continuar.", "error");
       return;
     }
 
@@ -153,7 +157,7 @@ export default function NuevoAjusteInventarioPage() {
     );
 
     if (lotesModificados.length === 0) {
-      alert("Debes modificar al menos un lote antes de enviar el ajuste.");
+      showToast("Debes modificar al menos un lote antes de enviar el ajuste.", "error");
       return;
     }
 
@@ -170,18 +174,27 @@ export default function NuevoAjusteInventarioPage() {
     });
 
     if (invalidSplit) {
-      alert(
+      showToast(
         "Para crear un nuevo lote, la cantidad debe reducirse respecto al lote original y no puede ser negativa.",
+        "error"
       );
       return;
     }
 
     if (totalStockActual !== totalStockPropuesto) {
-      alert(
+      showToast(
         "El stock total debe permanecer igual. Ajusta cantidades o splits para igualar el total antes y después.",
+        "error"
       );
       return;
     }
+
+    const isConfirmed = await confirm(
+      "¿Estás seguro de guardar este ajuste de inventario?",
+      "Guardar Ajuste"
+    );
+
+    if (!isConfirmed) return;
 
     const payload = {
       variante: ajuste.variante,
@@ -201,9 +214,10 @@ export default function NuevoAjusteInventarioPage() {
 
     try {
       await submitAjuste(payload);
+      showToast("Ajuste guardado con éxito", "success");
       router.push("/movimientos/ajustes");
     } catch (error) {
-      // useErrorHandler ya muestra el mensaje, aquí solo evitamos el flujo de éxito
+      showToast("Error al guardar el ajuste", "error");
     }
   };
 
@@ -248,9 +262,9 @@ export default function NuevoAjusteInventarioPage() {
                   className="w-full p-10 border-2 border-dashed border-slate-200 rounded-[24px] text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all flex flex-col items-center gap-4 bg-slate-50/50"
                 >
                   <Search size={40} className="opacity-20" />
-                  <span className="font-black uppercase tracking-widest text-xs">
+                  <Text variant="label" className="uppercase tracking-widest">
                     Click para buscar producto en stock
-                  </span>
+                  </Text>
                 </button>
               ) : (
                 <div className="flex items-center justify-between p-6 bg-blue-50/50 border border-blue-100 rounded-[24px]">
@@ -259,9 +273,7 @@ export default function NuevoAjusteInventarioPage() {
                       <Package size={24} className="text-blue-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
-                        {selectedVarianteInfo.product_code}
-                      </p>
+                      <Text variant="label" className="mb-1">{selectedVarianteInfo.product_code}</Text>
                       <Heading level={4} className="text-slate-900 text-lg">
                         {selectedVarianteInfo.producto_nombre}
                         <Text as="span" variant="muted" className="text-sm ml-2">
@@ -314,7 +326,7 @@ export default function NuevoAjusteInventarioPage() {
                 <Text variant="muted" className="text-[10px] uppercase tracking-widest mb-2">
                   Total Actual
                 </Text>
-                <Text className="text-3xl text-slate-900">
+                <Text variant="bodyBold" className="text-3xl text-slate-900">
                   {totalStockActual}
                 </Text>
               </div>
@@ -324,20 +336,20 @@ export default function NuevoAjusteInventarioPage() {
                   : "bg-rose-50 border-rose-100 text-rose-700"
                   }`}
               >
-                <p className="text-[11px] font-black uppercase tracking-widest mb-1">
+                <Text variant="label" className="uppercase tracking-widest mb-1">
                   {totalsMatch ? "✓ Stock Balanceado" : "⚠️ Desbalance"}
-                </p>
+                </Text>
                 {!totalsMatch && (
-                  <p className="text-[10px] font-bold opacity-70 leading-tight">
+                  <Text variant="bodyXs" className="opacity-70 leading-tight">
                     La suma final debe igualar a la actual
-                  </p>
+                  </Text>
                 )}
               </div>
               <div className="bg-white p-6 rounded-[24px] border border-slate-200 shadow-sm text-center">
-                <Text className="text-[10px] text-blue-400 uppercase tracking-widest mb-2">
+                <Text variant="bodyXs" className="text-[10px] text-blue-400 uppercase tracking-widest mb-2">
                   Total Propuesto
                 </Text>
-                <Text className="text-3xl text-blue-900">
+                <Text variant="bodyBold" className="text-3xl text-blue-900">
                   {totalStockPropuesto}
                 </Text>
               </div>
@@ -354,9 +366,9 @@ export default function NuevoAjusteInventarioPage() {
               <div className="space-y-4">
                 {lotes.filter((l) => l.cantidad_actual > 0).length === 0 ? (
                   <div className="p-12 text-center border-2 border-dashed border-slate-200 rounded-[32px] bg-slate-50/50">
-                    <p className="text-slate-400 font-black uppercase tracking-widest text-xs">
+                    <Text variant="label" className="text-slate-400 uppercase tracking-widest">
                       No hay lotes con stock para este producto
-                    </p>
+                    </Text>
                   </div>
                 ) : (
                   lotes
@@ -373,27 +385,23 @@ export default function NuevoAjusteInventarioPage() {
                               <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
                                 <MapPin size={16} />
                               </div>
-                              <span className="text-xs font-black text-slate-600 uppercase tracking-widest">
+                              <Text variant="label" className="uppercase tracking-widest">
                                 {lote.lote_codigo} • {lote.deposito_nombre}
-                              </span>
+                              </Text>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                               <div className="bg-slate-50 p-4 rounded-2xl">
-                                <p className="text-[9px] font-black text-slate-400 uppercase mb-1">
-                                  Cantidad Actual
-                                </p>
-                                <p className="text-xl font-black text-slate-700">
+                                <Text variant="label" className="uppercase mb-1">Cantidad Actual</Text>
+                                <Text variant="bodyBold" className="text-slate-700">
                                   {lote.cantidad_actual} u.
-                                </p>
+                                </Text>
                               </div>
                               <div className="bg-slate-50 p-4 rounded-2xl">
-                                <p className="text-[9px] font-black text-slate-400 uppercase mb-1">
-                                  Vencimiento Actual
-                                </p>
-                                <p className="text-xs font-black text-slate-700 uppercase">
+                                <Text variant="label" className="uppercase mb-1">Vencimiento Actual</Text>
+                                <Text variant="bodyXs" className="uppercase">
                                   {lote.vencimiento_actual || "Sin fecha"}
-                                </p>
+                                </Text>
                               </div>
                             </div>
                           </div>
@@ -404,9 +412,9 @@ export default function NuevoAjusteInventarioPage() {
                               <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
                                 <Settings2 size={16} />
                               </div>
-                              <span className="text-xs font-black text-blue-600 uppercase tracking-widest">
+                              <Text variant="label" className="uppercase tracking-widest">
                                 Ajuste de Valores
-                              </span>
+                              </Text>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -455,17 +463,17 @@ export default function NuevoAjusteInventarioPage() {
                                     className="text-blue-500"
                                     size={18}
                                   />
-                                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                                  <Text variant="label" className="uppercase tracking-widest">
                                     Redistribución de Diferencia (
                                     {lote.cantidad_actual -
                                       parseInt(lote.nueva_cantidad, 10)}{" "}
                                     u.)
-                                  </p>
+                                  </Text>
                                 </div>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase">
+                                <Text variant="bodyXs" className="uppercase">
                                   Seleccioná a dónde mover las unidades
                                   restantes
-                                </p>
+                                </Text>
                               </div>
 
                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -487,16 +495,16 @@ export default function NuevoAjusteInventarioPage() {
                                         }`}
                                     >
                                       <div className="flex items-center justify-between mb-1">
-                                        <p className="text-[10px] font-black text-slate-900 truncate">
+                                        <Text variant="bodyXs" className="truncate">
                                           {other.lote_codigo}
-                                        </p>
+                                        </Text>
                                         <div
                                           className={`w-2 h-2 rounded-full ${lote.destino_lote_id === other.id ? "bg-blue-500 animate-pulse" : "bg-slate-200"}`}
                                         />
                                       </div>
-                                      <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
+                                      <Text variant="bodyXs" className="uppercase truncate">
                                         {other.deposito_nombre}
-                                      </p>
+                                      </Text>
                                     </button>
                                   ))}
 
@@ -511,11 +519,9 @@ export default function NuevoAjusteInventarioPage() {
                                     }`}
                                 >
                                   <div className="flex items-center gap-2 mb-1">
-                                    <span
-                                      className={`text-[10px] font-black uppercase ${lote.destino_lote_id === null && lote.nuevo_lote_codigo ? "text-blue-600" : "text-slate-400 group-hover:text-blue-500"}`}
-                                    >
+                                    <Text variant="label" className={lote.destino_lote_id === null && lote.nuevo_lote_codigo ? "text-blue-600" : "text-slate-400 group-hover:text-blue-500"}>
                                       Nuevo Lote
-                                    </span>
+                                    </Text>
                                   </div>
                                   <input
                                     type="text"

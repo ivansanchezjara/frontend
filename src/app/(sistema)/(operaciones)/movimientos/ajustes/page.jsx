@@ -1,5 +1,5 @@
 "use client";
-import { EmptyState, LoadingScreen, PageHeader, Heading, Text, Button } from '@/components/ui';
+import { EmptyState, LoadingScreen, PageHeader, Heading, Text, Button, Badge } from '@/components/ui';
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,9 +15,13 @@ import {
 import { useApi } from "@/hooks/useApi";
 import { getAjustes, aprobarAjuste } from "@/services/apis/movimientos";
 import AjusteDetailModal from "@/components/movimientos/AjusteDetailModal";
+import { useToast } from "@/components/ui/feedback/ToastContext";
+import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
 export default function AjustesInventarioPage() {
   const router = useRouter();
+  const { confirm } = useConfirm();
+  const { showToast } = useToast();
   const [selectedAjuste, setSelectedAjuste] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
@@ -36,18 +40,20 @@ export default function AjustesInventarioPage() {
   const handleAprobar = async (id, e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (
-      !confirm(
-        "¿Confirmar aprobación de este ajuste de inventario? El stock físico, lotes y vencimientos se actualizarán inmediatamente.",
-      )
-    )
-      return;
+
+    const isConfirmed = await confirm(
+      "¿Confirmar aprobación de este ajuste de inventario? El stock físico, lotes y vencimientos se actualizarán inmediatamente.",
+      "Aprobar Ajuste"
+    );
+
+    if (!isConfirmed) return;
 
     try {
       await executeAprobar(id);
+      showToast("Ajuste aprobado con éxito", "success");
       fetchAjustes(); // Recargamos la lista para ver el cambio de estado
     } catch (error) {
-      // useErrorHandler ya muestra el mensaje
+      showToast("Error al aprobar el ajuste", "error");
     }
   };
 
@@ -115,19 +121,15 @@ export default function AjustesInventarioPage() {
                   {/* Info Principal */}
                   <div className="flex-1 min-w-0 text-center md:text-left">
                     <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                        ID #{ajuste.id}
-                      </span>
+                      <Text variant="label" className="uppercase tracking-widest">ID #{ajuste.id}</Text>
 
-                      <span
-                        className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${ajuste.estado === "APROBADO" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}
-                      >
+                      <Badge variant={ajuste.estado === "APROBADO" ? "success" : "warning"} className="uppercase tracking-widest">
                         {ajuste.estado || "BORRADOR"}
-                      </span>
+                      </Badge>
 
-                      <span className="text-[9px] font-black px-3 py-1 bg-slate-100 text-slate-600 rounded-full uppercase tracking-widest border border-slate-200">
+                      <Badge variant="default" className="uppercase tracking-widest">
                         {ajuste.motivo?.replace("_", " ") || "AJUSTE"}
-                      </span>
+                      </Badge>
                     </div>
 
                     <Heading level={3} className="text-xl text-slate-900 truncate tracking-tight">
@@ -142,43 +144,40 @@ export default function AjustesInventarioPage() {
 
                     {ajuste.lotes_ajustados?.length > 0 && (
                       <div className="mt-4 text-slate-500 text-sm space-y-1">
-                        <div className="text-slate-400 uppercase tracking-[0.3em] text-[10px] font-black">
-                          Lotes modificados
-                        </div>
+                        <Text variant="label" className="uppercase tracking-[0.3em]">Lotes modificados</Text>
                         {ajuste.lotes_ajustados.slice(0, 2).map((item) => (
-                          <p key={item.id} className="truncate">
-                            <span className="font-black text-slate-700">
+                          <Text key={item.id} variant="bodyXs" className="truncate">
+                            <Text variant="bodyXsBold" className="font-black text-slate-700">
                               {item.lote_codigo}
-                            </span>
+                            </Text>
                             : {item.cantidad_anterior}u →{" "}
                             {item.nueva_cantidad ?? item.cantidad_anterior}u
                             {item.nuevo_vencimiento ? (
-                              <span className="text-slate-400">
-                                {" "}
-                                | Vence {item.vencimiento_anterior ||
+                              <Text variant="bodyXs" className="text-slate-400">
+                                {" "} | Vence {item.vencimiento_anterior ||
                                   "N/A"} → {item.nuevo_vencimiento}
-                              </span>
+                              </Text>
                             ) : null}
-                          </p>
+                          </Text>
                         ))}
                         {ajuste.lotes_ajustados.length > 2 && (
-                          <p className="text-slate-400 text-xs">
+                          <Text variant="bodyXs" className="text-slate-400">
                             + {ajuste.lotes_ajustados.length - 2} lote(s) más
-                          </p>
+                          </Text>
                         )}
                       </div>
                     )}
 
                     <div className="flex flex-wrap justify-center md:justify-start gap-6 mt-4 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
-                      <span className="flex items-center gap-2">
+                      <Text variant="bodyXs" className="flex items-center gap-2">
                         <Calendar size={14} />{" "}
                         {new Date(
                           ajuste.fecha || ajuste.creado_en,
                         ).toLocaleDateString()}
-                      </span>
-                      <span className="flex items-center gap-2">
+                      </Text>
+                      <Text variant="bodyXs" className="flex items-center gap-2">
                         <User size={14} /> {ajuste.usuario_nombre || "Usuario"}
-                      </span>
+                      </Text>
                     </div>
                   </div>
 

@@ -1,15 +1,18 @@
 "use client";
-import { PageHeader, ResizableHeader } from '@/components/ui';
+import { PageHeader, ResizableHeader, Text, Heading } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Search, Plus, Trash2, Check, CheckCircle2, Download, Upload, Tag, Clock, Package } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { getDepositos, getIngreso, actualizarIngreso } from '@/services/apis/movimientos';
 import { getVariantes } from '@/services/apis/catalogo';
+import { useToast } from "@/components/ui/feedback/ToastContext";
+
 
 export default function EditarIngresoPage() {
     const router = useRouter();
     const { id } = useParams();
+    const { showToast } = useToast();
     const [depositos, setDepositos] = useState([]);
     const [variantes, setVariantes] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -204,19 +207,21 @@ export default function EditarIngresoPage() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        showToast("Plantilla descargada", "success");
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (errorMsg || items.length === 0) return;
-        if (!ingreso.deposito) { alert("Debe seleccionar un depósito."); return; }
+        if (!ingreso.deposito) { showToast("Debe seleccionar un depósito.", "error"); return; }
 
         try {
             const payload = { ...ingreso, items: items.map(it => ({ ...it, vencimiento: it.vencimiento === '' ? null : it.vencimiento })) };
             await updateIngresoAction(id, payload);
+            showToast("Borrador actualizado correctamente", "success");
             router.push('/movimientos/ingresos');
         } catch (error) {
-            // useErrorHandler handles notifications 
+            showToast("Error al actualizar el borrador", "error");
         }
     };
 
@@ -232,7 +237,7 @@ export default function EditarIngresoPage() {
                 subtitle={
                     <>
                         <Package size={12} />
-                        <span>Modificá los datos del arribo o los ítems antes de la aprobación definitiva.</span>
+                        <Text variant="bodySm">Modificá los datos del arribo o los ítems antes de la aprobación definitiva.</Text>
                     </>
                 }
             >
@@ -250,24 +255,24 @@ export default function EditarIngresoPage() {
                     <div className="space-y-6">
                         {/* SECCION GENERAL - AHORA ARRIBA Y ANCHO COMPLETO */}
                         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Información General</h3>
+                            <Heading level={6} className="mb-4">Información General</Heading>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-slate-700">
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Depósito</label>
+                                    <Text variant="label">Depósito</Text>
                                     <select name="deposito" required value={ingreso.deposito} onChange={handleIngresoChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm">
                                         {depositos.map(dep => <option key={dep.id} value={dep.id}>{dep.nombre}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Fecha de Arribo</label>
+                                    <Text variant="label">Fecha de Arribo</Text>
                                     <input type="date" name="fecha_arribo" value={ingreso.fecha_arribo} onChange={handleIngresoChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Comprobante</label>
+                                    <Text variant="label">Comprobante</Text>
                                     <input type="text" name="comprobante" value={ingreso.comprobante} onChange={handleIngresoChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" placeholder="N° Factura / Remito" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Observaciones</label>
+                                    <Text variant="label">Observaciones</Text>
                                     <textarea name="descripcion" value={ingreso.descripcion} onChange={handleIngresoChange} rows="1" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" placeholder="Ej: Arribo de mercadería de Aduana..."></textarea>
                                 </div>
                             </div>
@@ -276,7 +281,7 @@ export default function EditarIngresoPage() {
                         {/* TABLA DE ITEMS - ANCHO COMPLETO */}
                         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-20">
-                                <h2 className="text-slate-800 font-black">Ítems ({items.length})</h2>
+                                <Heading level={4}>Ítems ({items.length})</Heading>
                                 <div className="flex gap-2">
                                     <input type="file" id="csvImportEdit" className="hidden" accept=".csv,.txt" onChange={(e) => {
                                         const file = e.target.files[0];
@@ -301,7 +306,7 @@ export default function EditarIngresoPage() {
                                                 const sorted = [...items, ...loaded].sort((a, b) => a.variante_label.localeCompare(b.variante_label));
                                                 setItems(sorted);
                                                 validateItems(sorted);
-                                                alert("Cargado!");
+                                                showToast(`Cargados ${loaded.length} productos`, "success");
                                             }
                                         };
                                         reader.readAsText(file);
@@ -364,7 +369,7 @@ export default function EditarIngresoPage() {
                                                         </div>
                                                         {rowError && (
                                                             <div className="text-[9px] font-black text-red-600 uppercase tracking-tighter bg-red-100 px-2 py-1 rounded-md inline-block animate-pulse">
-                                                                ⚠ {rowError}
+                                                                <Text variant="caption">⚠ {rowError}</Text>
                                                             </div>
                                                         )}
                                                     </td>
@@ -405,13 +410,13 @@ export default function EditarIngresoPage() {
                             <div className="p-8 bg-slate-900 text-white flex justify-between items-center no-print">
                                 <div className="flex items-center gap-3">
                                     <CheckCircle2 size={24} className="text-emerald-400" />
-                                    <span className="text-sm font-medium italic text-slate-300">Resumen de Inversión</span>
+                                    <Text variant="bodySm">Resumen de Inversión</Text>
                                 </div>
 
                                 <div className="flex items-center gap-6">
                                     {/* TOTAL FOB */}
                                     <div className="text-right">
-                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Total FOB</p>
+                                        <Text variant="caption">Total FOB</Text>
                                         <p className="text-xl font-black text-slate-300">
                                             ${items.reduce((s, i) => s + (i.cantidad * (i.costo_fob_unitario || 0)), 0).toLocaleString()}
                                         </p>
@@ -422,7 +427,7 @@ export default function EditarIngresoPage() {
 
                                     {/* TOTAL LANDED */}
                                     <div className="text-right">
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Costo Total Arribo (Landed)</p>
+                                        <Text variant="caption">Costo Total Arribo (Landed)</Text>
                                         <p className="text-2xl font-black text-emerald-400">
                                             ${items.reduce((s, i) => s + (i.cantidad * (i.costo_landed_unitario || 0)), 0).toLocaleString()}
                                         </p>
@@ -464,7 +469,7 @@ export default function EditarIngresoPage() {
                                             const totalItems = [...items, ...newItemsAdd].sort((a, b) => a.variante_label.localeCompare(b.variante_label));
                                             setItems(totalItems);
                                             validateItems(totalItems);
-                                            alert(`Agregados ${filtered.length} productos.`);
+                                            showToast(`Agregados ${filtered.length} productos.`, "success");
                                         }
                                     }} className="bg-blue-100 text-blue-700 px-4 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-200 transition-all">
                                         Seleccionar Todo
@@ -478,7 +483,7 @@ export default function EditarIngresoPage() {
                                         (v.nombre_variante || "").toLowerCase().includes(searchTerm.toLowerCase())
                                     ).map(v => (
                                         <button key={v.id} onClick={() => { addProductToItems(v); setLastAddedId(v.id); setTimeout(() => setLastAddedId(null), 500); }} className={`w-full p-4 flex items-center justify-between rounded-3xl transition-all text-left mb-1 ${lastAddedId === v.id ? 'bg-blue-100 border-2 border-blue-300 scale-95' : 'hover:bg-slate-50 border-2 border-transparent'}`}>
-                                            <div><div className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{v.product_code}</div><div className="font-bold text-slate-800">{getVariantDisplayName(v)}</div></div>
+                                            <div><Text variant="caption">{v.product_code}</Text><Text variant="bodyBold">{getVariantDisplayName(v)}</Text></div>
                                             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${lastAddedId === v.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{lastAddedId === v.id ? <Check size={24} /> : <Plus size={24} />}</div>
                                         </button>
                                     ))}

@@ -13,9 +13,11 @@ const ConfirmContext = createContext(null);
  */
 export function ConfirmProvider({ children }) {
     const [config, setConfig] = useState(null);
+    const [inputValue, setInputValue] = useState('');
 
     const confirm = useCallback((options) => {
         return new Promise((resolve) => {
+            setInputValue(options.defaultValue || '');
             setConfig({
                 ...options,
                 resolve
@@ -28,6 +30,7 @@ export function ConfirmProvider({ children }) {
             config.resolve(result);
         }
         setConfig(null);
+        setInputValue('');
     };
 
     // Mapeo dinámico del tipo de confirmación al variante del botón de confirmación
@@ -50,18 +53,18 @@ export function ConfirmProvider({ children }) {
                     {/* Backdrop */}
                     <div 
                         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
-                        onClick={() => !config.preventClose && close(false)}
+                        onClick={() => !config.preventClose && close(config.isPrompt ? null : false)}
                     />
                     
                     {/* Modal Card */}
-                    <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
+                    <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="p-6">
                             <div className="flex items-start gap-4">
                                 <div className={`p-3 rounded-xl shrink-0 ${
-                                    config.type === 'danger' ? 'bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400' :
-                                    config.type === 'warning' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400' :
-                                    config.type === 'success' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' :
-                                    'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400'
+                                    config.type === 'danger' ? 'bg-red-50 text-red-600' :
+                                    config.type === 'warning' ? 'bg-amber-50 text-amber-600' :
+                                    config.type === 'success' ? 'bg-emerald-50 text-emerald-600' :
+                                    'bg-blue-50 text-blue-600'
                                 }`}>
                                     {config.type === 'danger' && <XCircle size={24} />}
                                     {config.type === 'warning' && <AlertCircle size={24} />}
@@ -70,29 +73,46 @@ export function ConfirmProvider({ children }) {
                                     {(config.type === 'info' || !config.type) && <Info size={24} />}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <Heading level={5} className="text-slate-900 dark:text-white mb-1">
+                                    <Heading level={5} className="text-slate-900 mb-1">
                                         {config.title || 'Confirmación'}
                                     </Heading>
-                                    <Text variant="bodySm" className="text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    <Text variant="bodySm" className="text-slate-500 leading-relaxed mb-4">
                                         {config.message}
                                     </Text>
+                                    {config.isPrompt && (
+                                        <div className="mt-3">
+                                            <input
+                                                type="text"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all animate-in fade-in slide-in-from-top-1 duration-200"
+                                                placeholder={config.placeholder || 'Escribe aquí...'}
+                                                value={inputValue}
+                                                onChange={(e) => setInputValue(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        close(inputValue);
+                                                    }
+                                                }}
+                                                autoFocus
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 dark:bg-slate-800/50">
+                        <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50">
                             {!config.isAlert && (
                                 <Button
                                     variant="secondary"
-                                    onClick={() => close(false)}
-                                    className="px-4 text-slate-700 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700"
+                                    onClick={() => close(config.isPrompt ? null : false)}
+                                    className="px-4 text-slate-700"
                                 >
                                     {config.cancelText || 'Cancelar'}
                                 </Button>
                             )}
                             <Button
                                 variant={buttonVariant}
-                                onClick={() => close(true)}
+                                onClick={() => close(config.isPrompt ? inputValue : true)}
                                 className={buttonCustomClass}
                             >
                                 {config.confirmText || 'Aceptar'}
@@ -117,6 +137,8 @@ export const useConfirm = () => {
         alert: (message, title, options = {}) => 
             confirm({ message, title, type: 'info', isAlert: true, ...options }),
         danger: (message, title, options = {}) => 
-            confirm({ message, title, type: 'danger', confirmText: 'Eliminar', ...options })
+            confirm({ message, title, type: 'danger', confirmText: 'Eliminar', ...options }),
+        prompt: (message, title, options = {}) =>
+            confirm({ message, title, type: 'info', isPrompt: true, ...options })
     };
 };

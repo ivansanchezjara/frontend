@@ -16,9 +16,13 @@ import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
 import { useApi } from "@/hooks/useApi";
 import { getStockLotes } from "@/services/apis/inventario";
 import { crearConsignacion } from "@/services/apis/movimientos";
+import { useToast } from "@/components/ui/feedback/ToastContext";
+import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
 export default function NuevaConsignacionPage() {
   const router = useRouter();
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // --- API & DATA ---
@@ -48,7 +52,7 @@ export default function NuevaConsignacionPage() {
         const variantLotes = (data?.results || data || []).filter(l => l.cantidad > 0);
 
         if (variantLotes.length === 0) {
-          alert("No hay stock disponible para esta variante.");
+          showToast("No hay stock disponible para esta variante.", "error");
           return;
         }
 
@@ -64,6 +68,7 @@ export default function NuevaConsignacionPage() {
           return new Date(a.fecha_entrada) - new Date(b.fecha_entrada);
         })[0];
       } catch (err) {
+        showToast("Error al cargar los lotes disponibles", "error");
         return;
       }
     }
@@ -117,12 +122,17 @@ export default function NuevaConsignacionPage() {
     // Validar que ninguna cantidad haya quedado vacía o en 0
     for (const item of items) {
       if (!item.cantidad || Number(item.cantidad) <= 0) {
-        alert(
-          `La cantidad para el lote ${item.lote_codigo} debe ser mayor a 0.`,
-        );
+        showToast(`La cantidad para el lote ${item.lote_codigo} debe ser mayor a 0.`, "error");
         return;
       }
     }
+
+    const isConfirmed = await confirm(
+      "¿Estás seguro de registrar esta consignación?",
+      "Registrar Salida"
+    );
+    
+    if (!isConfirmed) return;
 
     try {
       const payload = {
@@ -135,9 +145,10 @@ export default function NuevaConsignacionPage() {
       };
 
       await createConsignacionAction(payload);
+      showToast("Consignación registrada con éxito", "success");
       router.push("/movimientos/consignaciones");
     } catch (err) {
-      // El useErrorHandler interno de useApi maneja la notificación
+      showToast("Error al registrar la consignación", "error");
     }
   };
 
@@ -151,10 +162,10 @@ export default function NuevaConsignacionPage() {
         subtitle={
           <>
             <Package size={12} />
-            <span>
+            <Text as="span" variant="bodySm">
               Registrá mercadería enviada a clientes o vendedores en calidad de
               préstamo.
-            </span>
+            </Text>
           </>
         }
       >

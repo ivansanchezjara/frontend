@@ -11,9 +11,6 @@ import { Image as ImageIcon, LayoutGrid, List } from 'lucide-react';
 import ProductoCard from '@/components/comercial/catalogo/list/ProductoCard';
 import ProductoRow from '@/components/comercial/catalogo/list/ProductoRow';
 
-// Normalización para búsqueda sin tildes
-const normalizar = (t) => t?.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() || "";
-
 export default function CatalogoPage() {
     // --- API & DATA ---
 

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Folder, Trash2, AlertCircle, Plus } from 'lucide-react';
 import { getFolders, createFolder, deleteFolder } from '@/services/apis/media.js';
-import { Button, Text } from '@/components/ui';
+import { Button, Text, useConfirm, useToast } from '@/components/ui';
 
 /**
  * DirectoriesPanel estandarizado.
@@ -19,6 +19,8 @@ export default function DirectoriesPanel({
 }) {
     const [carpetas, setCarpetas] = useState([]);
     const [loading, setLoading] = useState(false);
+    const { prompt: showPrompt, danger } = useConfirm();
+    const { showToast } = useToast();
 
     const loadFolders = async () => {
         setLoading(true);
@@ -38,24 +40,34 @@ export default function DirectoriesPanel({
     }, [carpetaActual, isAuditing]);
 
     const onCreateFolder = async () => {
-        const name = prompt("Nombre de la nueva carpeta:");
-        if (!name) return;
+        const name = await showPrompt("Escribe el nombre de la carpeta:", "Nueva Carpeta", {
+            placeholder: "Ej: Instrumental quirúrgico",
+            confirmText: "Crear",
+            cancelText: "Cancelar"
+        });
+        if (!name || !name.trim()) return;
         try {
-            await createFolder(name, carpetaActual === 'root' ? null : carpetaActual);
+            await createFolder(name.trim(), carpetaActual === 'root' ? null : carpetaActual);
+            showToast("Carpeta creada con éxito", "success");
             loadFolders();
         } catch (error) {
-            alert("Error al crear carpeta");
+            showToast("Error al crear la carpeta", "error");
         }
     };
 
     const onDeleteFolder = async (e, id) => {
         e.stopPropagation();
-        if (!confirm("¿Estás seguro de eliminar esta carpeta? Solo se eliminará si está vacía.")) return;
+        const accept = await danger(
+            "¿Estás seguro de eliminar esta carpeta? Solo se eliminará si está vacía.",
+            "Eliminar Carpeta"
+        );
+        if (!accept) return;
         try {
             await deleteFolder(id);
+            showToast("Carpeta eliminada con éxito", "success");
             loadFolders();
         } catch (error) {
-            alert("Error al eliminar carpeta. Asegúrate de que esté vacía.");
+            showToast("Error al eliminar la carpeta. Asegúrate de que esté vacía.", "error");
         }
     };
 
