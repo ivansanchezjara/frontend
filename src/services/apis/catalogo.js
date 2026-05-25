@@ -174,6 +174,20 @@ export async function eliminarImagenProducto(id) {
   );
 }
 
+// ─── Productos (toggle rápido de visibilidad) ───────────────────
+
+export async function toggleProductoField(slug, field, value) {
+  return request(
+    `${API_URL}/catalogo/productos/${slug}/`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify({ [field]: value }),
+    },
+    `actualizar ${field} del producto`,
+  );
+}
+
 // ─── Stats ────────────────────────────────────────────────────────
 
 export async function getProductosStats() {

@@ -6,6 +6,7 @@ import { Search, Plus, Trash2, Check, CheckCircle2, Download, Upload, Tag, Clock
 import { useApi } from '@/hooks/useApi';
 import { getDepositos, crearIngreso } from '@/services/apis/movimientos';
 import { getVariantes } from '@/services/apis/catalogo';
+import { getStockLotes } from '@/services/apis/inventario';
 import { useToast } from "@/components/ui/feedback/ToastContext";
 import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
@@ -15,13 +16,16 @@ export default function NuevoIngresoPage() {
     const { confirm } = useConfirm();
     const [depositos, setDepositos] = useState([]);
     const [variantes, setVariantes] = useState([]);
+    const [stockLotes, setStockLotes] = useState([]);
     const [errorMsg, setErrorMsg] = useState(null);
+    const [loteWarnings, setLoteWarnings] = useState({});
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [lastAddedId, setLastAddedId] = useState(null);
 
     const { execute: fetchDepositos } = useApi(getDepositos);
     const { execute: fetchVariantes } = useApi(getVariantes);
+    const { execute: fetchStockLotes } = useApi(getStockLotes);
     const { execute: createIngresoAction, loading: isSubmitting } = useApi(crearIngreso, { auto: false });
 
     const [ingreso, setIngreso] = useState({
@@ -36,13 +40,15 @@ export default function NuevoIngresoPage() {
     useEffect(() => {
         async function loadData() {
             try {
-                const [dDep, dVar] = await Promise.all([
+                const [dDep, dVar, dLotes] = await Promise.all([
                     fetchDepositos({ limit: 1000 }),
-                    fetchVariantes({ limit: 5000 })
+                    fetchVariantes({ limit: 5000 }),
+                    fetchStockLotes({ limit: 10000 })
                 ]);
 
                 if (dDep) setDepositos(dDep.results || dDep);
                 if (dVar) setVariantes(dVar.results || dVar);
+                if (dLotes) setStockLotes(dLotes.results || dLotes);
             } catch (err) {
                 setErrorMsg("Error cargando los datos iniciales.");
             }
@@ -61,6 +67,8 @@ export default function NuevoIngresoPage() {
 
     const validateItems = (currentItems) => {
         let error = null;
+        const warnings = {};
+
         for (let i = 0; i < currentItems.length; i++) {
             const it = currentItems[i];
             const fob = parseFloat(it.costo_fob_unitario || 0);
@@ -78,7 +86,27 @@ export default function NuevoIngresoPage() {
             else if (!(p0 >= p1 && p1 >= p2 && p2 >= p3 && p3 >= p4)) error = `Ítem ${i + 1}: Jerarquía P0>=P1>=P2>=P3>=P4.`;
 
             if (error) break;
+
+            // Validación de lote vs vencimiento contra stock existente
+            if (it.lote_codigo && it.lote_codigo.trim()) {
+                const existingLote = stockLotes.find(
+                    sl => sl.variante === it.variante && sl.lote_codigo === it.lote_codigo.trim()
+                );
+                if (existingLote) {
+                    const existingVenc = existingLote.vencimiento || null;
+                    const itemVenc = it.vencimiento || null;
+                    if (existingVenc !== itemVenc) {
+                        const fechaExistente = existingVenc
+                            ? existingVenc.split('-').reverse().join('/')
+                            : 'sin vencimiento';
+                        warnings[i] = `Este lote ya existe con vencimiento: ${fechaExistente}`;
+                        error = `Ítem ${i + 1}: El lote '${it.lote_codigo}' ya existe con una fecha de vencimiento diferente (${fechaExistente}).`;
+                        break;
+                    }
+                }
+            }
         }
+        setLoteWarnings(warnings);
         setErrorMsg(error);
     };
 
@@ -334,6 +362,7 @@ export default function NuevoIngresoPage() {
                                             if (qtyError) rowError = "Cantidad debe ser mayor a 0";
                                             else if (fobError) rowError = "FOB no puede ser mayor que Landed";
                                             else if (pBreak) rowError = "Jerarquía de precios inválida (P0≥P1≥P2≥P3≥P4)";
+                                            else if (loteWarnings[idx]) rowError = loteWarnings[idx];
 
                                             // Comparaciones para color gris/negro
                                             const isFobChanged = parseFloat(item.costo_fob_unitario) !== parseFloat(v.costo_fob || 0);
@@ -403,9 +432,9 @@ export default function NuevoIngresoPage() {
                                     {/* TOTAL FOB */}
                                     <div className="text-right">
                                         <Text variant="caption">Total FOB</Text>
-                                        <Text variant="bodyBold" className="text-slate-300">
+                                        <Heading variant="bodyBold" className="text-slate-300">
                                             ${items.reduce((s, i) => s + (i.cantidad * (i.costo_fob_unitario || 0)), 0).toLocaleString()}
-                                        </Text>
+                                        </Heading>
                                     </div>
 
                                     {/* SEPARADOR VERTICAL */}
@@ -414,9 +443,9 @@ export default function NuevoIngresoPage() {
                                     {/* TOTAL LANDED */}
                                     <div className="text-right">
                                         <Text variant="caption">Costo Total Arribo (Landed)</Text>
-                                        <Text variant="bodyBold" className="text-emerald-400">
+                                        <Heading className="text-emerald-400">
                                             ${items.reduce((s, i) => s + (i.cantidad * (i.costo_landed_unitario || 0)), 0).toLocaleString()}
-                                        </Text>
+                                        </Heading>
                                     </div>
                                 </div>
                             </div>

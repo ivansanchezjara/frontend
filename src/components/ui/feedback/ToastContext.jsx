@@ -6,9 +6,10 @@ const ToastContext = createContext(null);
 
 export function ToastProvider({ children }) {
     const [toasts, setToasts] = useState([]);
+    const toastIdRef = React.useRef(0);
 
     const showToast = useCallback((message, type = 'info', duration = 5000) => {
-        const id = Date.now();
+        const id = ++toastIdRef.current;
         setToasts(prev => [...prev, { id, message, type }]);
 
         setTimeout(() => {

@@ -40,21 +40,18 @@ export default function Pagination({ count, pageSize, currentPage, onPageChange 
     };
 
     return (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6 w-full select-none">
-            {/* Info de registros en formato atómico */}
-            <Text variant="bodyXs" className="text-slate-500 font-semibold">
-                Mostrando <span className="font-extrabold text-slate-800">{from}</span> al <span className="font-extrabold text-slate-800">{to}</span> de <span className="font-extrabold text-slate-800">{count}</span> registros
-            </Text>
+        <div className="flex flex-col items-center justify-center gap-4 pt-8 w-full select-none">
 
-            {/* Controles de paginación */}
-            <div className="flex items-center gap-1.5">
+            {/* Controles de paginación tipo píldora */}
+            <div className="flex items-center gap-1 bg-white p-1.5 rounded-full shadow-sm border border-slate-200/60">
+
                 {/* Botón Anterior */}
                 <Button
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => onPageChange(currentPage - 1)}
                     disabled={currentPage === 1}
                     icon={ChevronLeft}
-                    className="w-10 h-10 p-0 rounded-xl hover:border-emerald-200 hover:text-emerald-600 transition-all shadow-sm active:scale-90 shrink-0"
+                    className="w-9 h-9 p-0 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-50 transition-all shrink-0"
                     title="Página anterior"
                 />
 
@@ -62,20 +59,16 @@ export default function Pagination({ count, pageSize, currentPage, onPageChange 
                 {getPages()[0] > 1 && (
                     <>
                         <Button
-                            variant={currentPage === 1 ? 'success' : 'outline'}
                             onClick={() => onPageChange(1)}
-                            className={`w-10 h-10 p-0 rounded-xl font-bold text-xs transition-all ${
-                                currentPage === 1 
-                                    ? 'shadow-lg shadow-emerald-500/20' 
-                                    : 'text-slate-600 hover:border-emerald-200 hover:text-emerald-600 hover:bg-slate-50'
-                            }`}
+                            className={`w-9 h-9 p-0 rounded-full font-bold text-xs transition-all ${currentPage === 1
+                                    ? 'bg-slate-900 text-white shadow-md'
+                                    : 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                }`}
                         >
                             1
                         </Button>
                         {getPages()[0] > 2 && (
-                            <span className="text-slate-300 text-xs px-1 font-extrabold select-none">
-                                ...
-                            </span>
+                            <span className="text-slate-300 text-xs px-1 font-bold">...</span>
                         )}
                     </>
                 )}
@@ -84,13 +77,11 @@ export default function Pagination({ count, pageSize, currentPage, onPageChange 
                 {getPages().map(page => (
                     <Button
                         key={page}
-                        variant={currentPage === page ? 'success' : 'outline'}
                         onClick={() => onPageChange(page)}
-                        className={`w-10 h-10 p-0 rounded-xl font-bold text-xs transition-all ${
-                            currentPage === page 
-                                ? 'shadow-lg shadow-emerald-500/20' 
-                                : 'text-slate-600 hover:border-emerald-200 hover:text-emerald-600 hover:bg-slate-50'
-                        }`}
+                        className={`w-9 h-9 p-0 rounded-full font-bold text-xs transition-all ${currentPage === page
+                                ? 'bg-slate-900 text-white shadow-md'
+                                : 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                            }`}
                     >
                         {page}
                     </Button>
@@ -100,18 +91,14 @@ export default function Pagination({ count, pageSize, currentPage, onPageChange 
                 {getPages()[getPages().length - 1] < totalPages && (
                     <>
                         {getPages()[getPages().length - 1] < totalPages - 1 && (
-                            <span className="text-slate-300 text-xs px-1 font-extrabold select-none">
-                                ...
-                            </span>
+                            <span className="text-slate-300 text-xs px-1 font-bold">...</span>
                         )}
                         <Button
-                            variant={currentPage === totalPages ? 'success' : 'outline'}
                             onClick={() => onPageChange(totalPages)}
-                            className={`w-10 h-10 p-0 rounded-xl font-bold text-xs transition-all ${
-                                currentPage === totalPages 
-                                    ? 'shadow-lg shadow-emerald-500/20' 
-                                    : 'text-slate-600 hover:border-emerald-200 hover:text-emerald-600 hover:bg-slate-50'
-                            }`}
+                            className={`w-9 h-9 p-0 rounded-full font-bold text-xs transition-all ${currentPage === totalPages
+                                    ? 'bg-slate-900 text-white shadow-md'
+                                    : 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                }`}
                         >
                             {totalPages}
                         </Button>
@@ -120,14 +107,20 @@ export default function Pagination({ count, pageSize, currentPage, onPageChange 
 
                 {/* Botón Siguiente */}
                 <Button
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => onPageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     icon={ChevronRight}
-                    className="w-10 h-10 p-0 rounded-xl hover:border-emerald-200 hover:text-emerald-600 transition-all shadow-sm active:scale-90 shrink-0"
+                    className="w-9 h-9 p-0 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-50 transition-all shrink-0"
                     title="Página siguiente"
                 />
             </div>
+
+            {/* Info de registros centrada abajo */}
+            <Text variant="bodyXs" className="text-slate-400 font-medium">
+                Mostrando <span className="font-bold text-slate-700">{from}</span> al <span className="font-bold text-slate-700">{to}</span> de <span className="font-bold text-slate-700">{count}</span> registros
+            </Text>
+
         </div>
     );
 }

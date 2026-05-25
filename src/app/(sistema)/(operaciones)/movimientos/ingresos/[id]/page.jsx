@@ -6,6 +6,7 @@ import { Search, Plus, Trash2, Check, CheckCircle2, Download, Upload, Tag, Clock
 import { useApi } from '@/hooks/useApi';
 import { getDepositos, getIngreso, actualizarIngreso } from '@/services/apis/movimientos';
 import { getVariantes } from '@/services/apis/catalogo';
+import { getStockLotes } from '@/services/apis/inventario';
 import { useToast } from "@/components/ui/feedback/ToastContext";
 
 
@@ -15,14 +16,17 @@ export default function EditarIngresoPage() {
     const { showToast } = useToast();
     const [depositos, setDepositos] = useState([]);
     const [variantes, setVariantes] = useState([]);
+    const [stockLotes, setStockLotes] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState(null);
+    const [loteWarnings, setLoteWarnings] = useState({});
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [lastAddedId, setLastAddedId] = useState(null);
 
     const { execute: fetchDepositos } = useApi(getDepositos);
     const { execute: fetchVariantes } = useApi(getVariantes);
+    const { execute: fetchStockLotes } = useApi(getStockLotes);
     const { execute: fetchIngreso } = useApi(getIngreso);
     const { execute: updateIngresoAction, loading: isSubmitting } = useApi(actualizarIngreso, { auto: false });
 
@@ -35,23 +39,27 @@ export default function EditarIngresoPage() {
     });
 
     const [items, setItems] = useState([]);
+    const [nextItemId, setNextItemId] = useState(1);
 
     useEffect(() => {
         async function loadAll() {
             try {
-                const [dDep, dVar, dIng] = await Promise.all([
+                const [dDep, dVar, dIng, dLotes] = await Promise.all([
                     fetchDepositos({ limit: 1000 }),
                     fetchVariantes({ limit: 5000 }),
-                    fetchIngreso(id)
+                    fetchIngreso(id),
+                    fetchStockLotes({ limit: 10000 })
                 ]);
 
                 if (dDep) setDepositos(dDep.results || dDep);
                 if (dVar) setVariantes(dVar.results || dVar);
+                if (dLotes) setStockLotes(dLotes.results || dLotes);
 
                 if (dIng) {
                     if (dIng.estado === 'APROBADO') { router.push('/movimientos/ingresos'); return; }
                     setIngreso({ fecha_arribo: dIng.fecha_arribo, descripcion: dIng.descripcion, comprobante: dIng.comprobante || '', deposito: dIng.deposito, estado: dIng.estado });
-                    setItems((dIng.items || []).map(it => ({
+                    const loadedItems = (dIng.items || []).map((it, i) => ({
+                        _uid: i + 1,
                         variante: it.variante,
                         variante_label: `${it.variante_codigo} - ${it.variante_nombre}`,
                         cantidad: it.cantidad,
@@ -64,7 +72,9 @@ export default function EditarIngresoPage() {
                         nuevo_precio_2_reventa: it.nuevo_precio_2_reventa,
                         nuevo_precio_3_mayorista: it.nuevo_precio_3_mayorista,
                         nuevo_precio_4_intercompany: it.nuevo_precio_4_intercompany
-                    })));
+                    }));
+                    setItems(loadedItems);
+                    setNextItemId(loadedItems.length + 1);
                 }
             } catch (err) {
                 setErrorMsg("Error cargando los datos.");
@@ -138,6 +148,7 @@ export default function EditarIngresoPage() {
 
     const addProductToItems = (v) => {
         const newItem = {
+            _uid: nextItemId,
             variante: v.id,
             variante_label: `${v.product_code} - ${getVariantDisplayName(v)}`,
             cantidad: 0,
@@ -151,6 +162,7 @@ export default function EditarIngresoPage() {
             nuevo_precio_3_mayorista: v.precio_3_mayorista || 0,
             nuevo_precio_4_intercompany: v.precio_4_intercompany || 0
         };
+        setNextItemId(prev => prev + 1);
         const newItems = [...items, newItem].sort((a, b) => a.variante_label.localeCompare(b.variante_label));
         setItems(newItems);
         validateItems(newItems);
@@ -165,6 +177,8 @@ export default function EditarIngresoPage() {
 
     const validateItems = (currentItems) => {
         let error = null;
+        const warnings = {};
+
         for (let i = 0; i < currentItems.length; i++) {
             const it = currentItems[i];
             const fob = parseFloat(it.costo_fob_unitario || 0);
@@ -181,7 +195,27 @@ export default function EditarIngresoPage() {
             else if (fob > landed) error = `Item ${i + 1}: Costo FOB no puede superar al Landed.`;
             else if (!(p0 >= p1 && p1 >= p2 && p2 >= p3 && p3 >= p4)) error = `Item ${i + 1}: Jerarquía P0≥P1≥P2≥P3≥P4.`;
             if (error) break;
+
+            // Validación de lote vs vencimiento contra stock existente
+            if (it.lote_codigo && it.lote_codigo.trim()) {
+                const existingLote = stockLotes.find(
+                    sl => sl.variante === it.variante && sl.lote_codigo === it.lote_codigo.trim()
+                );
+                if (existingLote) {
+                    const existingVenc = existingLote.vencimiento || null;
+                    const itemVenc = it.vencimiento || null;
+                    if (existingVenc !== itemVenc) {
+                        const fechaExistente = existingVenc
+                            ? existingVenc.split('-').reverse().join('/')
+                            : 'sin vencimiento';
+                        warnings[i] = `Este lote ya existe con vencimiento: ${fechaExistente}`;
+                        error = `Item ${i + 1}: El lote '${it.lote_codigo}' ya existe con una fecha de vencimiento diferente (${fechaExistente}).`;
+                        break;
+                    }
+                }
+            }
         }
+        setLoteWarnings(warnings);
         setErrorMsg(error);
     };
 
@@ -216,7 +250,7 @@ export default function EditarIngresoPage() {
         if (!ingreso.deposito) { showToast("Debe seleccionar un depósito.", "error"); return; }
 
         try {
-            const payload = { ...ingreso, items: items.map(it => ({ ...it, vencimiento: it.vencimiento === '' ? null : it.vencimiento })) };
+            const payload = { ...ingreso, items: items.map(({ _uid, variante_label, ...it }) => ({ ...it, vencimiento: it.vencimiento === '' ? null : it.vencimiento })) };
             await updateIngresoAction(id, payload);
             showToast("Borrador actualizado correctamente", "success");
             router.push('/movimientos/ingresos');
@@ -290,11 +324,13 @@ export default function EditarIngresoPage() {
                                         reader.onload = (ev) => {
                                             const lines = ev.target.result.split(/\r?\n/);
                                             const loaded = [];
+                                            let idCounter = nextItemId;
                                             lines.slice(1).forEach(l => {
                                                 const p = l.split(/[;,]/).map(val => val.trim());
                                                 if (p.length < 2) return;
                                                 const v = resolveVariantFromCell(p[0]);
                                                 if (v) loaded.push({
+                                                    _uid: idCounter++,
                                                     variante: v.id, variante_label: `${v.product_code} - ${getVariantDisplayName(v)}`,
                                                     cantidad: p[1] || 1, lote_codigo: p[2] || generateAutoLote(), vencimiento: parseSpreadsheetDate(p[3]),
                                                     costo_fob_unitario: p[4] || v.costo_fob || 0, costo_landed_unitario: p[5] || v.costo_landed || 0,
@@ -303,6 +339,7 @@ export default function EditarIngresoPage() {
                                                 });
                                             });
                                             if (loaded.length > 0) {
+                                                setNextItemId(idCounter);
                                                 const sorted = [...items, ...loaded].sort((a, b) => a.variante_label.localeCompare(b.variante_label));
                                                 setItems(sorted);
                                                 validateItems(sorted);
@@ -349,12 +386,13 @@ export default function EditarIngresoPage() {
                                             if (qtyError) rowError = "Cantidad debe ser mayor a 0";
                                             else if (fobError) rowError = "FOB no puede ser mayor que Landed";
                                             else if (pBreak) rowError = "Jerarquía de precios inválida (P0≥P1≥P2≥P3≥P4)";
+                                            else if (loteWarnings[idx]) rowError = loteWarnings[idx];
 
                                             const isFobChanged = parseFloat(item.costo_fob_unitario) !== parseFloat(v.costo_fob || 0);
                                             const isLandedChanged = parseFloat(item.costo_landed_unitario) !== parseFloat(v.costo_landed || 0);
 
                                             return (
-                                                <tr key={idx} className={`hover:bg-slate-50 transition-all ${(rowError) ? 'bg-red-50/50' : ''}`}>
+                                                <tr key={item._uid} className={`hover:bg-slate-50 transition-all ${(rowError) ? 'bg-red-50/50' : ''}`}>
                                                     <td className="p-3">
                                                         <div className="font-black text-slate-800 text-[11px] mb-2 truncate max-w-[280px]">{item.variante_label}</div>
                                                         <div className="flex gap-2 mb-1">
@@ -452,7 +490,9 @@ export default function EditarIngresoPage() {
                                             (v.nombre_variante || "").toLowerCase().includes(searchTerm.toLowerCase())
                                         );
                                         if (filtered.length > 0) {
+                                            let idCounter = nextItemId;
                                             const newItemsAdd = filtered.map(v => ({
+                                                _uid: idCounter++,
                                                 variante: v.id,
                                                 variante_label: `${v.product_code} - ${getVariantDisplayName(v)}`,
                                                 cantidad: 0,
@@ -466,6 +506,7 @@ export default function EditarIngresoPage() {
                                                 nuevo_precio_3_mayorista: v.precio_3_mayorista || 0,
                                                 nuevo_precio_4_intercompany: v.precio_4_intercompany || 0
                                             }));
+                                            setNextItemId(idCounter);
                                             const totalItems = [...items, ...newItemsAdd].sort((a, b) => a.variante_label.localeCompare(b.variante_label));
                                             setItems(totalItems);
                                             validateItems(totalItems);

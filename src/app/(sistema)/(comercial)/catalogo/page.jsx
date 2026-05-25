@@ -1,15 +1,55 @@
 "use client";
-import { EmptyState, LoadingScreen, PageHeader, Pagination, SearchBar, Button, Badge, Heading, Text } from '@/components/ui';
+import { EmptyState, LoadingScreen, PageHeader, Pagination, SearchBar, Button, Text } from '@/components/ui';
 import { useEffect, useState } from 'react';
 import { getProductos } from '@/services/apis/catalogo.js';
 import { useApi } from '@/hooks/useApi';
 import { useDebounce } from '@/hooks/useDebounce';
 import Link from 'next/link';
-import { Image as ImageIcon, LayoutGrid, List } from 'lucide-react';
+import { Image as ImageIcon, LayoutGrid, List, Globe, Star } from 'lucide-react';
 
 // Catálogo Components
 import ProductoCard from '@/components/comercial/catalogo/list/ProductoCard';
 import ProductoRow from '@/components/comercial/catalogo/list/ProductoRow';
+
+// Opciones de filtro
+const FILTER_OPTIONS = [
+    { value: '', label: 'Todos' },
+    { value: 'true', label: 'Sí' },
+    { value: 'false', label: 'No' },
+];
+
+function FilterDropdown({ value, onChange, icon: Icon, label, options = FILTER_OPTIONS }) {
+    const isActive = value !== '';
+    return (
+        <div className="relative flex items-center gap-1.5">
+            <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
+            <select
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className={`
+                    appearance-none text-xs font-semibold rounded-lg px-2 py-1.5 pr-6 cursor-pointer
+                    border transition-all outline-none
+                    ${isActive
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
+                    }
+                `}
+                aria-label={label}
+            >
+                {options.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                        {label}: {opt.label}
+                    </option>
+                ))}
+            </select>
+            <div className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2">
+                <svg className="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+        </div>
+    );
+}
 
 export default function CatalogoPage() {
     // --- API & DATA ---
@@ -30,6 +70,10 @@ export default function CatalogoPage() {
     const [busqueda, setBusqueda] = useState('');
     const busquedaDebounced = useDebounce(busqueda, 400);
 
+    // Filtros de visibilidad
+    const [filtroPublicado, setFiltroPublicado] = useState('');
+    const [filtroDestacado, setFiltroDestacado] = useState('');
+
     // Vista
     const [vista, setVista] = useState('grilla'); // 'grilla' | 'tabla'
 
@@ -42,19 +86,33 @@ export default function CatalogoPage() {
             page,
             search: busquedaDebounced,
         };
-        fetchProducts(params).then(() => setHasLoadedOnce(true));
-    }, [fetchProducts, busquedaDebounced, page]);
+        if (filtroPublicado) params.is_published = filtroPublicado;
+        if (filtroDestacado) params.featured = filtroDestacado;
 
-    // Resetear a página 1 cuando cambia la búsqueda o categoría
+        fetchProducts(params).then(() => setHasLoadedOnce(true));
+    }, [fetchProducts, busquedaDebounced, page, filtroPublicado, filtroDestacado]);
+
+    // Resetear a página 1 cuando cambia la búsqueda o filtros
     useEffect(() => {
         setPage(1);
-    }, [busquedaDebounced]);
+    }, [busquedaDebounced, filtroPublicado, filtroDestacado]);
 
     // Pantalla de carga inicial (solo la primera vez que entra a la página)
     const isInitialLoading = loadingProds && !hasLoadedOnce;
     if (isInitialLoading) return <LoadingScreen texto="Cargando Catálogo..." />;
 
-    const hayFiltrosActivos = busqueda !== '';
+    const hayFiltrosActivos = busqueda !== '' || filtroPublicado !== '' || filtroDestacado !== '';
+
+    const limpiarFiltros = () => {
+        setBusqueda('');
+        setFiltroPublicado('');
+        setFiltroDestacado('');
+    };
+
+    // Callback para actualizar el estado local cuando se hace toggle inline
+    const handleInlineToggle = (slug, field, newValue) => {
+        // No necesitamos refetch — el optimistic update en ProductoRow ya maneja el UI
+    };
 
     return (
         <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
@@ -129,8 +187,24 @@ export default function CatalogoPage() {
                             </div>
                         </div>
 
-                        {/* Fila inferior: contador */}
+                        {/* Fila inferior: filtros + contador */}
                         <div className="flex items-center justify-between gap-4 flex-wrap">
+
+                            {/* Filtros de visibilidad */}
+                            <div className="flex items-center gap-3">
+                                <FilterDropdown
+                                    value={filtroPublicado}
+                                    onChange={setFiltroPublicado}
+                                    icon={Globe}
+                                    label="Web"
+                                />
+                                <FilterDropdown
+                                    value={filtroDestacado}
+                                    onChange={setFiltroDestacado}
+                                    icon={Star}
+                                    label="Destacado"
+                                />
+                            </div>
 
                             {/* Contador */}
                             <Text
@@ -148,9 +222,9 @@ export default function CatalogoPage() {
                         {productos.length === 0 ? (
                             <EmptyState
                                 titulo={hayFiltrosActivos ? "Sin resultados" : "Catálogo vacío"}
-                                descripcion={hayFiltrosActivos ? "Intentá con otros términos o cambiá el filtro de categoría." : "Creá tu primer producto para empezar a armar el catálogo."}
+                                descripcion={hayFiltrosActivos ? "Intentá con otros términos o cambiá los filtros." : "Creá tu primer producto para empezar a armar el catálogo."}
                                 textoBoton={hayFiltrosActivos ? "Limpiar filtros" : undefined}
-                                onAction={hayFiltrosActivos ? () => { setBusqueda(''); } : undefined}
+                                onAction={hayFiltrosActivos ? limpiarFiltros : undefined}
                             />
                         ) : vista === 'grilla' ? (
 
@@ -170,13 +244,15 @@ export default function CatalogoPage() {
                                         <tr className="bg-slate-50 text-slate-500">
                                             <th className="py-3 pl-6 pr-4 text-[11px] font-black uppercase tracking-widest">Producto</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Marca</th>
+                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center hidden md:table-cell">Web</th>
+                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center hidden md:table-cell">Destacado</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Variantes</th>
                                             <th className="py-3 pr-6 pl-4"></th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {productos.map(p => (
-                                            <ProductoRow key={p.id} producto={p} />
+                                            <ProductoRow key={p.id} producto={p} onToggle={handleInlineToggle} />
                                         ))}
                                     </tbody>
                                 </table>
