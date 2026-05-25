@@ -220,9 +220,16 @@ export default function MediaManagerPage() {
     }
   };
 
-  const handleBulkAssign = async (varianteId, targetType) => {
+  const handleBulkAssign = async (varianteId, targetType, selectedNames = []) => {
+    const targetLabel = targetType === "product_main" ? "producto" : "variante";
+    const namesText = selectedNames.length > 0
+      ? selectedNames.join(", ")
+      : `${varianteId.length} ${varianteId.length === 1 ? "elemento" : "elementos"}`;
+    const imgCount = selectedItems.length;
+    const imgLabel = imgCount === 1 ? "imagen" : "imágenes";
+
     const isConfirmed = await confirm(
-      `¿Estás seguro de asignar ${selectedItems.length} imágenes a la variante ${varianteId}?`,
+      `¿Estás seguro de asignar ${imgCount} ${imgLabel} a ${targetLabel}: ${namesText}?`,
       "Asignar imágenes"
     );
     

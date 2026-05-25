@@ -58,9 +58,45 @@ export default function NuevoIngresoPage() {
 
     const handleIngresoChange = (e) => setIngreso({ ...ingreso, [e.target.name]: e.target.value });
 
+    // --- Lote/Vencimiento lock resolution ---
+    // Returns { locked: boolean, lockedDate: string|'', source: 'form'|'db'|null }
+    const resolveLockedVencimiento = (idx, currentItems) => {
+        const it = currentItems[idx];
+        const loteNorm = (it.lote_codigo || '').trim();
+        if (!loteNorm || !it.variante) return { locked: false, lockedDate: '', source: null };
+
+        // 1. Check internal form: find the first OTHER row with same variante + lote
+        for (let j = 0; j < currentItems.length; j++) {
+            if (j === idx) continue;
+            const other = currentItems[j];
+            if (other.variante === it.variante && (other.lote_codigo || '').trim() === loteNorm) {
+                return { locked: true, lockedDate: other.vencimiento || '', source: 'form' };
+            }
+        }
+
+        // 2. Check DB stock
+        const existingLote = stockLotes.find(
+            sl => sl.variante === it.variante && sl.lote_codigo === loteNorm
+        );
+        if (existingLote) {
+            return { locked: true, lockedDate: existingLote.vencimiento || '', source: 'db' };
+        }
+
+        return { locked: false, lockedDate: '', source: null };
+    };
+
     const handleItemChange = (index, field, value) => {
         const newItems = [...items];
         newItems[index][field] = value;
+
+        // When lote_codigo changes, auto-fill vencimiento if there's a lock source
+        if (field === 'lote_codigo') {
+            const lock = resolveLockedVencimiento(index, newItems);
+            if (lock.locked) {
+                newItems[index].vencimiento = lock.lockedDate;
+            }
+        }
+
         setItems(newItems);
         validateItems(newItems);
     };
@@ -87,20 +123,40 @@ export default function NuevoIngresoPage() {
 
             if (error) break;
 
-            // Validación de lote vs vencimiento contra stock existente
+            // Lot/expiry validation
             if (it.lote_codigo && it.lote_codigo.trim()) {
+                const loteNorm = it.lote_codigo.trim();
+                const itemVenc = it.vencimiento || null;
+
+                // 1. Internal form: find first other row with same variante + lote
+                const conflictoInterno = currentItems.find((other, j) =>
+                    j !== i &&
+                    other.variante === it.variante &&
+                    (other.lote_codigo || '').trim() === loteNorm &&
+                    (other.vencimiento || null) !== itemVenc
+                );
+
+                if (conflictoInterno) {
+                    const fechaOtro = conflictoInterno.vencimiento
+                        ? conflictoInterno.vencimiento.split('-').reverse().join('/')
+                        : 'sin vencimiento';
+                    warnings[i] = `El lote '${loteNorm}' ya tiene asignada la fecha ${fechaOtro} en este formulario.`;
+                    error = `Ítem ${i + 1}: El lote '${loteNorm}' ya tiene asignada la fecha ${fechaOtro} en este formulario.`;
+                    break;
+                }
+
+                // 2. DB stock: check existing lotes
                 const existingLote = stockLotes.find(
-                    sl => sl.variante === it.variante && sl.lote_codigo === it.lote_codigo.trim()
+                    sl => sl.variante === it.variante && sl.lote_codigo === loteNorm
                 );
                 if (existingLote) {
                     const existingVenc = existingLote.vencimiento || null;
-                    const itemVenc = it.vencimiento || null;
                     if (existingVenc !== itemVenc) {
                         const fechaExistente = existingVenc
                             ? existingVenc.split('-').reverse().join('/')
                             : 'sin vencimiento';
-                        warnings[i] = `Este lote ya existe con vencimiento: ${fechaExistente}`;
-                        error = `Ítem ${i + 1}: El lote '${it.lote_codigo}' ya existe con una fecha de vencimiento diferente (${fechaExistente}).`;
+                        warnings[i] = `El lote '${loteNorm}' ya existe en el sistema con vencimiento ${fechaExistente}.`;
+                        error = `Ítem ${i + 1}: El lote '${loteNorm}' ya existe en el sistema con vencimiento ${fechaExistente}.`;
                         break;
                     }
                 }
@@ -372,16 +428,33 @@ export default function NuevoIngresoPage() {
                                                 <tr key={idx} className={`hover:bg-slate-50 transition-all ${(rowError) ? 'bg-red-50/50' : ''}`}>
                                                     <td className="p-3">
                                                         <div className="font-black text-slate-800 text-[11px] mb-2 truncate max-w-[280px]">{item.variante_label}</div>
-                                                        <div className="flex gap-2 mb-1">
-                                                            <div className="relative flex-1">
-                                                                <Tag size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                                <input type="text" placeholder="Lote" value={item.lote_codigo} onChange={(e) => handleItemChange(idx, 'lote_codigo', e.target.value)} className="w-full pl-6 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold" />
-                                                            </div>
-                                                            <div className="relative flex-1">
-                                                                <Clock size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                                <input type="date" value={item.vencimiento} onChange={(e) => handleItemChange(idx, 'vencimiento', e.target.value)} className="w-full pl-6 pr-1 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[9px] font-bold" />
-                                                            </div>
-                                                        </div>
+                                                        {(() => {
+                                                            const vencLock = resolveLockedVencimiento(idx, items);
+                                                            return (
+                                                                <div className="flex gap-2 mb-1">
+                                                                    <div className="relative flex-1">
+                                                                        <Tag size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                                        <input type="text" placeholder="Lote" value={item.lote_codigo} onChange={(e) => handleItemChange(idx, 'lote_codigo', e.target.value)} className="w-full pl-6 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold" />
+                                                                    </div>
+                                                                    <div className="relative flex-1">
+                                                                        <Clock size={10} className={`absolute left-2 top-1/2 -translate-y-1/2 ${vencLock.locked ? 'text-amber-500' : 'text-slate-400'}`} />
+                                                                        <input
+                                                                            type="date"
+                                                                            value={item.vencimiento}
+                                                                            onChange={(e) => handleItemChange(idx, 'vencimiento', e.target.value)}
+                                                                            readOnly={vencLock.locked}
+                                                                            tabIndex={vencLock.locked ? -1 : undefined}
+                                                                            className={`w-full pl-6 pr-1 py-1.5 border rounded-lg text-[9px] font-bold ${
+                                                                                vencLock.locked
+                                                                                    ? 'bg-amber-50 border-amber-300 text-amber-700 cursor-not-allowed'
+                                                                                    : 'bg-slate-50 border-slate-200'
+                                                                            }`}
+                                                                            title={vencLock.locked ? `Fecha bloqueada — coincide con ${vencLock.source === 'form' ? 'otra fila en este formulario' : 'un lote existente en el sistema'}` : ''}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
                                                         {rowError && (
                                                             <Text variant="label" className="uppercase tracking-tighter bg-red-100 px-2 py-1 rounded-md inline-block animate-pulse">
                                                                 <span className="text-red-600">⚠</span> {rowError}
@@ -413,7 +486,7 @@ export default function NuevoIngresoPage() {
                                                             </td>
                                                         );
                                                     })}
-                                                    <td className="p-2 text-center text-slate-300 hover:text-red-500"><button onClick={() => setItems(items.filter((_, i) => i !== idx))}><Trash2 size={16} /></button></td>
+                                                    <td className="p-2 text-center text-slate-300 hover:text-red-500"><button onClick={() => { const updated = items.filter((_, i) => i !== idx); setItems(updated); validateItems(updated); }}><Trash2 size={16} /></button></td>
                                                 </tr>
                                             );
                                         })}

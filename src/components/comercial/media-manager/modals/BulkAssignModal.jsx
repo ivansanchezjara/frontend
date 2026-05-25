@@ -44,7 +44,21 @@ export default function BulkAssignModal({
 
   const handleAssignClick = () => {
     if (selectedIds.length === 0) return;
-    onAssign(selectedIds, targetType);
+
+    // Construir lista de nombres seleccionados para el mensaje de confirmación
+    let selectedNames = [];
+    if (targetType === "product_main") {
+      selectedNames = productos
+        .filter((p) => selectedIds.includes(p.id))
+        .map((p) => p.nombre_general);
+    } else {
+      selectedNames = productos
+        .flatMap((p) => p.variants)
+        .filter((v) => selectedIds.includes(v.id))
+        .map((v) => `${v.product_code} – ${v.nombre_variante}`);
+    }
+
+    onAssign(selectedIds, targetType, selectedNames);
   };
 
   const toggleId = (id) => {

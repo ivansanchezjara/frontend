@@ -235,7 +235,6 @@ export default function HistorialCambios({
                 );
               })}
             </div>
-
             <div>
               {entradasPagina.map((entrada, i) => (
                 <EntradaHistorial
