@@ -1,21 +1,52 @@
 "use client";
-import { EmptyState, LoadingScreen, PageHeader, Badge, Heading, Text } from '@/components/ui';
+import { EmptyState, LoadingScreen, PageHeader, Pagination, Badge, Heading, Text } from '@/components/ui';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Package, User, Calendar, Plus, MapPin, Clock, Truck } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
+import { useDebounce } from '@/hooks/useDebounce';
 import { getConsignaciones } from '@/services/apis/movimientos';
+import MovimientosFilterBar from '@/components/movimientos/MovimientosFilterBar';
 import { useToast } from "@/components/ui/feedback/ToastContext";
 import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
 export default function ConsignacionesPage() {
     const { confirm } = useConfirm();
     const { showToast } = useToast();
-    const { data: consignacionesData, loading } = useApi(getConsignaciones, {
-        auto: true,
-        initialData: []
+
+    // Estados de filtros y paginación
+    const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearch = useDebounce(searchTerm, 500);
+    const [filters, setFilters] = useState({
+        fecha_inicio: '',
+        fecha_fin: '',
+        estado: ''
+    });
+    const [page, setPage] = useState(1);
+    const PAGE_SIZE = 24;
+
+    const { data: consignacionesData, loading, execute: fetchConsignaciones } = useApi(getConsignaciones, {
+        auto: false,
+        initialData: { results: [], count: 0 }
     });
 
-    const consignaciones = consignacionesData?.results || consignacionesData || [];
+    // Cargar datos cuando cambian los filtros o la página
+    useEffect(() => {
+        fetchConsignaciones({
+            page,
+            search: debouncedSearch,
+            ...filters
+        });
+    }, [page, debouncedSearch, filters, fetchConsignaciones]);
+
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({ ...prev, [name]: value }));
+        setPage(1);
+    };
+
+    const consignaciones = consignacionesData?.results || [];
+    const totalCount = consignacionesData?.count || 0;
 
     return (
         <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
@@ -41,6 +72,23 @@ export default function ConsignacionesPage() {
 
             <main className="flex-1 overflow-y-auto p-8 min-w-0">
                 <div className="max-w-[1800px] mx-auto space-y-6">
+                    <MovimientosFilterBar
+                        searchTerm={searchTerm}
+                        setSearchTerm={(val) => { setSearchTerm(val); setPage(1); }}
+                        filters={filters}
+                        handleFilterChange={handleFilterChange}
+                        onClear={() => {
+                            setSearchTerm('');
+                            setFilters({ fecha_inicio: '', fecha_fin: '', estado: '' });
+                            setPage(1);
+                        }}
+                        loading={loading}
+                        placeholder="Buscar por responsable, destino o ID..."
+                        estadoOptions={[
+                            { value: "BORRADOR", label: "Borrador" },
+                            { value: "APROBADO", label: "Aprobado" },
+                        ]}
+                    />
 
                     {loading ? (
                         <LoadingScreen message="Cargando hojas de ruta de consignación..." />
@@ -94,7 +142,17 @@ export default function ConsignacionesPage() {
 
                                         <div className="flex items-center justify-between">
                                             <Text variant="label" className="flex items-center gap-1.5 font-bold"><Calendar size={14} /> {new Date(cons.fecha_salida).toLocaleDateString()}</Text>
-                                            <Text variant="label" className="flex items-center gap-1.5 text-blue-500 font-black"><User size={14} /> {cons.usuario_nombre}</Text>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <Text variant="label" className="flex items-center gap-1.5 text-blue-500 font-bold truncate">
+                                                <User size={14} className="shrink-0" /> Creado: {cons.usuario_nombre}
+                                            </Text>
+                                            {cons.aprobado_por_nombre && (
+                                                <Text variant="label" className="flex items-center gap-1.5 text-emerald-600 font-bold truncate">
+                                                    <User size={14} className="shrink-0" /> Confirmado: {cons.aprobado_por_nombre}
+                                                </Text>
+                                            )}
                                         </div>
                                         {cons.fecha_esperada_devolucion && (
                                             <Text variant="label" className={`flex items-center gap-1.5 mt-3 font-bold ${new Date(cons.fecha_esperada_devolucion) < new Date() ? 'text-rose-500' : 'text-slate-400'}`}>
@@ -109,6 +167,16 @@ export default function ConsignacionesPage() {
                                 </Link>
                             ))}
                         </div>
+                    )}
+
+                    {/* Paginación */}
+                    {!loading && totalCount > PAGE_SIZE && (
+                        <Pagination
+                            currentPage={page}
+                            totalItems={totalCount}
+                            pageSize={PAGE_SIZE}
+                            onPageChange={setPage}
+                        />
                     )}
                 </div>
             </main>

@@ -1,7 +1,7 @@
 import { PageHeader, Heading, Text } from '@/components/ui';
 import Link from 'next/link';
 import {
-    ArrowDownCircle, ArrowUpCircle,
+    ArrowUpCircle,
     RefreshCcw, Settings2, Truck, ArrowRight, Package
 } from 'lucide-react';
 
@@ -14,13 +14,7 @@ export default function MovimientosHubPage() {
             desc: 'Registrar la entrada de stock, remitos y actualizar costos de compra.',
             color: 'blue'
         },
-        {
-            href: '/movimientos/bajas',
-            icon: <ArrowDownCircle size={32} />,
-            title: 'Bajas de Inventario',
-            desc: 'Registrar pérdidas, mermas, productos vencidos o roturas.',
-            color: 'blue'
-        },
+
         {
             href: '/movimientos/transferencias',
             icon: <RefreshCcw size={32} />,

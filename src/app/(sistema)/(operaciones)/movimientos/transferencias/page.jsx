@@ -9,13 +9,16 @@ import {
   User,
   Calendar,
   Plus,
-  Check
+  Check,
+  X,
+  Edit3
 } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   getTransferencias,
   aprobarTransferencia,
+  rechazarTransferencia,
 } from "@/services/apis/movimientos";
 import MovimientoCard from "@/components/movimientos/MovimientoCard";
 import MovimientosFilterBar from "@/components/movimientos/MovimientosFilterBar";
@@ -25,7 +28,7 @@ import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 export default function TransferenciasPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const { confirm } = useConfirm();
+  const { confirm, danger } = useConfirm();
 
   // Estados de filtros y paginación
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,7 +69,11 @@ export default function TransferenciasPage() {
     setPage(1);
   };
 
-  const { execute: aprobarAction } = useApi(aprobarTransferencia, {
+  const { execute: aprobarAction, loading: isAprobando } = useApi(aprobarTransferencia, {
+    auto: false,
+  });
+
+  const { execute: rechazarAction, loading: isRechazando } = useApi(rechazarTransferencia, {
     auto: false,
   });
 
@@ -83,6 +90,25 @@ export default function TransferenciasPage() {
     try {
       await aprobarAction(id);
       showToast("Transferencia aprobada con éxito.", "success");
+      await fetchTransferencias({ page, search: debouncedSearch, ...filters });
+    } catch (error) {
+      // Error handling is managed by useApi / useErrorHandler
+    }
+  };
+
+  const handleRechazar = async (id, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const confirmed = await danger(
+      "¿Confirmar rechazo de esta transferencia? Esta acción es irreversible.",
+      "Rechazar Transferencia"
+    );
+    if (!confirmed) return;
+
+    try {
+      await rechazarAction(id);
+      showToast("Transferencia rechazada.", "info");
       await fetchTransferencias({ page, search: debouncedSearch, ...filters });
     } catch (error) {
       // Error handling is managed by useApi / useErrorHandler
@@ -159,10 +185,15 @@ export default function TransferenciasPage() {
                   ]}
                   info={[
                     { icon: Calendar, label: new Date(transf.fecha).toLocaleDateString() },
-                    { icon: User, label: transf.usuario_nombre },
+                    { icon: User, label: `Creado: ${transf.usuario_nombre || '—'}` },
+                    ...(transf.aprobado_por_nombre ? [{ icon: Check, label: `Confirmado: ${transf.aprobado_por_nombre}` }] : []),
                     { icon: Package, label: `${transf.items?.length || 0} Ítems` }
                   ]}
                   onApprove={handleAprobar}
+                  onReject={handleRechazar}
+                  onEditHref={`/movimientos/transferencias/${transf.id}`}
+                  isAprobando={isAprobando}
+                  isRechazando={isRechazando}
                   approveLabel="Aprobar Movimiento"
                 />
               ))}
@@ -179,7 +210,8 @@ export default function TransferenciasPage() {
                       <th className="py-4 px-4">Destino</th>
                       <th className="py-4 px-4">Fecha</th>
                       <th className="py-4 px-4 text-center">Ítems</th>
-                      <th className="py-4 px-4">Usuario</th>
+                      <th className="py-4 px-4">Creado por</th>
+                      <th className="py-4 px-4">Confirmado por</th>
                       <th className="py-4 px-6 text-right">Acciones</th>
                     </tr>
                   </thead>
@@ -214,11 +246,28 @@ export default function TransferenciasPage() {
                           </td>
                           <td className="py-4 px-4 text-center font-bold text-slate-900">{transf.items?.length || 0}</td>
                           <td className="py-4 px-4">
-                            <Text as="span" variant="bodySm" className="text-slate-500">{transf.usuario_nombre}</Text>
+                            <Text as="span" variant="bodySm" className="text-slate-500">{transf.usuario_nombre || '—'}</Text>
+                          </td>
+                          <td className="py-4 px-4">
+                            <Text as="span" variant="bodySm" className="text-slate-500">{transf.aprobado_por_nombre || '—'}</Text>
                           </td>
                           <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
                             {transf.estado === 'BORRADOR' ? (
                               <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => router.push(`/movimientos/transferencias/${transf.id}`)}
+                                  className="p-1.5 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg border border-slate-200 hover:border-blue-100 transition-all"
+                                  title="Editar Borrador"
+                                >
+                                  <Edit3 size={14} />
+                                </button>
+                                <button
+                                  onClick={(e) => handleRechazar(transf.id, e)}
+                                  className="p-1.5 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg border border-slate-200 hover:border-rose-100 transition-all"
+                                  title="Rechazar"
+                                >
+                                  <X size={14} />
+                                </button>
                                 <button
                                   onClick={(e) => handleAprobar(transf.id, e)}
                                   className="p-1.5 bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-lg border border-slate-200 hover:border-emerald-100 transition-all"

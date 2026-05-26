@@ -8,15 +8,13 @@ import {
   Clock,
   CheckCircle,
   ArrowRight,
-  CornerDownRight,
+  Shuffle,
 } from "lucide-react";
 import { Button, Text, Badge } from '@/components/ui';
 
 /**
- * AjusteDetailModal estandarizado (Strict Light Mode).
- * Modal de visualización que detalla los cambios de stock y vencimiento de lotes
- * efectuados en un ajuste de inventario específico.
- * Reutiliza las piezas atómicas de interfaz (Button, Typography - Text, Badge).
+ * AjusteDetailModal — Modal de detalle para reclasificaciones de inventario.
+ * Muestra las líneas de movimiento de stock entre lotes.
  */
 export default function AjusteDetailModal({ ajuste, isOpen, onClose }) {
   if (!isOpen || !ajuste) return null;
@@ -43,7 +41,7 @@ export default function AjusteDetailModal({ ajuste, isOpen, onClose }) {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Text variant="bodyXs" className="text-slate-400 uppercase tracking-widest font-black shrink-0">
-                  Ajuste INV-#{ajuste.id}
+                  Reclasificación #{ajuste.id}
                 </Text>
                 <Badge
                   className={`text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-widest border-none ${
@@ -54,7 +52,7 @@ export default function AjusteDetailModal({ ajuste, isOpen, onClose }) {
                 </Badge>
               </div>
               <Text as="h2" className="text-xl font-black text-slate-900 tracking-tight leading-none">
-                Detalles del Movimiento
+                Detalle de Reclasificación
               </Text>
             </div>
           </div>
@@ -90,10 +88,10 @@ export default function AjusteDetailModal({ ajuste, isOpen, onClose }) {
             </div>
             <div className="text-right select-none">
               <Text variant="label" className="text-slate-400 block mb-1">
-                Motivo del Ajuste
+                Motivo
               </Text>
               <Badge className="bg-white border border-slate-200 text-slate-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
-                {ajuste.motivo?.replace("_", " ")}
+                {ajuste.motivo}
               </Badge>
             </div>
           </div>
@@ -112,101 +110,67 @@ export default function AjusteDetailModal({ ajuste, isOpen, onClose }) {
             </div>
           )}
 
-          {/* Tabla de Cambios */}
+          {/* Líneas de Reclasificación */}
           <div className="space-y-4">
             <Text variant="label" className="text-slate-400 block ml-2 mb-2 tracking-[0.2em]">
-              Lotes Afectados
+              Movimientos entre Lotes
             </Text>
             <div className="space-y-4">
-              {ajuste.lotes_ajustados?.map((item) => {
-                const hasQtyChange =
-                  item.nueva_cantidad !== null &&
-                  item.nueva_cantidad !== item.cantidad_anterior;
-                const hasDateChange =
-                  item.nuevo_vencimiento !== null &&
-                  item.nuevo_vencimiento !== item.vencimiento_anterior;
-                const isSplit =
-                  item.nuevo_lote_codigo && item.nueva_cantidad !== null;
-
-                return (
-                  <div
-                    key={item.id}
-                    className="bg-white border border-slate-100 rounded-[24px] overflow-hidden shadow-sm hover:border-slate-300 transition-all"
-                  >
-                    <div className="p-5 flex flex-col md:flex-row justify-between gap-6">
-                      {/* Info Lote */}
-                      <div className="flex items-center gap-4 min-w-[200px]">
-                        <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400">
-                          <MapPin size={20} />
-                        </div>
-                        <div>
-                          <Text variant="label" className="text-slate-400 block mb-1">
-                            {item.deposito_nombre}
-                          </Text>
-                          <Text className="font-black text-slate-900 tracking-tight">
-                            {item.lote_codigo}
-                          </Text>
-                        </div>
+              {ajuste.items?.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white border border-slate-100 rounded-[24px] overflow-hidden shadow-sm hover:border-slate-300 transition-all"
+                >
+                  <div className="p-5 flex flex-col md:flex-row items-center gap-4">
+                    {/* Lote Origen */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-400 shrink-0">
+                        <MapPin size={20} />
                       </div>
-
-                      {/* Comparación Cantidad */}
-                      <div className="flex-1">
-                        <Text variant="label" className="text-slate-400 block mb-2">
-                          Cantidad
+                      <div className="min-w-0">
+                        <Text variant="label" className="text-slate-400 block mb-0.5">
+                          Origen
                         </Text>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-bold text-slate-400 line-through">
-                            {item.cantidad_anterior} u.
-                          </span>
-                          <ArrowRight size={14} className="text-slate-300 animate-pulse" />
-                          <span
-                            className={`text-lg font-black ${hasQtyChange ? "text-blue-600" : "text-slate-800"}`}
-                          >
-                            {item.nueva_cantidad ?? item.cantidad_anterior} u.
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Comparación Vencimiento */}
-                      <div className="flex-1">
-                        <Text variant="label" className="text-slate-400 block mb-2">
-                          Vencimiento
+                        <Text className="font-black text-slate-900 tracking-tight truncate">
+                          {item.lote_origen_codigo}
                         </Text>
-                        <div className="flex items-center gap-3">
-                          <span className="text-[11px] font-bold text-slate-400 line-through">
-                            {item.vencimiento_anterior || "N/A"}
-                          </span>
-                          <ArrowRight size={14} className="text-slate-300 animate-pulse" />
-                          <span
-                            className={`text-xs font-black ${hasDateChange ? "text-amber-600" : "text-slate-800"}`}
-                          >
-                            {item.nuevo_vencimiento ??
-                              item.vencimiento_anterior ??
-                              "N/A"}
-                          </span>
-                        </div>
+                        <Text variant="bodyXs" className="text-slate-400">
+                          {item.lote_origen_deposito}
+                        </Text>
                       </div>
                     </div>
 
-                    {/* Detalle de Redistribución (Si hubo split/transferencia) */}
-                    {isSplit && (
-                      <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-2 select-none">
-                        <CornerDownRight size={16} className="text-blue-500" />
-                        <Text variant="bodyXs" className="font-bold text-slate-600 uppercase tracking-widest">
-                          Diferencia de{" "}
-                          <span className="text-blue-600 font-black">
-                            {item.cantidad_anterior - item.nueva_cantidad}u.
-                          </span>{" "}
-                          movida a lote:{" "}
-                          <span className="text-slate-900 font-black">
-                            {item.nuevo_lote_codigo}
-                          </span>
+                    {/* Flecha + Cantidad */}
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-2 rounded-full">
+                        <Shuffle size={14} className="text-blue-500" />
+                        <Text className="font-black text-blue-700 text-sm">
+                          {item.cantidad} u.
                         </Text>
                       </div>
-                    )}
+                      <ArrowRight size={16} className="text-slate-300" />
+                    </div>
+
+                    {/* Lote Destino */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500 shrink-0">
+                        <MapPin size={20} />
+                      </div>
+                      <div className="min-w-0">
+                        <Text variant="label" className="text-slate-400 block mb-0.5">
+                          Destino
+                        </Text>
+                        <Text className="font-black text-slate-900 tracking-tight truncate">
+                          {item.lote_destino_codigo || item.nuevo_lote_codigo}
+                        </Text>
+                        <Text variant="bodyXs" className="text-slate-400">
+                          {item.lote_destino_deposito || (item.nuevo_lote_codigo ? "Lote nuevo" : "")}
+                        </Text>
+                      </div>
+                    </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -216,7 +180,7 @@ export default function AjusteDetailModal({ ajuste, isOpen, onClose }) {
           <div className="flex gap-6">
             <div className="flex flex-col">
               <Text variant="label" className="text-slate-400 block mb-1">
-                Fecha de Registro
+                Fecha
               </Text>
               <div className="flex items-center gap-2 text-slate-700 font-black text-xs">
                 <Calendar size={14} className="text-slate-400" />
@@ -225,19 +189,30 @@ export default function AjusteDetailModal({ ajuste, isOpen, onClose }) {
             </div>
             <div className="flex flex-col">
               <Text variant="label" className="text-slate-400 block mb-1">
-                Registrado por
+                Creado por
               </Text>
               <div className="flex items-center gap-2 text-slate-700 font-black text-xs">
                 <User size={14} className="text-slate-400" />
                 {ajuste.usuario_nombre}
               </div>
             </div>
+            {ajuste.aprobado_por_nombre && (
+              <div className="flex flex-col">
+                <Text variant="label" className="text-slate-400 block mb-1">
+                  Aprobado por
+                </Text>
+                <div className="flex items-center gap-2 text-slate-700 font-black text-xs">
+                  <CheckCircle size={14} className="text-emerald-500" />
+                  {ajuste.aprobado_por_nombre}
+                </div>
+              </div>
+            )}
           </div>
           <Button
             onClick={onClose}
             className="bg-slate-900 text-white px-10 h-13 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-100 active:scale-95"
           >
-            Cerrar Detalles
+            Cerrar
           </Button>
         </div>
       </div>

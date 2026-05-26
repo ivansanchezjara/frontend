@@ -129,6 +129,18 @@ export async function getTransferencias(params = {}) {
   );
 }
 
+export async function getTransferencia(id) {
+  return request(
+    `${API_URL}/inventario/transferencias/${id}/`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver detalle de transferencia",
+  );
+}
+
 export async function aprobarTransferencia(id) {
   return request(
     `${API_URL}/inventario/transferencias/${id}/aprobar/`,
@@ -137,6 +149,29 @@ export async function aprobarTransferencia(id) {
       headers: authHeaders(),
     },
     "aprobar transferencia",
+  );
+}
+
+export async function rechazarTransferencia(id) {
+  return request(
+    `${API_URL}/inventario/transferencias/${id}/rechazar/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "rechazar transferencia",
+  );
+}
+
+export async function actualizarTransferencia(id, data) {
+  return request(
+    `${API_URL}/inventario/transferencias/${id}/`,
+    {
+      method: "PUT",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar transferencia",
   );
 }
 
@@ -149,78 +184,6 @@ export async function crearTransferencia(data) {
       body: JSON.stringify(data),
     },
     "crear transferencia",
-  );
-}
-
-// ─── Bajas de Inventario ─────────────────────────────────────────
-
-export async function getBajas(params = {}) {
-  return request(
-    `${API_URL}/inventario/bajas/${toQueryString(params)}`,
-    {
-      method: "GET",
-      headers: authHeaders(),
-      cache: "no-store",
-    },
-    "ver bajas de inventario",
-  );
-}
-
-export async function aprobarBaja(id) {
-  return request(
-    `${API_URL}/inventario/bajas/${id}/aprobar/`,
-    {
-      method: "POST",
-      headers: authHeaders(),
-    },
-    "aprobar baja de inventario",
-  );
-}
-
-export async function rechazarBaja(id) {
-  return request(
-    `${API_URL}/inventario/bajas/${id}/rechazar/`,
-    {
-      method: "POST",
-      headers: authHeaders(),
-    },
-    "rechazar baja de inventario",
-  );
-}
-
-export async function crearBaja(data) {
-  return request(
-    `${API_URL}/inventario/bajas/`,
-    {
-      method: "POST",
-      headers: jsonHeaders(),
-      body: JSON.stringify(data),
-    },
-    "crear baja de inventario",
-  );
-}
-
-export async function getBaja(id) {
-  return request(
-    `${API_URL}/inventario/bajas/${id}/`,
-    {
-      method: "GET",
-      headers: authHeaders(),
-      cache: "no-store",
-    },
-    "ver detalle de baja",
-  );
-}
-
-export async function actualizarBaja(id, data) {
-  return request(
-    `${API_URL}/inventario/bajas/${id}/`,
-    {
-      method: "PUT",
-      headers: jsonHeaders(),
-      body: JSON.stringify(data),
-    },
-    "actualizar baja de inventario",
   );
 }
 
@@ -319,5 +282,242 @@ export async function getDepositos() {
       cache: "no-store",
     },
     "ver depósitos",
+  );
+}
+
+// ─── Auditoría de Stock ──────────────────────────────────────────
+
+export async function getAuditoriasStock(params = {}) {
+  return request(
+    `${API_URL}/inventario/auditorias-stock/${toQueryString(params)}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver auditorías de stock",
+  );
+}
+
+export async function getAuditoriaStock(id) {
+  return request(
+    `${API_URL}/inventario/auditorias-stock/${id}/`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver detalle de auditoría de stock",
+  );
+}
+
+export async function crearAuditoriaStock(data) {
+  return request(
+    `${API_URL}/inventario/auditorias-stock/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear auditoría de stock",
+  );
+}
+
+export async function iniciarConteoAuditoria(id) {
+  return request(
+    `${API_URL}/inventario/auditorias-stock/${id}/iniciar_conteo/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "iniciar conteo de auditoría",
+  );
+}
+
+export async function registrarConteoAuditoria(id, lineas) {
+  return request(
+    `${API_URL}/inventario/auditorias-stock/${id}/registrar_conteo/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify({ lineas }),
+    },
+    "registrar conteo físico",
+  );
+}
+
+export async function pasarConciliacionAuditoria(id) {
+  return request(
+    `${API_URL}/inventario/auditorias-stock/${id}/pasar_conciliacion/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "pasar auditoría a conciliación",
+  );
+}
+
+export async function aprobarAuditoriaStock(id) {
+  return request(
+    `${API_URL}/inventario/auditorias-stock/${id}/aprobar/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "aprobar auditoría de stock",
+  );
+}
+
+export async function rechazarAuditoriaStock(id) {
+  return request(
+    `${API_URL}/inventario/auditorias-stock/${id}/rechazar/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "rechazar auditoría de stock",
+  );
+}
+
+export async function getMarcasDisponibles() {
+  return request(
+    `${API_URL}/inventario/auditorias-stock/marcas_disponibles/`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+    },
+    "ver marcas disponibles",
+  );
+}
+
+// ─── Ajustes Rápidos (Altas/Bajas) ──────────────────────────────────
+
+export async function getAjustesRapidos(params = {}) {
+  return request(
+    `${API_URL}/inventario/ajustes-rapidos/${toQueryString(params)}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver ajustes rápidos",
+  );
+}
+
+export async function getAjusteRapido(id) {
+  return request(
+    `${API_URL}/inventario/ajustes-rapidos/${id}/`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver detalle de ajuste rápido",
+  );
+}
+
+export async function crearAjusteRapido(data) {
+  return request(
+    `${API_URL}/inventario/ajustes-rapidos/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear ajuste rápido",
+  );
+}
+
+export async function actualizarAjusteRapido(id, data) {
+  return request(
+    `${API_URL}/inventario/ajustes-rapidos/${id}/`,
+    {
+      method: "PUT",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar ajuste rápido",
+  );
+}
+
+export async function aprobarAjusteRapido(id) {
+  return request(
+    `${API_URL}/inventario/ajustes-rapidos/${id}/aprobar/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "aprobar ajuste rápido",
+  );
+}
+
+export async function rechazarAjusteRapido(id) {
+  return request(
+    `${API_URL}/inventario/ajustes-rapidos/${id}/rechazar/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "rechazar ajuste rápido",
+  );
+}
+
+// ─── Ediciones de Lote ──────────────────────────────────────────────
+
+export async function getEdicionesLote(params = {}) {
+  return request(
+    `${API_URL}/inventario/ediciones-lote/${toQueryString(params)}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver ediciones de lote",
+  );
+}
+
+export async function getEdicionLote(id) {
+  return request(
+    `${API_URL}/inventario/ediciones-lote/${id}/`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver detalle de edición de lote",
+  );
+}
+
+export async function crearEdicionLote(data) {
+  return request(
+    `${API_URL}/inventario/ediciones-lote/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear edición de lote",
+  );
+}
+
+export async function aprobarEdicionLote(id) {
+  return request(
+    `${API_URL}/inventario/ediciones-lote/${id}/aprobar/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "aprobar edición de lote",
+  );
+}
+
+export async function rechazarEdicionLote(id) {
+  return request(
+    `${API_URL}/inventario/ediciones-lote/${id}/rechazar/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "rechazar edición de lote",
   );
 }

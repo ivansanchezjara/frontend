@@ -118,7 +118,7 @@ export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {(() => {
                                 const validLotes = (Array.isArray(lotes) ? lotes : []).filter(
-                                    (l) => l.cantidad > 0 || l.cantidad_vencida > 0,
+                                    (l) => l.cantidad > 0,
                                 );
 
                                 if (validLotes.length === 0) {
@@ -138,18 +138,18 @@ export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
                                         acc[code] = {
                                             lote_codigo: code,
                                             vencimiento: lote.vencimiento,
+                                            esta_vencido: lote.esta_vencido,
                                             total_cantidad: 0,
-                                            total_vencida: 0,
                                             ubicaciones: [],
                                         };
                                     }
                                     acc[code].total_cantidad += lote.cantidad;
-                                    acc[code].total_vencida += lote.cantidad_vencida;
+                                    if (lote.esta_vencido) acc[code].esta_vencido = true;
                                     acc[code].ubicaciones.push({
                                         id: lote.id,
                                         deposito_nombre: lote.deposito_nombre,
                                         cantidad: lote.cantidad,
-                                        cantidad_vencida: lote.cantidad_vencida,
+                                        esta_vencido: lote.esta_vencido,
                                     });
                                     return acc;
                                 }, {});
@@ -172,9 +172,9 @@ export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
                                                 <Text className="text-xl font-black text-slate-900">
                                                     {grupo.total_cantidad} <span className="text-xs font-normal">u.</span>
                                                 </Text>
-                                                {grupo.total_vencida > 0 && (
+                                                {grupo.esta_vencido && (
                                                     <div className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full mt-1 inline-block">
-                                                        {grupo.total_vencida} u. Vencidas
+                                                        VENCIDO
                                                     </div>
                                                 )}
                                             </div>
@@ -215,9 +215,9 @@ export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
                                                                     {ubi.cantidad} u.
                                                                 </Text>
                                                             )}
-                                                            {ubi.cantidad_vencida > 0 && (
+                                                            {ubi.esta_vencido && (
                                                                 <span className="font-bold text-red-500 bg-white px-1.5 rounded-md border border-red-100 text-[10px]">
-                                                                    {ubi.cantidad_vencida} u. vencidas
+                                                                    vencido
                                                                 </span>
                                                             )}
                                                         </div>
