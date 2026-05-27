@@ -22,6 +22,7 @@ export default function ProductSearchModal({
   emptyMessage = "No se encontraron productos.",
   mode = "lote",
   showEmptyStock = false,
+  extraParams = {},
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 300);
@@ -35,7 +36,7 @@ export default function ProductSearchModal({
 
   useEffect(() => {
     if (isOpen && apiFunc) {
-      execute({ search: debouncedSearch, limit: 50 });
+      execute({ search: debouncedSearch, limit: 50, ...extraParams });
     }
   }, [debouncedSearch, isOpen, execute, apiFunc]);
 
@@ -60,6 +61,21 @@ export default function ProductSearchModal({
       groups[vid].cantidad += l.cantidad;
     });
     displayData = Object.values(groups);
+  } else if (mode === "lote-unico") {
+    // Agrupar por lote_codigo: un solo resultado por código de lote
+    const groups = {};
+    rawData.forEach((l) => {
+      const key = l.lote_codigo;
+      if (!groups[key]) {
+        groups[key] = { ...l, cantidad: 0, total_registros: 0 };
+      }
+      groups[key].cantidad += l.cantidad;
+      groups[key].total_registros += 1;
+    });
+    displayData = Object.values(groups);
+  } else if (mode === "producto") {
+    // Modo producto: los items ya vienen como productos del catálogo
+    displayData = rawData;
   } else {
     displayData = rawData;
   }
@@ -68,6 +84,11 @@ export default function ProductSearchModal({
     ? displayData
     : displayData.filter((l) => {
       const search = searchTerm.toLowerCase();
+      if (mode === "producto") {
+        return l.nombre_general?.toLowerCase().includes(search) ||
+          l.general_code?.toLowerCase().includes(search) ||
+          l.brand?.toLowerCase().includes(search);
+      }
       const matchesVariante =
         l.variante_nombre?.toLowerCase().includes(search) ||
         l.variante_codigo?.toLowerCase().includes(search) ||
@@ -76,7 +97,7 @@ export default function ProductSearchModal({
       return matchesVariante || l.lote_codigo?.toLowerCase().includes(search);
     });
 
-  const finalData = showEmptyStock
+  const finalData = (showEmptyStock || mode === "producto")
     ? filteredData
     : filteredData.filter((item) => item.cantidad > 0);
 
@@ -144,46 +165,73 @@ export default function ProductSearchModal({
                     {lastAddedId === l.id ? <Check className="text-emerald-500" /> : <Package size={24} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    {mode === "lote" && (
+                    {(mode === "lote" || mode === "lote-unico") && (
                       <Text variant="bodyXs" className="text-blue-500 font-black uppercase tracking-widest leading-none mb-1">
                         {l.lote_codigo}
                       </Text>
                     )}
-                    <Text className="font-black text-slate-900 truncate">
-                      {l.variante_nombre}{" "}
-                      <span className="text-slate-450 text-sm font-medium">
-                        | {l.nombre_variante || l.variante_nombre}
-                      </span>
-                    </Text>
-                    {mode === "lote" && (
-                      <Text variant="bodyXs" className="text-slate-400 font-bold uppercase mb-1">
-                        {l.deposito_nombre}
-                      </Text>
-                    )}
-                    {mode === "variante" && (
-                      <Text variant="bodyXs" className="text-blue-500 font-black uppercase tracking-widest leading-none mb-1">
-                        {l.variante_codigo}
-                      </Text>
-                    )}
-                    {l.vencimiento && mode === "lote" && (
-                      <Text 
-                        variant="bodyXs" 
-                        className={`font-black uppercase tracking-widest leading-none mt-1 ${
-                          new Date(l.vencimiento) < new Date() ? "text-red-600" : "text-emerald-600"
-                        }`}
-                      >
-                        {new Date(l.vencimiento) < new Date() ? "⚠️ VENCIDO" : "✓ VIGENTE"} • {new Date(l.vencimiento).toLocaleDateString("es-AR")}
-                      </Text>
+                    {mode === "producto" ? (
+                      <>
+                        <Text variant="bodyXs" className="text-blue-500 font-black uppercase tracking-widest leading-none mb-1">
+                          {l.general_code}
+                        </Text>
+                        <Text className="font-black text-slate-900 truncate">
+                          {l.nombre_general}
+                        </Text>
+                        {l.brand && (
+                          <Text variant="bodyXs" className="text-slate-400 font-bold uppercase mb-1">
+                            {l.brand}
+                          </Text>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Text className="font-black text-slate-900 truncate">
+                          {l.variante_nombre}{" "}
+                          <span className="text-slate-450 text-sm font-medium">
+                            | {l.nombre_variante || l.variante_nombre}
+                          </span>
+                        </Text>
+                        {mode === "lote" && (
+                          <Text variant="bodyXs" className="text-slate-400 font-bold uppercase mb-1">
+                            {l.deposito_nombre}
+                          </Text>
+                        )}
+                        {mode === "lote-unico" && l.total_registros > 1 && (
+                          <Text variant="bodyXs" className="text-slate-400 font-bold uppercase mb-1">
+                            {l.total_registros} depósitos
+                          </Text>
+                        )}
+                        {mode === "variante" && (
+                          <Text variant="bodyXs" className="text-blue-500 font-black uppercase tracking-widest leading-none mb-1">
+                            {l.variante_codigo}
+                          </Text>
+                        )}
+                        {l.vencimiento && (mode === "lote" || mode === "lote-unico") && (
+                          <Text 
+                            variant="bodyXs" 
+                            className={`font-black uppercase tracking-widest leading-none mt-1 ${
+                              new Date(l.vencimiento) < new Date() ? "text-red-600" : "text-emerald-600"
+                            }`}
+                          >
+                            {new Date(l.vencimiento) < new Date() ? "⚠️ VENCIDO" : "✓ VIGENTE"} • {new Date(l.vencimiento).toLocaleDateString("es-AR")}
+                          </Text>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
                 <div className="text-right shrink-0 ml-4 select-none">
-                  <Text variant="label" className="text-slate-400 block mb-0.5">
-                    {mode === "variante" ? "STOCK TOTAL" : "STOCK"}
-                  </Text>
-                  <Text className="text-xl font-black text-slate-900">
-                    {l.cantidad}
-                  </Text>
+                  {mode !== "producto" && (
+                    <>
+                      <Text variant="label" className="text-slate-400 block mb-0.5">
+                        {mode === "variante" || mode === "lote-unico" ? "STOCK TOTAL" : "STOCK"}
+                      </Text>
+                      <Text className="text-xl font-black text-slate-900">
+                        {l.cantidad}
+                      </Text>
+                    </>
+                  )}
                 </div>
               </button>
             ))

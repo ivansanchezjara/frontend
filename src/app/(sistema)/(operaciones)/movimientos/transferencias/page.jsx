@@ -166,9 +166,6 @@ export default function TransferenciasPage() {
               title="No hay transferencias registradas"
               message="Aquí verás todos los movimientos de stock realizados entre tus depósitos."
               actionLabel="Nueva Transferencia"
-              onAction={() =>
-                (window.location.href = "/movimientos/transferencias/nuevo")
-              }
             />
           ) : vista === 'grilla' ? (
             <div className="grid grid-cols-1 gap-4">
@@ -177,6 +174,7 @@ export default function TransferenciasPage() {
                   key={transf.id}
                   id={transf.id}
                   estado={transf.estado}
+                  href={`/movimientos/transferencias/${transf.id}/detalle`}
                   titulo={`${transf.deposito_origen_nombre} → ${transf.deposito_destino_nombre}`}
                   subtitulo={transf.observaciones}
                   customIcon={transf.estado !== 'APROBADO' ? ArrowRightLeft : undefined}

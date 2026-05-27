@@ -50,7 +50,7 @@ export default function AjustesHubPage() {
             <main className="flex-1 overflow-y-auto p-8 min-w-0">
                 <div className="max-w-[1600px] mx-auto">
                     <div className="mb-10">
-                        <Heading level={2} className="text-slate-900 tracking-tight">Seleccioná una operación</Heading>
+                        <Heading level={2} className="text-slate-900 tracking-tight">Seleccioná una ajuste</Heading>
                         <Text className="text-slate-500 font-medium">Elegí el tipo de ajuste que necesitás realizar sobre el inventario.</Text>
                     </div>
 

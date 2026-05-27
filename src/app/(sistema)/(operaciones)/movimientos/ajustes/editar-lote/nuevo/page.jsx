@@ -1,21 +1,22 @@
 "use client";
 import { PageHeader, Text, Heading } from '@/components/ui';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Edit3, Search, Package, Calendar, MapPin } from 'lucide-react';
+import { Edit3, Package, Calendar, MapPin, Layers } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { useToast } from "@/components/ui/feedback/ToastContext";
 import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 import { crearEdicionLote } from '@/services/apis/movimientos';
 import { getStockLotes } from '@/services/apis/inventario';
+import SelectedProductCard from "@/components/movimientos/SelectedProductCard";
+import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
 
 export default function NuevaEdicionLotePage() {
     const router = useRouter();
     const { showToast } = useToast();
     const { confirm } = useConfirm();
 
-    const [stockLotes, setStockLotes] = useState([]);
-    const [searchLote, setSearchLote] = useState('');
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [selectedLote, setSelectedLote] = useState(null);
     const [formData, setFormData] = useState({
         nuevo_lote_codigo: '',
@@ -23,36 +24,11 @@ export default function NuevaEdicionLotePage() {
         motivo: ''
     });
 
-    const { execute: fetchStockLotes, loading: loadingLotes } = useApi(getStockLotes, { auto: false });
     const { execute: createAction, loading: isSubmitting } = useApi(crearEdicionLote, { auto: false });
-
-    useEffect(() => {
-        async function loadLotes() {
-            try {
-                const data = await fetchStockLotes({ limit: 10000 });
-                if (data) setStockLotes(data.results || data);
-            } catch (err) {
-                // Error handled by useApi
-            }
-        }
-        loadLotes();
-    }, []);
-
-    const filteredLotes = stockLotes.filter(lote => {
-        if (!searchLote) return false;
-        const term = searchLote.toLowerCase();
-        return (
-            lote.lote_codigo?.toLowerCase().includes(term) ||
-            lote.variante_codigo?.toLowerCase().includes(term) ||
-            lote.variante_nombre?.toLowerCase().includes(term) ||
-            lote.deposito_nombre?.toLowerCase().includes(term)
-        );
-    }).slice(0, 20);
 
     const handleSelectLote = (lote) => {
         setSelectedLote(lote);
-        setSearchLote('');
-        // Pre-fill current values
+        setIsSearchOpen(false);
         setFormData(prev => ({
             ...prev,
             nuevo_lote_codigo: '',
@@ -147,93 +123,37 @@ export default function NuevaEdicionLotePage() {
                         </Heading>
 
                         {!selectedLote ? (
+                            <button
+                                type="button"
+                                onClick={() => setIsSearchOpen(true)}
+                                className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50/50 transition-all text-left group"
+                            >
+                                <Package size={20} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                <Text variant="bodySm" className="text-slate-500 group-hover:text-blue-600 transition-colors">
+                                    Buscar lote por código, producto o depósito...
+                                </Text>
+                            </button>
+                        ) : (
                             <div className="space-y-3">
-                                <div className="relative">
-                                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input
-                                        type="text"
-                                        value={searchLote}
-                                        onChange={(e) => setSearchLote(e.target.value)}
-                                        placeholder="Buscar por código de lote, producto o depósito..."
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 pl-10 text-sm"
-                                    />
-                                </div>
-
-                                {searchLote && (
-                                    <div className="border border-slate-200 rounded-xl overflow-hidden max-h-[300px] overflow-y-auto">
-                                        {filteredLotes.length === 0 ? (
-                                            <div className="p-4 text-center">
-                                                <Text variant="bodySm" className="text-slate-400">
-                                                    No se encontraron lotes con ese criterio.
-                                                </Text>
-                                            </div>
-                                        ) : (
-                                            filteredLotes.map(lote => (
-                                                <button
-                                                    key={lote.id}
-                                                    type="button"
-                                                    onClick={() => handleSelectLote(lote)}
-                                                    className="w-full text-left p-3 hover:bg-blue-50 border-b border-slate-100 last:border-b-0 transition-colors"
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <Text variant="bodySmBold" className="text-slate-800">
-                                                                {lote.lote_codigo}
-                                                            </Text>
-                                                            <Text variant="bodyXs" className="text-slate-500">
-                                                                {lote.variante_codigo} — {lote.variante_nombre}
-                                                            </Text>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <Text variant="bodyXs" className="text-slate-400">
-                                                                {lote.deposito_nombre}
-                                                            </Text>
-                                                            <Text variant="bodyXs" className="text-slate-400">
-                                                                Stock: {lote.cantidad} | Venc: {lote.vencimiento ? new Date(lote.vencimiento).toLocaleDateString() : '—'}
-                                                            </Text>
-                                                        </div>
-                                                    </div>
-                                                </button>
-                                            ))
-                                        )}
+                                <SelectedProductCard
+                                    codigo={selectedLote.variante_codigo}
+                                    titulo={selectedLote.variante_nombre}
+                                    detalles={[
+                                        { icon: Package, label: `Lote: ${selectedLote.lote_codigo}` },
+                                        { icon: MapPin, label: selectedLote.deposito_nombre },
+                                        { icon: Calendar, label: `Venc: ${selectedLote.vencimiento ? new Date(selectedLote.vencimiento).toLocaleDateString() : 'Sin vencimiento'}` },
+                                    ]}
+                                    onClear={() => setSelectedLote(null)}
+                                    clearLabel="Cambiar"
+                                />
+                                {selectedLote.total_registros_lote > 1 && (
+                                    <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-xl">
+                                        <Layers size={14} className="text-blue-500" />
+                                        <Text variant="bodyXs" className="text-blue-700 font-medium">
+                                            Este código de lote existe en {selectedLote.total_registros_lote} depositos. Los cambios se aplicarán a todos.
+                                        </Text>
                                     </div>
                                 )}
-                            </div>
-                        ) : (
-                            <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-5">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-blue-600 border border-blue-100 shadow-sm">
-                                            <Package size={24} />
-                                        </div>
-                                        <div>
-                                            <Text variant="bodyXs" className="text-blue-500 font-black uppercase tracking-widest leading-none mb-1">
-                                                {selectedLote.variante_codigo}
-                                            </Text>
-                                            <Text className="text-lg font-black text-slate-900 leading-none">
-                                                {selectedLote.variante_nombre}
-                                            </Text>
-                                            <div className="flex items-center gap-4 mt-1.5">
-                                                <Text variant="bodyXs" className="text-slate-500 flex items-center gap-1">
-                                                    <Package size={12} /> Lote: <span className="font-bold text-slate-700">{selectedLote.lote_codigo}</span>
-                                                </Text>
-                                                <Text variant="bodyXs" className="text-slate-500 flex items-center gap-1">
-                                                    <MapPin size={12} /> {selectedLote.deposito_nombre}
-                                                </Text>
-                                                <Text variant="bodyXs" className="text-slate-500 flex items-center gap-1">
-                                                    <Calendar size={12} /> Venc: {selectedLote.vencimiento ? new Date(selectedLote.vencimiento).toLocaleDateString() : 'Sin vencimiento'}
-                                                </Text>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedLote(null)}
-                                        className="text-slate-400 hover:text-red-500 text-xs font-bold uppercase tracking-widest transition-colors"
-                                    >
-                                        Cambiar
-                                    </button>
-                                </div>
                             </div>
                         )}
                     </div>
@@ -336,6 +256,18 @@ export default function NuevaEdicionLotePage() {
                     )}
                 </div>
             </main>
+
+            {/* Modal de búsqueda de lotes */}
+            <ProductSearchModal
+                isOpen={isSearchOpen}
+                onClose={() => setIsSearchOpen(false)}
+                onSelect={handleSelectLote}
+                apiFunc={getStockLotes}
+                mode="lote-unico"
+                showEmptyStock
+                placeholder="Buscar por código de lote o producto..."
+                emptyMessage="No se encontraron lotes con ese criterio."
+            />
         </div>
     );
 }

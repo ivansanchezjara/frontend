@@ -79,7 +79,8 @@ export default function EditarTransferenciaPage({ params }) {
             lote_origen: item.lote_origen,
             lote_codigo: item.lote_codigo,
             variante_nombre: item.variante_nombre,
-            nombre_variante: item.variante_codigo,
+            nombre_variante: item.nombre_variante,
+            variante_codigo: item.variante_codigo,
             stock_disponible: null, // Se actualizará con stockLotes
             cantidad: item.cantidad,
           }))
@@ -129,6 +130,7 @@ export default function EditarTransferenciaPage({ params }) {
       lote_codigo: lote.lote_codigo,
       variante_nombre: lote.variante_nombre,
       nombre_variante: lote.nombre_variante,
+      variante_codigo: lote.variante_codigo,
       stock_disponible: lote.cantidad,
       cantidad: 1,
     };
@@ -373,15 +375,23 @@ export default function EditarTransferenciaPage({ params }) {
                         className="hover:bg-slate-50 transition-all group"
                       >
                         <td className="p-4">
-                          <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">
-                            {item.lote_codigo}
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                              {item.variante_codigo}
+                            </span>
+                            <span className="text-[10px] text-slate-300">•</span>
+                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                              {item.lote_codigo}
+                            </span>
                           </div>
                           <div className="font-black text-slate-800 text-sm">
-                            {item.variante_nombre}{" "}
-                            <Text as="span" variant="bodySm" className="text-slate-400 font-bold">
-                              | {item.nombre_variante}
-                            </Text>
+                            {item.variante_nombre}
                           </div>
+                          {item.nombre_variante && (
+                            <Text as="span" variant="bodySm" className="text-slate-400 font-bold">
+                              {item.nombre_variante}
+                            </Text>
+                          )}
                         </td>
                         <td className="p-4 text-center">
                           <div className="inline-block px-3 py-1 bg-slate-100 rounded-full font-black text-slate-600">

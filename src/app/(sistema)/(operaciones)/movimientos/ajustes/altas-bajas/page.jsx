@@ -146,8 +146,6 @@ export default function AjustesRapidosPage() {
                             icon={<Layers size={48} className="text-slate-300 mx-auto mb-4" />}
                             title="No hay ajustes rápidos registrados"
                             message="Aquí verás todas las altas y bajas de stock realizadas."
-                            actionLabel="Nuevo Ajuste"
-                            onAction={() => window.location.href = '/movimientos/ajustes/altas-bajas/nuevo'}
                         />
                     ) : vista === 'grilla' ? (
                         <div className="grid grid-cols-1 gap-4">

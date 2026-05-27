@@ -65,7 +65,7 @@ export const modulosActivos = [
     title: "Stock y Disponibilidad",
     desc: "Consulta rápida de existencias, vencimientos y ubicaciones.",
     color: "blue",
-    roles: ["Admin"],
+    roles: ["Admin", "gestorDeDeposito"],
   },
   {
     href: "/movimientos",
@@ -73,7 +73,7 @@ export const modulosActivos = [
     title: "Gestión de Movimientos",
     desc: "Carga de ingresos, consignaciones y ajustes comerciales.",
     color: "blue",
-    roles: ["Admin"],
+    roles: ["Admin", "gestorDeDeposito"],
   },
   {
     href: "/media-manager",
@@ -81,7 +81,7 @@ export const modulosActivos = [
     title: "Gestor de Medios",
     desc: "Almacenamiento y Archivos de la plataforma.",
     color: "emerald",
-    roles: ["Admin", "gestorDeCatalogo"],
+    roles: ["Admin"],
   },
 ];
 
@@ -171,7 +171,7 @@ export const navItems = [
     label: "Stock y Disponibilidad",
     type: "active",
     color: "blue",
-    roles: ["Admin"],
+    roles: ["Admin", "gestorDeDeposito"],
   },
   {
     category: "Operaciones",
@@ -180,7 +180,7 @@ export const navItems = [
     label: "Gestión de Movimientos",
     type: "active",
     color: "blue",
-    roles: ["Admin"],
+    roles: ["Admin", "gestorDeDeposito"],
   },
   {
     category: "Comercial",

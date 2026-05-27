@@ -377,6 +377,7 @@ export default function NuevoIngresoPage() {
                                             }
                                         };
                                         reader.readAsText(file);
+                                        e.target.value = '';
                                     }} />
                                     <button type="button" onClick={handleDownloadTemplate} className="bg-slate-50 text-slate-500 hover:text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-slate-200 transition-all active:scale-95">
                                         <Download size={14} /> Bajar Plantilla
@@ -444,11 +445,10 @@ export default function NuevoIngresoPage() {
                                                                             onChange={(e) => handleItemChange(idx, 'vencimiento', e.target.value)}
                                                                             readOnly={vencLock.locked}
                                                                             tabIndex={vencLock.locked ? -1 : undefined}
-                                                                            className={`w-full pl-6 pr-1 py-1.5 border rounded-lg text-[9px] font-bold ${
-                                                                                vencLock.locked
+                                                                            className={`w-full pl-6 pr-1 py-1.5 border rounded-lg text-[9px] font-bold ${vencLock.locked
                                                                                     ? 'bg-amber-50 border-amber-300 text-amber-700 cursor-not-allowed'
                                                                                     : 'bg-slate-50 border-slate-200'
-                                                                            }`}
+                                                                                }`}
                                                                             title={vencLock.locked ? `Fecha bloqueada — coincide con ${vencLock.source === 'form' ? 'otra fila en este formulario' : 'un lote existente en el sistema'}` : ''}
                                                                         />
                                                                     </div>

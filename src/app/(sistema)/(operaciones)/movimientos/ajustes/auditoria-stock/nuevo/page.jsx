@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ClipboardList, Tag, Package, X, Lock } from 'lucide-react';
+import { ClipboardList, Tag, Package, X, Lock, Search, Trash2 } from 'lucide-react';
 import { PageHeader, Text, Heading, Button } from '@/components/ui';
 import { useApi } from '@/hooks/useApi';
 import { useToast } from '@/components/ui/feedback/ToastContext';
 import { useConfirm } from '@/components/ui/feedback/ConfirmContext';
 import { crearAuditoriaStock, getDepositos, getMarcasDisponibles } from '@/services/apis/movimientos';
 import { getProductos } from '@/services/apis/catalogo';
+import ProductSearchModal from '@/components/movimientos/ProductSearchModal';
 
 export default function NuevaAuditoriaStockPage() {
     const router = useRouter();
@@ -20,13 +21,10 @@ export default function NuevaAuditoriaStockPage() {
     const [productosSeleccionados, setProductosSeleccionados] = useState([]);
     const [depositos, setDepositos] = useState([]);
     const [marcas, setMarcas] = useState([]);
-    const [productosDisponibles, setProductosDisponibles] = useState([]);
-    const [searchProducto, setSearchProducto] = useState('');
-    const [showProductSearch, setShowProductSearch] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
 
     const { execute: fetchDepositos } = useApi(getDepositos, { auto: false });
     const { execute: fetchMarcas } = useApi(getMarcasDisponibles, { auto: false });
-    const { execute: fetchProductos } = useApi(getProductos, { auto: false });
     const { execute: crear, loading: isSubmitting } = useApi(crearAuditoriaStock, { auto: false });
 
     useEffect(() => {
@@ -38,22 +36,18 @@ export default function NuevaAuditoriaStockPage() {
         loadData();
     }, []);
 
-    useEffect(() => {
-        if (formData.modo_seleccion === 'PRODUCTOS' && searchProducto.length >= 2) {
-            const timer = setTimeout(async () => {
-                const result = await fetchProductos({ search: searchProducto, page_size: 20 });
-                if (result) setProductosDisponibles(result.results || result || []);
-            }, 300);
-            return () => clearTimeout(timer);
-        }
-    }, [searchProducto, formData.modo_seleccion]);
-
     const handleChange = (e) => { setFormData(prev => ({ ...prev, [e.target.name]: e.target.value })); };
-    const handleAddProducto = (producto) => {
-        if (!productosSeleccionados.find(p => p.id === producto.id)) setProductosSeleccionados(prev => [...prev, producto]);
-        setSearchProducto(''); setShowProductSearch(false);
+
+    const handleAddProducto = (item) => {
+        // item viene del modal con shape de getProductos: { id, nombre_general, general_code, brand }
+        if (!productosSeleccionados.find(p => p.id === item.id)) {
+            setProductosSeleccionados(prev => [...prev, item]);
+        }
     };
-    const handleRemoveProducto = (id) => { setProductosSeleccionados(prev => prev.filter(p => p.id !== id)); };
+
+    const handleRemoveProducto = (id) => {
+        setProductosSeleccionados(prev => prev.filter(p => p.id !== id));
+    };
 
     const isValid = () => {
         if (!formData.titulo.trim()) return false;
@@ -153,35 +147,62 @@ export default function NuevaAuditoriaStockPage() {
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                <div className="relative">
-                                    <Text variant="label" className="uppercase mb-1">Buscar Productos *</Text>
-                                    <input type="text" value={searchProducto}
-                                        onChange={(e) => { setSearchProducto(e.target.value); setShowProductSearch(true); }}
-                                        onFocus={() => setShowProductSearch(true)}
-                                        placeholder="Escribí para buscar por nombre o código..."
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none" />
-                                    {showProductSearch && productosDisponibles.length > 0 && (
-                                        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                                            {productosDisponibles.filter(p => !productosSeleccionados.find(s => s.id === p.id)).map(producto => (
-                                                <button key={producto.id} onClick={() => handleAddProducto(producto)}
-                                                    className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors border-b border-slate-50 last:border-0">
-                                                    <Text className="font-bold text-slate-900 text-sm">{producto.nombre_general}</Text>
-                                                    <Text variant="bodyXs" className="text-slate-400">{producto.general_code} • {producto.brand}</Text>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                <button
+                                    onClick={() => setIsSearchOpen(true)}
+                                    className="w-full p-6 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all flex items-center justify-center gap-3 bg-slate-50/50"
+                                >
+                                    <Search size={20} className="opacity-40" />
+                                    <Text variant="label" className="uppercase tracking-widest">
+                                        Click para buscar y agregar productos
+                                    </Text>
+                                </button>
+
                                 {productosSeleccionados.length > 0 && (
-                                    <div className="space-y-2">
-                                        <Text variant="label" className="text-slate-400 uppercase">{productosSeleccionados.length} producto(s) seleccionado(s)</Text>
-                                        <div className="flex flex-wrap gap-2">
-                                            {productosSeleccionados.map(p => (
-                                                <div key={p.id} className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2">
-                                                    <Text variant="bodySm" className="font-bold text-blue-800">{p.nombre_general}</Text>
-                                                    <button onClick={() => handleRemoveProducto(p.id)} className="text-blue-400 hover:text-red-500 transition-colors"><X size={14} /></button>
-                                                </div>
-                                            ))}
+                                    <div className="space-y-3">
+                                        <Text variant="label" className="text-slate-400 uppercase">
+                                            {productosSeleccionados.length} producto(s) seleccionado(s)
+                                        </Text>
+                                        <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                                            <table className="w-full text-sm">
+                                                <thead>
+                                                    <tr className="bg-slate-50 border-b border-slate-200">
+                                                        <th className="text-left px-4 py-3 font-black text-[10px] uppercase tracking-widest text-slate-400">Código</th>
+                                                        <th className="text-left px-4 py-3 font-black text-[10px] uppercase tracking-widest text-slate-400">Producto</th>
+                                                        <th className="text-left px-4 py-3 font-black text-[10px] uppercase tracking-widest text-slate-400">Marca</th>
+                                                        <th className="w-12"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {productosSeleccionados.map((p) => (
+                                                        <tr key={p.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
+                                                            <td className="px-4 py-3">
+                                                                <Text variant="bodyXs" className="text-blue-600 font-black uppercase tracking-widest">
+                                                                    {p.general_code}
+                                                                </Text>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <Text className="font-bold text-slate-800">
+                                                                    {p.nombre_general}
+                                                                </Text>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <Text variant="bodySm" className="text-slate-500">
+                                                                    {p.brand || '—'}
+                                                                </Text>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                <button
+                                                                    onClick={() => handleRemoveProducto(p.id)}
+                                                                    className="text-slate-300 hover:text-rose-500 transition-colors"
+                                                                    title="Quitar producto"
+                                                                >
+                                                                    <Trash2 size={15} />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 )}
@@ -205,6 +226,19 @@ export default function NuevaAuditoriaStockPage() {
                     </div>
                 </div>
             </main>
+
+            {isSearchOpen && (
+                <ProductSearchModal
+                    isOpen={isSearchOpen}
+                    onClose={() => setIsSearchOpen(false)}
+                    onSelect={handleAddProducto}
+                    apiFunc={getProductos}
+                    mode="producto"
+                    placeholder="Buscar por nombre o código de producto..."
+                    emptyMessage="No se encontraron productos."
+                    showEmptyStock
+                />
+            )}
         </div>
     );
 }

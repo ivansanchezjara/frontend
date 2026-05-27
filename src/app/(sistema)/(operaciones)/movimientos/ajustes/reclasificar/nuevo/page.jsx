@@ -1,6 +1,6 @@
 "use client";
 import { PageHeader, Button, Heading, Text, Input } from '@/components/ui';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -12,9 +12,10 @@ import {
   Trash2,
 } from "lucide-react";
 import ProductSearchModal from "@/components/movimientos/ProductSearchModal";
+import SelectedProductCard from "@/components/movimientos/SelectedProductCard";
 import { useApi } from "@/hooks/useApi";
 import { getStockLotes } from "@/services/apis/inventario";
-import { crearAjuste } from "@/services/apis/movimientos";
+import { getDepositos, crearAjuste } from "@/services/apis/movimientos";
 import { useToast } from "@/components/ui/feedback/ToastContext";
 import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 
@@ -24,6 +25,7 @@ export default function NuevaReclasificacionPage() {
   const { confirm } = useConfirm();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
+  const { execute: fetchDepositos } = useApi(getDepositos, { auto: false });
   const { execute: fetchVarianteLotes } = useApi(getStockLotes, {
     auto: false,
     initialData: { results: [] },
@@ -34,11 +36,34 @@ export default function NuevaReclasificacionPage() {
   });
 
   // --- ESTADO LOCAL ---
+  const [depositos, setDepositos] = useState([]);
+  const [selectedDeposito, setSelectedDeposito] = useState("");
   const [motivo, setMotivo] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [selectedVariante, setSelectedVariante] = useState(null);
-  const [lotes, setLotes] = useState([]); // Lotes disponibles de la variante
+  const [lotes, setLotes] = useState([]); // Lotes disponibles de la variante en el depósito
   const [items, setItems] = useState([]); // Líneas de reclasificación
+
+  // Cargar depósitos al montar
+  useEffect(() => {
+    async function loadDepositos() {
+      try {
+        const data = await fetchDepositos();
+        setDepositos(data?.results || data || []);
+      } catch (err) {
+        setDepositos([]);
+      }
+    }
+    loadDepositos();
+  }, []);
+
+  const handleDepositoChange = (e) => {
+    setSelectedDeposito(e.target.value);
+    // Limpiar selección de producto y lotes al cambiar depósito
+    setSelectedVariante(null);
+    setLotes([]);
+    setItems([]);
+  };
 
   const selectVariante = async (v) => {
     setSelectedVariante(v);
@@ -46,7 +71,7 @@ export default function NuevaReclasificacionPage() {
     setItems([]);
 
     try {
-      const data = await fetchVarianteLotes({ variante: v.id, limit: 1000 });
+      const data = await fetchVarianteLotes({ variante: v.id, deposito: selectedDeposito, limit: 1000 });
       const lotesFetch = data?.results || data || [];
       setLotes(
         lotesFetch.map((l) => ({
@@ -78,7 +103,6 @@ export default function NuevaReclasificacionPage() {
       prev.map((item) => {
         if (item.id !== itemId) return item;
         const updated = { ...item, [field]: value };
-        // Si cambia a "nuevo lote", limpiar lote_destino y viceversa
         if (field === "useNewLote") {
           if (value) updated.lote_destino = "";
           else updated.nuevo_lote_codigo = "";
@@ -102,7 +126,7 @@ export default function NuevaReclasificacionPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedVariante || isSubmitting) return;
+    if (!selectedVariante || !selectedDeposito || isSubmitting) return;
 
     if (!motivo.trim()) {
       showToast("Debes describir el motivo de la reclasificación.", "error");
@@ -161,6 +185,8 @@ export default function NuevaReclasificacionPage() {
     }
   };
 
+  const depositoNombre = depositos.find(d => d.id === Number(selectedDeposito))?.nombre || '';
+
   return (
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       <PageHeader
@@ -171,12 +197,12 @@ export default function NuevaReclasificacionPage() {
         subtitle={
           <>
             <Shuffle size={12} />
-            Mover unidades de un lote a otro dentro del mismo producto.
+            Mover unidades entre lotes dentro de un mismo depósito.
           </>
         }
       >
         <Button
-          disabled={isSubmitting || !selectedVariante || !hasValidItems || !motivo.trim()}
+          disabled={isSubmitting || !selectedVariante || !selectedDeposito || !hasValidItems || !motivo.trim()}
           onClick={handleSubmit}
           variant="primary"
           className="uppercase tracking-widest font-black"
@@ -187,75 +213,90 @@ export default function NuevaReclasificacionPage() {
 
       <main className="flex-1 overflow-y-auto p-8 min-w-0">
         <div className="max-w-[1200px] mx-auto space-y-6">
-          {/* SECCIÓN 1: PRODUCTO */}
+
+          {/* SECCIÓN 1: DEPÓSITO */}
           <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm space-y-6">
             <Heading level={3} className="text-xs text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-              <Package size={14} /> Producto
+              <MapPin size={14} /> Depósito
             </Heading>
 
-            {!selectedVariante ? (
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="w-full p-10 border-2 border-dashed border-slate-200 rounded-[24px] text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all flex flex-col items-center gap-4 bg-slate-50/50"
+            <div className="max-w-md">
+              <select
+                value={selectedDeposito}
+                onChange={handleDepositoChange}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all"
               >
-                <Search size={40} className="opacity-20" />
-                <Text variant="label" className="uppercase tracking-widest">
-                  Click para buscar producto en stock
-                </Text>
-              </button>
-            ) : (
-              <div className="flex items-center justify-between p-6 bg-blue-50/50 border border-blue-100 rounded-[24px]">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-blue-100 shadow-sm">
-                    <Package size={24} className="text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <Text variant="label" className="mb-1">{selectedVariante.product_code}</Text>
-                    <Heading level={4} className="text-slate-900 text-lg">
-                      {selectedVariante.producto_nombre}
-                      <Text as="span" variant="muted" className="text-sm ml-2">
-                        | {selectedVariante.nombre_variante}
-                      </Text>
-                    </Heading>
-                    <button
-                      onClick={() => {
-                        setSelectedVariante(null);
-                        setLotes([]);
-                        setItems([]);
-                      }}
-                      className="text-[10px] font-black text-blue-600 uppercase tracking-widest mt-1 hover:underline"
-                    >
-                      Cambiar producto
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {selectedVariante && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
-                <Input
-                  label="Motivo de la reclasificación"
-                  value={motivo}
-                  onChange={(e) => setMotivo(e.target.value)}
-                  placeholder="Ej: Reorganización de lotes, Error de asignación..."
-                />
-                <Input
-                  label="Observaciones (opcional)"
-                  value={observaciones}
-                  onChange={(e) => setObservaciones(e.target.value)}
-                  placeholder="Comentarios adicionales..."
-                />
-              </div>
-            )}
+                <option value="">Seleccionar depósito...</option>
+                {depositos.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.nombre}
+                  </option>
+                ))}
+              </select>
+              <Text variant="bodyXs" className="text-slate-400 mt-2">
+                Los movimientos de lotes se realizarán dentro de este depósito.
+              </Text>
+            </div>
           </div>
 
-          {/* SECCIÓN 2: LÍNEAS DE RECLASIFICACIÓN */}
+          {/* SECCIÓN 2: PRODUCTO (solo si hay depósito) */}
+          {selectedDeposito && (
+            <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm space-y-6">
+              <Heading level={3} className="text-xs text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                <Package size={14} /> Producto
+              </Heading>
+
+              {!selectedVariante ? (
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className="w-full p-10 border-2 border-dashed border-slate-200 rounded-[24px] text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all flex flex-col items-center gap-4 bg-slate-50/50"
+                >
+                  <Search size={40} className="opacity-20" />
+                  <Text variant="label" className="uppercase tracking-widest">
+                    Click para buscar producto en stock
+                  </Text>
+                </button>
+              ) : (
+                <SelectedProductCard
+                  codigo={selectedVariante.product_code}
+                  titulo={selectedVariante.producto_nombre}
+                  subtitulo={selectedVariante.nombre_variante}
+                  onClear={() => {
+                    setSelectedVariante(null);
+                    setLotes([]);
+                    setItems([]);
+                  }}
+                />
+              )}
+
+              {selectedVariante && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                  <Input
+                    label="Motivo de la reclasificación"
+                    value={motivo}
+                    onChange={(e) => setMotivo(e.target.value)}
+                    placeholder="Ej: Reorganización de lotes, Error de asignación..."
+                  />
+                  <Input
+                    label="Observaciones (opcional)"
+                    value={observaciones}
+                    onChange={(e) => setObservaciones(e.target.value)}
+                    placeholder="Comentarios adicionales..."
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SECCIÓN 3: LÍNEAS DE RECLASIFICACIÓN */}
           {selectedVariante && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Heading level={3} className="text-xs text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
                   <Shuffle size={14} /> Movimientos entre Lotes
+                  {depositoNombre && (
+                    <span className="text-blue-500 ml-2">— {depositoNombre}</span>
+                  )}
                 </Heading>
                 <Button
                   onClick={addItem}
@@ -270,7 +311,7 @@ export default function NuevaReclasificacionPage() {
               {lotes.filter((l) => l.cantidad > 0).length === 0 ? (
                 <div className="p-12 text-center border-2 border-dashed border-slate-200 rounded-[32px] bg-slate-50/50">
                   <Text variant="label" className="text-slate-400 uppercase tracking-widest">
-                    No hay lotes con stock para este producto
+                    No hay lotes con stock para este producto en el depósito seleccionado
                   </Text>
                 </div>
               ) : items.length === 0 ? (
@@ -314,7 +355,7 @@ export default function NuevaReclasificacionPage() {
                               .filter((l) => l.cantidad > 0)
                               .map((l) => (
                                 <option key={l.id} value={l.id}>
-                                  {l.lote_codigo} • {l.deposito_nombre} ({l.cantidad} u.)
+                                  {l.lote_codigo} ({l.cantidad} u.)
                                 </option>
                               ))}
                           </select>
@@ -365,7 +406,7 @@ export default function NuevaReclasificacionPage() {
                                 .filter((l) => l.id !== Number(item.lote_origen))
                                 .map((l) => (
                                   <option key={l.id} value={l.id}>
-                                    {l.lote_codigo} • {l.deposito_nombre} ({l.cantidad} u.)
+                                    {l.lote_codigo} ({l.cantidad} u.)
                                   </option>
                                 ))}
                             </select>
@@ -410,6 +451,7 @@ export default function NuevaReclasificacionPage() {
               });
             }}
             apiFunc={getStockLotes}
+            extraParams={{ deposito: selectedDeposito }}
           />
         )}
       </main>

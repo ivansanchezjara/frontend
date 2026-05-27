@@ -29,6 +29,18 @@ export async function getAjustes(params = {}) {
   );
 }
 
+export async function getAjuste(id) {
+  return request(
+    `${API_URL}/inventario/ajustes/${id}/`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver detalle de ajuste de inventario",
+  );
+}
+
 /**
  * Aprueba un ajuste de inventario y actualiza el stock físico.
  */
@@ -40,6 +52,17 @@ export async function aprobarAjuste(id) {
       headers: authHeaders(),
     },
     "aprobar ajuste de inventario",
+  );
+}
+
+export async function rechazarAjuste(id) {
+  return request(
+    `${API_URL}/inventario/ajustes/${id}/rechazar/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "rechazar ajuste de inventario",
   );
 }
 

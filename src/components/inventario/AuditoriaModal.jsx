@@ -20,16 +20,16 @@ export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
         const days = (new Date(vencimiento) - new Date()) / (1000 * 60 * 60 * 24);
         if (days < 0)
             return {
-                color: "text-red-700",
-                dot: "bg-red-600 animate-pulse",
+                color: "text-red-900",
+                dot: "bg-red-900 animate-pulse",
                 label: "VENCIDO",
             };
         if (days < 90)
             return { color: "text-red-500", dot: "bg-red-500", label: `< 90 días` };
         if (days < 180)
             return {
-                color: "text-amber-500",
-                dot: "bg-amber-500",
+                color: "text-yellow-500",
+                dot: "bg-yellow-500",
                 label: `< 180 días`,
             };
         return {
