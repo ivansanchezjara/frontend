@@ -70,6 +70,7 @@ export default function NuevoAjusteRapidoPage() {
         const newItems = [...items, {
             tipo_operacion: 'ALTA',
             variante: null,
+            producto_nombre: '',
             variante_label: '',
             variante_codigo: '',
             lote: null,
@@ -150,7 +151,8 @@ export default function NuevoAjusteRapidoPage() {
         newItems[activeRowIdx] = {
             ...newItems[activeRowIdx],
             variante: item.variante || item.id,
-            variante_label: item.variante_nombre || item.nombre_variante || '',
+            producto_nombre: item.variante_nombre || '',
+            variante_label: item.nombre_variante || item.variante_nombre || '',
             variante_codigo: item.variante_codigo || item.product_code || '',
             lote: null,
             lote_label: '',
@@ -446,7 +448,10 @@ export default function NuevoAjusteRapidoPage() {
                                                             <div className="truncate">
                                                                 <span className="font-black text-blue-600">{item.variante_codigo}</span>
                                                                 {' '}
-                                                                <span className="text-slate-600">{item.variante_label}</span>
+                                                                <span className="font-semibold text-slate-800">{item.producto_nombre}</span>
+                                                                {item.variante_label && item.variante_label !== item.producto_nombre && (
+                                                                    <span className="text-slate-400 ml-1">| {item.variante_label}</span>
+                                                                )}
                                                             </div>
                                                         ) : (
                                                             <span>Buscar variante...</span>

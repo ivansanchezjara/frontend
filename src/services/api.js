@@ -52,8 +52,18 @@ async function handleResponse(res, context = "") {
   }
 
   if (res.status === 403) {
-    const accion = context ? ` para ${context}` : "";
-    throw new ApiError(`No tienes permisos suficientes${accion}.`, 403);
+    let mensaje = "";
+    try {
+      const data = await res.json();
+      mensaje = data.error || data.detail || "";
+    } catch {
+      // No se pudo parsear el body
+    }
+    if (!mensaje) {
+      const accion = context ? ` para ${context}` : "";
+      mensaje = `No tienes permisos suficientes${accion}.`;
+    }
+    throw new ApiError(mensaje, 403);
   }
 
   if (!res.ok) {

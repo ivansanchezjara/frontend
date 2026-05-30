@@ -76,6 +76,14 @@ export const modulosActivos = [
     roles: ["Admin", "gestorDeDeposito"],
   },
   {
+    href: "/ventas-crm",
+    icon: "🤝",
+    title: "Ventas y CRM",
+    desc: "Seguimiento de clientes, cotizaciones y gestión comercial.",
+    color: "emerald",
+    roles: ["Admin", "vendedor"],
+  },
+  {
     href: "/media-manager",
     icon: "🖼️",
     title: "Gestor de Medios",
@@ -86,13 +94,6 @@ export const modulosActivos = [
 ];
 
 export const modulosFuturos = [
-  {
-    icon: "🤝",
-    title: "Ventas y CRM",
-    desc: "Seguimiento de clientes, cotizaciones y persecución comercial.",
-    color: "emerald",
-    roles: ["Admin"],
-  },
   {
     icon: "💵",
     title: "Caja y Ventas Diarias",
@@ -150,11 +151,12 @@ export const navItems = [
   },
   {
     category: "Comercial",
-    label: "Ventas y CRM",
+    href: "/ventas-crm",
     icon: "🤝",
-    type: "future",
+    label: "Ventas y CRM",
+    type: "active",
     color: "emerald",
-    roles: ["Admin"],
+    roles: ["Admin", "vendedor"],
   },
   {
     category: "Comercial",
