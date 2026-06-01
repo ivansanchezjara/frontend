@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { SearchX, Globe, ShoppingBag, Users } from "lucide-react";
+import { SearchX, Globe, ShoppingBag, Plus } from "lucide-react";
 import Link from "next/link";
 
 import ClienteForm from "@/components/ventas/ClienteForm";
@@ -199,28 +199,12 @@ export default function PerfilClientePage() {
 
   const interacciones = interaccionesData?.results || [];
 
-  // ─── Fetch vendedores (para el select del form) ─────────────
-  const [vendedores, setVendedores] = useState([]);
-
   useEffect(() => {
     if (id) {
       setNotFound(false);
       refetchCliente();
     }
   }, [id, refetchCliente]);
-
-  useEffect(() => {
-    if (cliente?.vendedor_responsable) {
-      // Incluir al menos el vendedor actual en la lista
-      const v = cliente.vendedor_responsable_detail || cliente.vendedor_responsable;
-      if (typeof v === "object" && v.id) {
-        setVendedores((prev) => {
-          if (prev.find((p) => p.id === v.id)) return prev;
-          return [...prev, v];
-        });
-      }
-    }
-  }, [cliente]);
 
   // ─── Guardar datos del cliente ──────────────────────────────
   const handleSave = async (formData) => {
@@ -231,7 +215,9 @@ export default function PerfilClientePage() {
       setCliente(updated);
       showAlert("Datos del cliente actualizados correctamente.", "Éxito");
     } catch (err) {
-      if (err && typeof err === "object" && !(err instanceof Error)) {
+      if (err?.status === 400 && err?.data) {
+        setSaveErrors(err.data);
+      } else if (err && typeof err === "object" && !(err instanceof Error)) {
         setSaveErrors(err);
       } else {
         showAlert(err?.message || "Error al guardar.", "Error");
@@ -351,7 +337,6 @@ export default function PerfilClientePage() {
               onSave={handleSave}
               saving={saving}
               errors={saveErrors}
-              vendedores={vendedores}
             />
           </Section>
 
@@ -374,15 +359,15 @@ export default function PerfilClientePage() {
             title="Interacciones"
             subtitle="Historial de contacto con el cliente, más recientes primero."
             action={
-              <Button
-                as={Link}
-                href={`/ventas-crm/clientes/${id}/nueva-interaccion`}
-                variant="ghost"
-                size="sm"
-                icon={Users}
-              >
-                Nueva
-              </Button>
+              <Link href={`/ventas-crm/clientes/${id}/nueva-interaccion`}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={Plus}
+                >
+                  Nueva
+                </Button>
+              </Link>
             }
           >
             <InteraccionTimeline

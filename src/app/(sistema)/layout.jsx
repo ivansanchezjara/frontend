@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { logout, getUser } from '@/services/apis/auth.js';
-import { Menu, X, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { Menu, X, ChevronLeft, ChevronRight, ChevronDown, LogOut } from 'lucide-react';
 import { navItems, familyStyles } from '@/config/navigation.js';
 import { BrandMark, Text } from '@/components/ui';
 
@@ -12,6 +12,7 @@ export default function SistemaLayout({ children }) {
     const router = useRouter();
     const [isExpanded, setIsExpanded] = useState(true);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [expandedParents, setExpandedParents] = useState({});
     const [user, setUser] = useState(null);
 
     useEffect(() => {
@@ -73,6 +74,26 @@ export default function SistemaLayout({ children }) {
         }
         itemsAgrupados[cat].push(item);
     });
+
+    // Auto-expand parents whose children match the current path
+    useEffect(() => {
+        const newExpanded = {};
+        navItems.forEach(item => {
+            if (item.children) {
+                const isChildActive = item.children.some(child =>
+                    pathname === child.href || (child.href !== '/dashboard' && pathname.startsWith(child.href))
+                );
+                if (isChildActive) {
+                    newExpanded[item.label] = true;
+                }
+            }
+        });
+        setExpandedParents(prev => ({ ...prev, ...newExpanded }));
+    }, [pathname]);
+
+    const toggleParent = (label) => {
+        setExpandedParents(prev => ({ ...prev, [label]: !prev[label] }));
+    };
 
     return (
         <div className="min-h-screen bg-[#f1f5f9] flex flex-col md:flex-row">
@@ -149,9 +170,53 @@ export default function SistemaLayout({ children }) {
                             {/* Items de la Categoría */}
                             <div className="space-y-0.5">
                                 {itemsAgrupados[categoria].map((item, idx) => {
-                                    const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.includes(item.href));
+                                    // Item con submódulos (children)
+                                    if (item.children) {
+                                        const isParentExpanded = expandedParents[item.label];
+                                        const isChildActive = item.children.some(child =>
+                                            pathname === child.href || (child.href !== '/dashboard' && pathname.startsWith(child.href))
+                                        );
+                                        const activeClass = familyStyles[item.color]?.activeNav || familyStyles.blue.activeNav;
 
-                                    // AQUÍ ESTÁ LA MAGIA: Leemos directamente desde el archivo central
+                                        return (
+                                            <div key={idx}>
+                                                <button
+                                                    onClick={() => toggleParent(item.label)}
+                                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-bold transition-all w-full ${isChildActive ? activeClass : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                                >
+                                                    <span className="text-base shrink-0">{item.icon}</span>
+                                                    {(isExpanded || isMobileOpen) && (
+                                                        <>
+                                                            <span className="truncate flex-1 text-left animate-in fade-in slide-in-from-left-2 duration-300">{item.label}</span>
+                                                            <ChevronDown size={14} className={`shrink-0 transition-transform duration-200 ${isParentExpanded ? 'rotate-180' : ''}`} />
+                                                        </>
+                                                    )}
+                                                </button>
+                                                {isParentExpanded && (isExpanded || isMobileOpen) && (
+                                                    <div className="ml-4 mt-0.5 space-y-0.5 border-l border-slate-800 pl-2 animate-in slide-in-from-top-1 duration-200">
+                                                        {item.children.map((child, childIdx) => {
+                                                            if (!hasPermission(child)) return null;
+                                                            const isActive = pathname === child.href || (child.href !== '/dashboard' && pathname.startsWith(child.href + '/'));
+                                                            return (
+                                                                <Link
+                                                                    key={childIdx}
+                                                                    href={child.href}
+                                                                    onClick={() => setIsMobileOpen(false)}
+                                                                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${isActive ? 'text-white bg-white/10' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}
+                                                                >
+                                                                    <span className="text-sm shrink-0">{child.icon}</span>
+                                                                    <span className="truncate">{child.label}</span>
+                                                                </Link>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    }
+
+                                    // Item simple (sin children)
+                                    const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.includes(item.href));
                                     const activeClass = familyStyles[item.color]?.activeNav || familyStyles.blue.activeNav;
 
                                     return item.type === 'active' ? (

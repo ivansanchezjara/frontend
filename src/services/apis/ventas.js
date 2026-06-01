@@ -152,7 +152,7 @@ export async function reactivarCliente(id) {
 
 export async function habilitarCuentaOnline(id) {
   return request(
-    `${API_URL}/ventas/clientes/${id}/habilitar_cuenta_online/`,
+    `${API_URL}/ventas/clientes/${id}/habilitar-cuenta-online/`,
     {
       method: "POST",
       headers: authHeaders(),

@@ -34,47 +34,31 @@ export default function PageHeader({ title, breadcrumbs = [], subtitle, subtitle
 
                 {/* Breadcrumbs */}
                 {hasBreadcrumbs && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {breadcrumbs.length > 2 ? (
-                            <>
-                                <span className="flex items-center gap-2">
-                                    <Text as="span" variant="mutedXs">...</Text>
-                                    <ChevronRight size={12} className="text-slate-300" />
-                                </span>
-                                <span className="flex items-center gap-2">
-                                    {breadcrumbs[breadcrumbs.length - 2].href ? (
-                                        <Link href={breadcrumbs[breadcrumbs.length - 2].href} className="hover:text-blue-600 transition-colors">
-                                            <Text as="span" variant="mutedXs">{breadcrumbs[breadcrumbs.length - 2].label}</Text>
-                                        </Link>
+                    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 flex-wrap">
+                        {breadcrumbs.map((crumb, i) => {
+                            const isLast = i === breadcrumbs.length - 1;
+                            return (
+                                <span key={i} className="flex items-center gap-1.5">
+                                    {i > 0 && <ChevronRight size={14} className="text-slate-300" />}
+                                    {isLast || !crumb.href ? (
+                                        <span className={cn(
+                                            "text-sm font-black uppercase tracking-[0.15em]",
+                                            isLast ? "text-slate-700" : "text-slate-400"
+                                        )}>
+                                            {crumb.label}
+                                        </span>
                                     ) : (
-                                        <Text as="span" variant="mutedXs">{breadcrumbs[breadcrumbs.length - 2].label}</Text>
+                                        <Link
+                                            href={crumb.href}
+                                            className="text-sm font-black uppercase tracking-[0.15em] text-slate-400 hover:text-emerald-600 transition-colors"
+                                        >
+                                            {crumb.label}
+                                        </Link>
                                     )}
-                                    <ChevronRight size={12} className="text-slate-300" />
                                 </span>
-                                <span className="flex items-center gap-2">
-                                    <Text as="span" variant="bodyXsBold" className="text-slate-700">{breadcrumbs[breadcrumbs.length - 1].label}</Text>
-                                </span>
-                            </>
-                        ) : (
-                            breadcrumbs.map((crumb, i) => {
-                                const isLast = i === breadcrumbs.length - 1;
-                                return (
-                                    <span key={i} className="flex items-center gap-2">
-                                        {i > 0 && <ChevronRight size={12} className="text-slate-300" />}
-                                        {isLast || !crumb.href ? (
-                                            <Text as="span" variant={isLast ? "bodyXsBold" : "mutedXs"} className={isLast ? "text-slate-700" : ""}>
-                                                {crumb.label}
-                                            </Text>
-                                        ) : (
-                                            <Link href={crumb.href} className="hover:text-blue-600 transition-colors">
-                                                <Text as="span" variant="mutedXs">{crumb.label}</Text>
-                                            </Link>
-                                        )}
-                                    </span>
-                                );
-                            })
-                        )}
-                    </div>
+                            );
+                        })}
+                    </nav>
                 )}
 
                 {/* Subtítulo */}

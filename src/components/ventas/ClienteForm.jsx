@@ -1,49 +1,91 @@
 "use client";
-import { useState } from "react";
-import { Input, Button, Field } from "@/components/ui";
+import { useState, useEffect } from "react";
+import { Input, Button, Field, Toggle } from "@/components/ui";
 import { Text } from "@/components/ui/basics/Typography";
+import { cn } from "@/lib/utils";
 
-const TIER_OPTIONS = [
-  { value: "publico", label: "Público" },
-  { value: "estudiante", label: "Estudiante" },
-  { value: "reventa", label: "Reventa" },
-  { value: "mayorista", label: "Mayorista" },
-  { value: "intercompany", label: "Intercompany" },
+// ─── Configuración ──────────────────────────────────────────────
+
+const TIPO_PERSONA_OPTIONS = [
+  { value: "fisica", label: "Persona Física" },
+  { value: "juridica", label: "Persona Jurídica" },
 ];
+
+const CATEGORIAS_FISICA = [
+  { value: "doctor", label: "Doctor/Odontólogo" },
+  { value: "estudiante", label: "Estudiante" },
+  { value: "protesista", label: "Protesista" },
+  { value: "profesor", label: "Profesor" },
+  { value: "cliente_casual", label: "Cliente Casual" },
+];
+
+const CATEGORIAS_JURIDICA = [
+  { value: "clinica", label: "Clínica" },
+  { value: "laboratorio_dental", label: "Laboratorio Dental" },
+  { value: "mayorista", label: "Mayorista" },
+  { value: "instituto_educativo", label: "Instituto Educativo" },
+];
+
+const selectClass =
+  "block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500";
+
+const textareaClass =
+  "block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none placeholder:text-slate-400";
+
+// ─── Componente Principal ───────────────────────────────────────
 
 /**
  * Formulario de datos del cliente.
- * Campos obligatorios: razon_social, telefono, tier_precio, vendedor_responsable
- * Campos opcionales: nombre_comercial, ruc, correo_electronico, direccion_facturacion, direccion_entrega
  *
- * @param {Object} cliente - Datos actuales del cliente
+ * Obligatorios: tipo_persona, categoria, razon_social, telefono, correo_electronico
+ * Condicionales: ruc (jurídica nacional), documento_extranjero (extranjero)
+ * Opcionales: nombre_comercial (jurídica), direccion, direccion_entrega, notas
+ *
+ * @param {Object} cliente - Datos actuales del cliente (null para nuevo)
  * @param {Function} onSave - Callback al guardar (recibe formData)
  * @param {boolean} saving - Estado de guardado
  * @param {Object|null} errors - Errores de validación del backend
- * @param {Array} vendedores - Lista de vendedores disponibles [{id, username, first_name, last_name}]
+ * @param {boolean} isNew - Si es creación (vs edición)
  */
-export default function ClienteForm({ cliente, onSave, saving = false, errors = null, vendedores = [], submitLabel, hideVendedor = false, isNew = false }) {
+export default function ClienteForm({ cliente, onSave, saving = false, errors = null, isNew = false }) {
   const [formData, setFormData] = useState({
+    tipo_persona: cliente?.tipo_persona || "fisica",
+    categoria: cliente?.categoria || "cliente_casual",
+    es_extranjero: cliente?.es_extranjero || false,
     razon_social: cliente?.razon_social || "",
     nombre_comercial: cliente?.nombre_comercial || "",
-    ruc: cliente?.ruc || "",
     telefono: cliente?.telefono || "",
     correo_electronico: cliente?.correo_electronico || "",
-    direccion_facturacion: cliente?.direccion_facturacion || "",
+    ruc: cliente?.ruc || "",
+    documento_extranjero: cliente?.documento_extranjero || "",
+    direccion: cliente?.direccion || "",
+    misma_direccion_entrega: cliente?.misma_direccion_entrega ?? true,
     direccion_entrega: cliente?.direccion_entrega || "",
-    tier_precio: cliente?.tier_precio || "publico",
-    vendedor_responsable: cliente?.vendedor_responsable?.id || cliente?.vendedor_responsable || "",
+    notas: cliente?.notas || "",
   });
 
   const [isDirty, setIsDirty] = useState(false);
-
   const [localErrors, setLocalErrors] = useState({});
+
+  // Categorías disponibles según tipo de persona
+  const categoriasDisponibles =
+    formData.tipo_persona === "juridica" ? CATEGORIAS_JURIDICA : CATEGORIAS_FISICA;
+
+  // Resetear categoría si cambia tipo_persona y la actual no es válida
+  useEffect(() => {
+    const validas = categoriasDisponibles.map((c) => c.value);
+    if (!validas.includes(formData.categoria)) {
+      setFormData((prev) => ({
+        ...prev,
+        categoria: categoriasDisponibles[0]?.value || "",
+      }));
+    }
+  }, [formData.tipo_persona]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (field) => (e) => {
     const value = e?.target ? e.target.value : e;
     setFormData((prev) => ({ ...prev, [field]: value }));
     setIsDirty(true);
-    // Limpiar error local del campo al escribir
     setLocalErrors((prev) => {
       const next = { ...prev };
       delete next[field];
@@ -51,13 +93,34 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
     });
   };
 
+  const handleToggle = (field) => (value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
     // Validación local
     const newErrors = {};
-    if (!formData.razon_social.trim()) newErrors.razon_social = "Este campo es obligatorio";
-    if (!formData.telefono.trim()) newErrors.telefono = "Este campo es obligatorio";
-    if (!hideVendedor && !formData.vendedor_responsable) newErrors.vendedor_responsable = "Este campo es obligatorio";
+    if (!formData.razon_social.trim()) newErrors.razon_social = "Este campo es obligatorio.";
+    if (!formData.telefono.trim()) newErrors.telefono = "Este campo es obligatorio.";
+    if (!formData.correo_electronico.trim()) newErrors.correo_electronico = "Este campo es obligatorio.";
+
+    // RUC obligatorio para jurídica nacional
+    if (formData.tipo_persona === "juridica" && !formData.es_extranjero && !formData.ruc.trim()) {
+      newErrors.ruc = "El RUC es obligatorio para persona jurídica nacional.";
+    }
+
+    // Documento extranjero obligatorio si es extranjero
+    if (formData.es_extranjero && !formData.documento_extranjero.trim()) {
+      newErrors.documento_extranjero = "El documento es obligatorio para clientes extranjeros.";
+    }
+
+    // Dirección de entrega si no usa la misma
+    if (!formData.misma_direccion_entrega && !formData.direccion_entrega.trim() && formData.direccion.trim()) {
+      newErrors.direccion_entrega = "Indique una dirección de entrega o marque 'misma dirección'.";
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setLocalErrors(newErrors);
@@ -68,7 +131,6 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
   };
 
   const getError = (field) => {
-    // Priorizar errores del backend, luego locales
     if (errors) {
       const err = errors[field];
       if (err) return Array.isArray(err) ? err.join(", ") : err;
@@ -76,138 +138,179 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
     return localErrors[field] || undefined;
   };
 
+  const esJuridica = formData.tipo_persona === "juridica";
+
   return (
     <form onSubmit={handleSubmit} className="p-6 space-y-6">
-      {/* Campos obligatorios */}
+
+      {/* ─── Clasificación ─────────────────────────────────────── */}
       <div>
         <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
-          Datos Obligatorios
+          Clasificación
         </Text>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label="Razón Social *"
-            value={formData.razon_social}
-            onChange={handleChange("razon_social")}
-            maxLength={200}
-            placeholder="Nombre legal de la empresa"
-            error={getError("razon_social")}
-          />
-          <Input
-            label="Teléfono *"
-            value={formData.telefono}
-            onChange={handleChange("telefono")}
-            maxLength={20}
-            placeholder="+595 21 123-4567"
-            error={getError("telefono")}
-          />
-          <Field label="Tier de Precio *">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Tipo de persona */}
+          <Field label="Tipo de Persona *">
             <select
-              value={formData.tier_precio}
-              onChange={handleChange("tier_precio")}
-              className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className={selectClass}
+              value={formData.tipo_persona}
+              onChange={handleChange("tipo_persona")}
             >
-              {TIER_OPTIONS.map((opt) => (
+              {TIPO_PERSONA_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
               ))}
             </select>
-            {getError("tier_precio") && (
+          </Field>
+
+          {/* Categoría */}
+          <Field label="Categoría *">
+            <select
+              className={selectClass}
+              value={formData.categoria}
+              onChange={handleChange("categoria")}
+            >
+              {categoriasDisponibles.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            {getError("categoria") && (
               <Text variant="bodySm" className="mt-1 text-xs text-red-500">
-                {getError("tier_precio")}
+                {getError("categoria")}
               </Text>
             )}
           </Field>
-          {!hideVendedor && (
-            <Field label="Vendedor Responsable *">
-              <select
-                value={formData.vendedor_responsable}
-                onChange={handleChange("vendedor_responsable")}
-                className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-              >
-                <option value="">Seleccionar vendedor...</option>
-                {vendedores.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.first_name && v.last_name
-                      ? `${v.first_name} ${v.last_name}`
-                      : v.username}
-                  </option>
-                ))}
-              </select>
-              {getError("vendedor_responsable") && (
-                <Text variant="bodySm" className="mt-1 text-xs text-red-500">
-                  {getError("vendedor_responsable")}
-                </Text>
-              )}
-            </Field>
-          )}
+
+          {/* Es extranjero */}
+          <div className="flex items-end pb-1">
+            <Toggle
+              checked={formData.es_extranjero}
+              onChange={handleToggle("es_extranjero")}
+              label="Cliente extranjero"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Campos opcionales */}
+      {/* ─── Datos Principales ─────────────────────────────────── */}
       <div>
         <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
-          Datos Opcionales
+          Datos Principales
         </Text>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="Nombre Comercial"
-            value={formData.nombre_comercial}
-            onChange={handleChange("nombre_comercial")}
+            label={esJuridica ? "Razón Social *" : "Nombre Completo *"}
+            value={formData.razon_social}
+            onChange={handleChange("razon_social")}
             maxLength={200}
-            placeholder="Nombre de fantasía"
-            error={getError("nombre_comercial")}
+            placeholder={esJuridica ? "Nombre legal de la empresa" : "Nombre y apellido"}
+            error={getError("razon_social")}
           />
+
+          {esJuridica && (
+            <Input
+              label="Nombre Comercial"
+              value={formData.nombre_comercial}
+              onChange={handleChange("nombre_comercial")}
+              maxLength={200}
+              placeholder="Nombre de fantasía"
+              error={getError("nombre_comercial")}
+            />
+          )}
+
           <Input
-            label="RUC"
+            label="Teléfono *"
+            value={formData.telefono}
+            onChange={handleChange("telefono")}
+            maxLength={20}
+            placeholder="+595 981 123-456"
+            error={getError("telefono")}
+          />
+
+          <Input
+            label="Correo Electrónico *"
+            type="email"
+            value={formData.correo_electronico}
+            onChange={handleChange("correo_electronico")}
+            maxLength={254}
+            placeholder="contacto@ejemplo.com"
+            error={getError("correo_electronico")}
+            helperText="Se usará como login para el portal e-commerce"
+          />
+        </div>
+      </div>
+
+      {/* ─── Documentos ────────────────────────────────────────── */}
+      <div>
+        <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
+          Documentos
+        </Text>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* RUC — obligatorio para jurídica nacional, opcional para física */}
+          <Input
+            label={esJuridica && !formData.es_extranjero ? "RUC *" : "RUC"}
             value={formData.ruc}
             onChange={handleChange("ruc")}
             maxLength={20}
             placeholder="80012345-6"
             error={getError("ruc")}
           />
-          <Input
-            label="Correo Electrónico"
-            type="email"
-            value={formData.correo_electronico}
-            onChange={handleChange("correo_electronico")}
-            maxLength={254}
-            placeholder="contacto@empresa.com"
-            error={getError("correo_electronico")}
-          />
+
+          {/* Documento extranjero — solo si es extranjero */}
+          {formData.es_extranjero && (
+            <Input
+              label="Documento Extranjero *"
+              value={formData.documento_extranjero}
+              onChange={handleChange("documento_extranjero")}
+              maxLength={50}
+              placeholder="CI o pasaporte del país de origen"
+              error={getError("documento_extranjero")}
+            />
+          )}
         </div>
       </div>
 
-      {/* Direcciones */}
+      {/* ─── Direcciones ───────────────────────────────────────── */}
       <div>
         <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
-          Direcciones
+          Direcciones (Opcional)
         </Text>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-1">
-            <Field label="Dirección de Facturación">
-              <textarea
-                value={formData.direccion_facturacion}
-                onChange={handleChange("direccion_facturacion")}
-                rows={3}
-                placeholder="Dirección completa para facturación"
-                className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
-              />
-              {getError("direccion_facturacion") && (
-                <Text variant="bodySm" className="mt-1 text-xs text-red-500">
-                  {getError("direccion_facturacion")}
-                </Text>
-              )}
-            </Field>
-          </div>
-          <div className="md:col-span-1">
+        <div className="space-y-4">
+          <Field label="Dirección">
+            <textarea
+              className={textareaClass}
+              value={formData.direccion}
+              onChange={handleChange("direccion")}
+              rows={2}
+              placeholder="Dirección completa"
+            />
+            {getError("direccion") && (
+              <Text variant="bodySm" className="mt-1 text-xs text-red-500">
+                {getError("direccion")}
+              </Text>
+            )}
+          </Field>
+
+          <Toggle
+            checked={formData.misma_direccion_entrega}
+            onChange={handleToggle("misma_direccion_entrega")}
+            label="Usar la misma dirección para entregas"
+          />
+
+          {!formData.misma_direccion_entrega && (
             <Field label="Dirección de Entrega">
               <textarea
+                className={cn(
+                  textareaClass,
+                  getError("direccion_entrega") && "border-red-300 focus:border-red-500"
+                )}
                 value={formData.direccion_entrega}
                 onChange={handleChange("direccion_entrega")}
-                rows={3}
-                placeholder="Dirección completa para entregas"
-                className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
+                rows={2}
+                placeholder="Dirección de entrega diferente"
               />
               {getError("direccion_entrega") && (
                 <Text variant="bodySm" className="mt-1 text-xs text-red-500">
@@ -215,11 +318,28 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
                 </Text>
               )}
             </Field>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Botón guardar */}
+      {/* ─── Notas ─────────────────────────────────────────────── */}
+      <div>
+        <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
+          Notas (Opcional)
+        </Text>
+        <Field label="Observaciones">
+          <textarea
+            className={textareaClass}
+            value={formData.notas}
+            onChange={handleChange("notas")}
+            rows={3}
+            placeholder="Notas internas sobre el cliente..."
+            maxLength={1000}
+          />
+        </Field>
+      </div>
+
+      {/* ─── Botón guardar ─────────────────────────────────────── */}
       <div className="flex justify-end pt-2">
         <Button
           type="submit"
@@ -227,7 +347,7 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
           disabled={saving || (!isNew && !isDirty)}
           className={saving ? "opacity-70" : ""}
         >
-          {saving ? "Guardando..." : (submitLabel || "Guardar Cambios")}
+          {saving ? "Guardando..." : isNew ? "Crear Cliente" : "Guardar Cambios"}
         </Button>
       </div>
     </form>

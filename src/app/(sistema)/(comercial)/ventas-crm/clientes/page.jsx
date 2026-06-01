@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { Search, Building2, UserCheck, Plus } from 'lucide-react';
-import { EmptyState, LoadingScreen, PageHeader, Pagination, SearchBar, Button, Text } from '@/components/ui';
+import { Search, Building2, Users, Plus, Filter } from 'lucide-react';
+import { EmptyState, LoadingScreen, PageHeader, Pagination, SearchBar, Button, Badge, Text } from '@/components/ui';
 import { useConfirm } from '@/components/ui';
 import { useToast } from '@/components/ui';
 import { useApi } from '@/hooks/useApi';
@@ -11,38 +11,55 @@ import { useUrlFilters } from '@/hooks/useUrlFilters';
 import { getClientes, desactivarCliente, reactivarCliente } from '@/services/apis/ventas';
 import { cn } from '@/lib/utils';
 
-// ─── Configuración de tiers ─────────────────────────────────────
+// ─── Configuración ──────────────────────────────────────────────
 
-const TIER_OPTIONS = [
+const TIPO_PERSONA_OPTIONS = [
     { value: '', label: 'Todos' },
-    { value: 'publico', label: 'Público' },
-    { value: 'estudiante', label: 'Estudiante' },
-    { value: 'reventa', label: 'Reventa' },
-    { value: 'mayorista', label: 'Mayorista' },
-    { value: 'intercompany', label: 'Intercompany' },
+    { value: 'fisica', label: 'Persona Física' },
+    { value: 'juridica', label: 'Persona Jurídica' },
 ];
 
-const TIER_BADGE_STYLES = {
-    publico: 'bg-slate-100 text-slate-700',
-    estudiante: 'bg-blue-100 text-blue-700',
-    reventa: 'bg-emerald-100 text-emerald-700',
-    mayorista: 'bg-purple-100 text-purple-700',
-    intercompany: 'bg-amber-100 text-amber-700',
+const CATEGORIA_OPTIONS = [
+    { value: '', label: 'Todas' },
+    { value: 'doctor', label: 'Doctor/Odontólogo' },
+    { value: 'estudiante', label: 'Estudiante' },
+    { value: 'protesista', label: 'Protesista' },
+    { value: 'profesor', label: 'Profesor' },
+    { value: 'cliente_casual', label: 'Cliente Casual' },
+    { value: 'clinica', label: 'Clínica' },
+    { value: 'laboratorio_dental', label: 'Laboratorio Dental' },
+    { value: 'mayorista', label: 'Mayorista' },
+    { value: 'instituto_educativo', label: 'Instituto Educativo' },
+];
+
+const CATEGORIA_LABELS = {
+    doctor: 'Doctor',
+    estudiante: 'Estudiante',
+    protesista: 'Protesista',
+    profesor: 'Profesor',
+    cliente_casual: 'Casual',
+    clinica: 'Clínica',
+    laboratorio_dental: 'Lab. Dental',
+    mayorista: 'Mayorista',
+    instituto_educativo: 'Instituto',
 };
 
-const TIER_LABELS = {
-    publico: 'Público',
-    estudiante: 'Estudiante',
-    reventa: 'Reventa',
-    mayorista: 'Mayorista',
-    intercompany: 'Intercompany',
+const CATEGORIA_BADGE_STYLES = {
+    doctor: 'bg-blue-100 text-blue-700',
+    estudiante: 'bg-sky-100 text-sky-700',
+    protesista: 'bg-violet-100 text-violet-700',
+    profesor: 'bg-indigo-100 text-indigo-700',
+    cliente_casual: 'bg-slate-100 text-slate-700',
+    clinica: 'bg-emerald-100 text-emerald-700',
+    laboratorio_dental: 'bg-teal-100 text-teal-700',
+    mayorista: 'bg-purple-100 text-purple-700',
+    instituto_educativo: 'bg-amber-100 text-amber-700',
 };
 
 const FILTER_SCHEMA = {
     search: '',
-    ruc: '',
-    tier_precio: '',
-    vendedor: '',
+    tipo_persona: '',
+    categoria: '',
     page: 1,
 };
 
@@ -87,7 +104,6 @@ function ClientesContent() {
     const { danger, confirm } = useConfirm();
     const { filters, setFilter, resetFilters, page, setPage } = useUrlFilters(FILTER_SCHEMA);
 
-    // --- API & DATA ---
     const {
         data: clientesData,
         loading: loadingClientes,
@@ -98,14 +114,9 @@ function ClientesContent() {
     const count = clientesData?.count || 0;
     const pageSize = 24;
 
-    // Debounce para inputs de texto
+    // Debounce para búsqueda
     const [busquedaLocal, setBusquedaLocal] = useState(filters.search);
     const busquedaDebounced = useDebounce(busquedaLocal, 400);
-    const [rucLocal, setRucLocal] = useState(filters.ruc);
-    const rucDebounced = useDebounce(rucLocal, 400);
-    const [vendedorLocal, setVendedorLocal] = useState(filters.vendedor);
-    const vendedorDebounced = useDebounce(vendedorLocal, 400);
-
     const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
     // Sincronizar debounced → URL
@@ -113,34 +124,23 @@ function ClientesContent() {
         if (busquedaDebounced !== filters.search) setFilter('search', busquedaDebounced);
     }, [busquedaDebounced]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    useEffect(() => {
-        if (rucDebounced !== filters.ruc) setFilter('ruc', rucDebounced);
-    }, [rucDebounced]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    useEffect(() => {
-        if (vendedorDebounced !== filters.vendedor) setFilter('vendedor', vendedorDebounced);
-    }, [vendedorDebounced]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // Sincronizar URL → inputs locales
+    // Sincronizar URL → input local
     useEffect(() => { setBusquedaLocal(filters.search); }, [filters.search]);
-    useEffect(() => { setRucLocal(filters.ruc); }, [filters.ruc]);
-    useEffect(() => { setVendedorLocal(filters.vendedor); }, [filters.vendedor]);
 
     // Cargar clientes cuando cambian filtros en URL
     useEffect(() => {
         const params = { page: filters.page };
         if (filters.search) params.search = filters.search;
-        if (filters.ruc) params.ruc = filters.ruc;
-        if (filters.tier_precio) params.tier_precio = filters.tier_precio;
-        if (filters.vendedor) params.vendedor_responsable = filters.vendedor;
+        if (filters.tipo_persona) params.tipo_persona = filters.tipo_persona;
+        if (filters.categoria) params.categoria = filters.categoria;
 
         fetchClientes(params).then(() => setHasLoadedOnce(true));
-    }, [fetchClientes, filters.search, filters.ruc, filters.tier_precio, filters.vendedor, filters.page]);
+    }, [fetchClientes, filters.search, filters.tipo_persona, filters.categoria, filters.page]);
 
     // --- Acciones ---
     const handleDesactivar = async (cliente) => {
         const confirmed = await danger(
-            `¿Estás seguro de desactivar al cliente "${cliente.razon_social}"? El cliente no podrá realizar compras hasta ser reactivado.`,
+            `¿Estás seguro de desactivar al cliente "${cliente.razon_social}"? No podrá realizar compras hasta ser reactivado.`,
             'Desactivar cliente',
             { confirmText: 'Desactivar' }
         );
@@ -173,15 +173,12 @@ function ClientesContent() {
     };
 
     // --- Loading inicial ---
-    const isInitialLoading = loadingClientes && !hasLoadedOnce;
-    if (isInitialLoading) return <LoadingScreen texto="Cargando clientes..." />;
+    if (loadingClientes && !hasLoadedOnce) return <LoadingScreen texto="Cargando clientes..." />;
 
-    const hayFiltrosActivos = filters.search !== '' || filters.ruc !== '' || filters.tier_precio !== '' || filters.vendedor !== '';
+    const hayFiltrosActivos = filters.search !== '' || filters.tipo_persona !== '' || filters.categoria !== '';
 
     const limpiarFiltros = () => {
         setBusquedaLocal('');
-        setRucLocal('');
-        setVendedorLocal('');
         resetFilters();
     };
 
@@ -190,7 +187,10 @@ function ClientesContent() {
 
             {/* HEADER */}
             <PageHeader
-                title="Clientes"
+                breadcrumbs={[
+                    { label: "Ventas y CRM", href: "/ventas-crm" },
+                    { label: "Clientes" },
+                ]}
                 subtitle={`CRM · ${count} clientes registrados`}
                 subtitleClassName="text-emerald-600"
             >
@@ -212,69 +212,36 @@ function ClientesContent() {
                     {/* BARRA DE HERRAMIENTAS */}
                     <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-3 relative z-20">
 
-                        {/* Fila superior: búsqueda por razón social */}
+                        {/* Búsqueda */}
                         <div className="flex items-center gap-3">
                             <div className="flex-1">
                                 <SearchBar
                                     value={busquedaLocal}
                                     onChange={setBusquedaLocal}
-                                    placeholder="Buscar por razón social..."
+                                    placeholder="Buscar por nombre, RUC, teléfono o correo..."
                                 />
                             </div>
                         </div>
 
-                        {/* Fila inferior: filtros */}
+                        {/* Filtros */}
                         <div className="flex items-center justify-between gap-4 flex-wrap">
                             <div className="flex items-center gap-3 flex-wrap">
-                                {/* Filtro RUC */}
-                                <div className="relative flex items-center gap-1.5">
-                                    <Search className={cn('w-3.5 h-3.5', rucLocal ? 'text-emerald-600' : 'text-slate-400')} />
-                                    <input
-                                        type="text"
-                                        value={rucLocal}
-                                        onChange={(e) => setRucLocal(e.target.value)}
-                                        placeholder="RUC..."
-                                        className={cn(
-                                            'text-xs font-semibold rounded-lg px-2 py-1.5 w-32',
-                                            'border transition-all outline-none',
-                                            rucLocal
-                                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300 placeholder:text-slate-400'
-                                        )}
-                                        aria-label="Filtrar por RUC"
-                                    />
-                                </div>
-
-                                {/* Filtro Tier */}
                                 <FilterDropdown
-                                    value={filters.tier_precio}
-                                    onChange={(val) => setFilter('tier_precio', val)}
-                                    icon={Building2}
-                                    label="Tier"
-                                    options={TIER_OPTIONS}
+                                    value={filters.tipo_persona}
+                                    onChange={(val) => setFilter('tipo_persona', val)}
+                                    icon={Users}
+                                    label="Tipo"
+                                    options={TIPO_PERSONA_OPTIONS}
                                 />
-
-                                {/* Filtro Vendedor */}
-                                <div className="relative flex items-center gap-1.5">
-                                    <UserCheck className={cn('w-3.5 h-3.5', vendedorLocal ? 'text-emerald-600' : 'text-slate-400')} />
-                                    <input
-                                        type="text"
-                                        value={vendedorLocal}
-                                        onChange={(e) => setVendedorLocal(e.target.value)}
-                                        placeholder="Vendedor..."
-                                        className={cn(
-                                            'text-xs font-semibold rounded-lg px-2 py-1.5 w-32',
-                                            'border transition-all outline-none',
-                                            vendedorLocal
-                                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300 placeholder:text-slate-400'
-                                        )}
-                                        aria-label="Filtrar por vendedor"
-                                    />
-                                </div>
+                                <FilterDropdown
+                                    value={filters.categoria}
+                                    onChange={(val) => setFilter('categoria', val)}
+                                    icon={Filter}
+                                    label="Categoría"
+                                    options={CATEGORIA_OPTIONS}
+                                />
                             </div>
 
-                            {/* Contador */}
                             <Text
                                 variant="label"
                                 className="flex items-center gap-2 text-slate-400 whitespace-nowrap"
@@ -305,11 +272,10 @@ function ClientesContent() {
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="bg-slate-50 text-slate-500">
-                                            <th className="py-3 pl-6 pr-4 text-[11px] font-black uppercase tracking-widest">Razón Social</th>
-                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest hidden md:table-cell">RUC</th>
-                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest hidden md:table-cell">Teléfono</th>
-                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Tier</th>
-                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest hidden lg:table-cell">Vendedor</th>
+                                            <th className="py-3 pl-6 pr-4 text-[11px] font-black uppercase tracking-widest">Nombre / Razón Social</th>
+                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest hidden md:table-cell">Contacto</th>
+                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Categoría</th>
+                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest hidden lg:table-cell">RUC</th>
                                             <th className="py-3 pr-6 pl-4 text-[11px] font-black uppercase tracking-widest text-right">Acciones</th>
                                         </tr>
                                     </thead>
@@ -332,28 +298,27 @@ function ClientesContent() {
                                                     {cliente.nombre_comercial && (
                                                         <p className="text-xs text-slate-400 mt-0.5">{cliente.nombre_comercial}</p>
                                                     )}
+                                                    {cliente.es_extranjero && (
+                                                        <Badge variant="warning" className="mt-1 text-[9px]">Extranjero</Badge>
+                                                    )}
                                                 </td>
                                                 <td className="py-3 px-4 hidden md:table-cell">
-                                                    <span className="text-xs font-mono text-slate-600">
-                                                        {cliente.ruc || '—'}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-4 hidden md:table-cell">
-                                                    <span className="text-xs text-slate-600">
-                                                        {cliente.telefono}
-                                                    </span>
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="text-xs text-slate-600">{cliente.telefono}</span>
+                                                        <span className="text-xs text-slate-400">{cliente.correo_electronico}</span>
+                                                    </div>
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
                                                     <span className={cn(
                                                         'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider',
-                                                        TIER_BADGE_STYLES[cliente.tier_precio] || 'bg-slate-100 text-slate-700'
+                                                        CATEGORIA_BADGE_STYLES[cliente.categoria] || 'bg-slate-100 text-slate-700'
                                                     )}>
-                                                        {TIER_LABELS[cliente.tier_precio] || cliente.tier_precio}
+                                                        {CATEGORIA_LABELS[cliente.categoria] || cliente.categoria}
                                                     </span>
                                                 </td>
                                                 <td className="py-3 px-4 hidden lg:table-cell">
-                                                    <span className="text-xs text-slate-600">
-                                                        {cliente.vendedor_responsable_nombre || cliente.vendedor_responsable || '—'}
+                                                    <span className="text-xs font-mono text-slate-600">
+                                                        {cliente.ruc || '—'}
                                                     </span>
                                                 </td>
                                                 <td className="py-3 pr-6 pl-4 text-right">
@@ -400,7 +365,7 @@ function ClientesContent() {
     );
 }
 
-// ─── Página con Suspense (requerido por useSearchParams) ────────
+// ─── Página con Suspense ────────────────────────────────────────
 
 export default function ClientesPage() {
     return (

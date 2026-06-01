@@ -1,11 +1,9 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 
 import ClienteForm from "@/components/ventas/ClienteForm";
-import { Button, PageHeader, Section } from "@/components/ui";
+import { PageHeader, Section } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { createCliente } from "@/services/apis/ventas";
 
@@ -28,7 +26,8 @@ export default function NuevoClientePage() {
       if (err.status === 400 && err.data) {
         setSaveErrors(err.data);
       } else {
-        showToast("Error al crear el cliente", "error");
+        const detail = err?.data?.detail || err?.message || "Error al crear el cliente";
+        showToast(detail, "error");
       }
     } finally {
       setSaving(false);
@@ -36,30 +35,31 @@ export default function NuevoClientePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       <PageHeader
-        title="Nuevo Cliente"
-        subtitle="Registrar un nuevo cliente en el sistema"
+        breadcrumbs={[
+          { label: "Clientes", href: "/ventas-crm/clientes" },
+          { label: "Nuevo Cliente" },
+        ]}
+        subtitle="CRM · Registrar un nuevo cliente"
         subtitleClassName="text-emerald-600"
-      >
-        <Link href="/ventas-crm/clientes">
-          <Button variant="ghost" className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            Volver
-          </Button>
-        </Link>
-      </PageHeader>
+      />
 
-      <Section className="mt-6">
-        <ClienteForm
-          onSave={handleSave}
-          saving={saving}
-          errors={saveErrors}
-          submitLabel="Crear Cliente"
-          hideVendedor
-          isNew
-        />
-      </Section>
+      <main className="flex-1 overflow-y-auto p-8 min-w-0">
+        <div className="max-w-4xl mx-auto">
+          <Section
+            title="Datos del Cliente"
+            subtitle="Complete los campos para registrar un nuevo cliente. Los campos con * son obligatorios."
+          >
+            <ClienteForm
+              onSave={handleSave}
+              saving={saving}
+              errors={saveErrors}
+              isNew
+            />
+          </Section>
+        </div>
+      </main>
     </div>
   );
 }

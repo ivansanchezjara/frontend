@@ -91,16 +91,17 @@ export const modulosActivos = [
     color: "emerald",
     roles: ["Admin"],
   },
+  {
+    href: "/caja",
+    icon: "🧾",
+    title: "Caja y Facturación",
+    desc: "Cobro de pedidos, sesiones de caja y facturación.",
+    color: "purple",
+    roles: ["Admin", "cajero"],
+  },
 ];
 
 export const modulosFuturos = [
-  {
-    icon: "💵",
-    title: "Caja y Ventas Diarias",
-    desc: "Apertura, cierre y facturación en mostrador.",
-    color: "emerald",
-    roles: ["Admin"],
-  },
   {
     icon: "💳",
     title: "Cobranzas",
@@ -159,12 +160,45 @@ export const navItems = [
     roles: ["Admin", "vendedor"],
   },
   {
-    category: "Comercial",
+    category: "Finanzas",
+    href: "/caja",
+    icon: "🧾",
     label: "Caja y Facturación",
-    icon: "💵",
-    type: "future",
-    color: "emerald",
-    roles: ["Admin"],
+    type: "active",
+    color: "purple",
+    roles: ["Admin", "cajero"],
+    children: [
+      {
+        href: "/caja/cola",
+        icon: "🧾",
+        label: "Cola de Cobro",
+        roles: ["Admin", "cajero"],
+      },
+      {
+        href: "/caja/sesiones",
+        icon: "💰",
+        label: "Sesiones de Caja",
+        roles: ["Admin", "cajero"],
+      },
+      {
+        href: "/caja/entrega",
+        icon: "📦",
+        label: "Entrega de Mercadería",
+        roles: ["Admin", "gestorDeDeposito"],
+      },
+      {
+        href: "/caja/facturas",
+        icon: "📄",
+        label: "Facturas y Comprobantes",
+        roles: ["Admin", "cajero"],
+      },
+      {
+        href: "/caja/timbrados",
+        icon: "🔖",
+        label: "Timbrados",
+        roles: ["Admin"],
+      },
+    ],
   },
   {
     category: "Operaciones",
