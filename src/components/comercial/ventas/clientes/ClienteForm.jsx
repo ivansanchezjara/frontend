@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Input, Button, Field, Toggle } from "@/components/ui";
+import { Input, Button, Field, Toggle, PhoneInput, validatePhone, buildPhoneValue, PHONE_PREFIXES } from "@/components/ui";
 import { Text } from "@/components/ui/basics/Typography";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +32,22 @@ const selectClass =
 const textareaClass =
   "block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none placeholder:text-slate-400";
 
+// ─── Helper: parsear teléfono guardado en BD → { prefix, number } ──
+// El formato guardado es "+595 981000000" o "981000000" (sin prefijo)
+function parsePhoneValue(raw = "") {
+  if (!raw) return { prefix: "+595", number: "" };
+  const known = PHONE_PREFIXES.filter((p) => p.code !== "+other").sort(
+    (a, b) => b.code.length - a.code.length // más largos primero para evitar match parcial
+  );
+  for (const p of known) {
+    if (raw.startsWith(p.code + " ")) {
+      return { prefix: p.code, number: raw.slice(p.code.length + 1) };
+    }
+  }
+  // Sin prefijo reconocido → asumir Paraguay
+  return { prefix: "+595", number: raw };
+}
+
 // ─── Componente Principal ───────────────────────────────────────
 
 /**
@@ -48,13 +64,16 @@ const textareaClass =
  * @param {boolean} isNew - Si es creación (vs edición)
  */
 export default function ClienteForm({ cliente, onSave, saving = false, errors = null, isNew = false }) {
+  const parsedPhone = parsePhoneValue(cliente?.telefono || "");
+
   const [formData, setFormData] = useState({
     tipo_persona: cliente?.tipo_persona || "fisica",
     categoria: cliente?.categoria || "cliente_casual",
     es_extranjero: cliente?.es_extranjero || false,
     razon_social: cliente?.razon_social || "",
     nombre_comercial: cliente?.nombre_comercial || "",
-    telefono: cliente?.telefono || "",
+    telefonoPrefijo: parsedPhone.prefix,
+    telefono: parsedPhone.number,
     correo_electronico: cliente?.correo_electronico || "",
     ruc: cliente?.ruc || "",
     documento_extranjero: cliente?.documento_extranjero || "",
@@ -104,8 +123,19 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
     // Validación local
     const newErrors = {};
     if (!formData.razon_social.trim()) newErrors.razon_social = "Este campo es obligatorio.";
-    if (!formData.telefono.trim()) newErrors.telefono = "Este campo es obligatorio.";
-    if (!formData.correo_electronico.trim()) newErrors.correo_electronico = "Este campo es obligatorio.";
+
+    if (!formData.telefono.trim()) {
+      newErrors.telefono = "Este campo es obligatorio.";
+    } else {
+      const phoneErr = validatePhone(formData.telefonoPrefijo, formData.telefono);
+      if (phoneErr) newErrors.telefono = phoneErr;
+    }
+
+    if (!formData.correo_electronico.trim()) {
+      newErrors.correo_electronico = "Este campo es obligatorio.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo_electronico)) {
+      newErrors.correo_electronico = "El correo no tiene un formato válido.";
+    }
 
     // RUC obligatorio para jurídica nacional
     if (formData.tipo_persona === "juridica" && !formData.es_extranjero && !formData.ruc.trim()) {
@@ -127,7 +157,14 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
       return;
     }
     setLocalErrors({});
-    if (onSave) onSave(formData);
+
+    // Construir payload: combinar prefijo + número en un solo string
+    const { telefonoPrefijo, telefono, ...rest } = formData;
+    const payload = {
+      ...rest,
+      telefono: buildPhoneValue(telefonoPrefijo, telefono),
+    };
+    if (onSave) onSave(payload);
   };
 
   const getError = (field) => {
@@ -221,12 +258,16 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
             />
           )}
 
-          <Input
+          <PhoneInput
             label="Teléfono *"
+            prefix={formData.telefonoPrefijo}
+            onPrefixChange={(p) => {
+              setFormData((prev) => ({ ...prev, telefonoPrefijo: p }));
+              setIsDirty(true);
+              setLocalErrors((prev) => { const n = { ...prev }; delete n.telefono; return n; });
+            }}
             value={formData.telefono}
             onChange={handleChange("telefono")}
-            maxLength={20}
-            placeholder="+595 981 123-456"
             error={getError("telefono")}
           />
 

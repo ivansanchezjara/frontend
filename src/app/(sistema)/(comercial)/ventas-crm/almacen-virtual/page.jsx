@@ -6,7 +6,7 @@ import { useApi } from '@/hooks/useApi';
 import { useDebounce } from '@/hooks/useDebounce';
 import { getAlmacenVirtual, getDisponibilidadAlmacen } from '@/services/apis/ventas';
 import { cn } from '@/lib/utils';
-import AlmacenVirtualGrid from '@/components/ventas/AlmacenVirtualGrid';
+import AlmacenVirtualGrid from '@/components/comercial/ventas/shared/AlmacenVirtualGrid';
 
 // ─── Página de Almacén Virtual ──────────────────────────────────
 

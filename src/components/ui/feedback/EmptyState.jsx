@@ -20,10 +20,14 @@ export default function EmptyState({
     descripcion = "Parece que no hay información para mostrar en este momento.", 
     onAction = null, 
     textoBoton = "Crear",
-    icon = "🔍"
+    icon = "🔍",
+    inline = false,
 }) {
     return (
-        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-16 text-center flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300 w-full">
+        <div className={inline
+            ? "py-10 text-center flex flex-col items-center justify-center animate-in fade-in duration-200 w-full"
+            : "bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-16 text-center flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300 w-full"
+        }>
             <span className="text-6xl mb-4 select-none">{icon}</span>
             
             <Heading level={4} className="text-slate-900 mb-2 font-black">

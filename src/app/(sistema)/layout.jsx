@@ -141,7 +141,12 @@ export default function SistemaLayout({ children }) {
 
                 {/* Logo Section */}
                 <div className={`mb-6 flex items-center gap-2.5 transition-all duration-300 ${(!isExpanded && !isMobileOpen) ? 'md:flex-col md:gap-3' : 'justify-between'}`}>
-                    <Link href="/dashboard" className="flex items-center gap-2.5 hover:scale-105 transition-transform cursor-pointer" onClick={() => setIsMobileOpen(false)}>
+                    <Link
+                        href="/dashboard"
+                        className="flex items-center gap-2.5 hover:scale-105 transition-transform cursor-pointer"
+                        onClick={() => setIsMobileOpen(false)}
+                        title={(!isExpanded && !isMobileOpen) ? "Panel Principal" : undefined}
+                    >
                         <BrandMark
                             size="md"
                             tone="light"
@@ -183,6 +188,7 @@ export default function SistemaLayout({ children }) {
                                                 <button
                                                     onClick={() => toggleParent(item.label)}
                                                     className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-bold transition-all w-full ${isChildActive ? activeClass : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                                    title={(!isExpanded && !isMobileOpen) ? item.label : undefined}
                                                 >
                                                     <span className="text-base shrink-0">{item.icon}</span>
                                                     {(isExpanded || isMobileOpen) && (
@@ -201,7 +207,7 @@ export default function SistemaLayout({ children }) {
                                                                 <Link
                                                                     key={childIdx}
                                                                     href={child.href}
-                                                                    onClick={() => setIsMobileOpen(false)}
+                                                                    onClick={() => { setIsMobileOpen(false); setIsExpanded(false); }}
                                                                     className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${isActive ? 'text-white bg-white/10' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}
                                                                 >
                                                                     <span className="text-sm shrink-0">{child.icon}</span>
@@ -223,14 +229,19 @@ export default function SistemaLayout({ children }) {
                                         <Link
                                             key={idx}
                                             href={item.href}
-                                            onClick={() => setIsMobileOpen(false)}
+                                            onClick={() => { setIsMobileOpen(false); setIsExpanded(false); }}
                                             className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-bold transition-all ${isActive ? activeClass : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                            title={(!isExpanded && !isMobileOpen) ? item.label : undefined}
                                         >
                                             <span className="text-base shrink-0">{item.icon}</span>
                                             {(isExpanded || isMobileOpen) && <span className="truncate animate-in fade-in slide-in-from-left-2 duration-300">{item.label}</span>}
                                         </Link>
                                     ) : (
-                                        <div key={idx} className={`flex items-center gap-2.5 px-3 py-2 opacity-30 cursor-not-allowed grayscale text-sm font-bold ${(!isExpanded && !isMobileOpen) ? 'md:justify-center px-0' : ''}`}>
+                                        <div
+                                            key={idx}
+                                            className={`flex items-center gap-2.5 px-3 py-2 opacity-30 cursor-not-allowed grayscale text-sm font-bold ${(!isExpanded && !isMobileOpen) ? 'md:justify-center px-0' : ''}`}
+                                            title={(!isExpanded && !isMobileOpen) ? `${item.label} (No disponible)` : undefined}
+                                        >
                                             <span className="text-base shrink-0">{item.icon}</span>
                                             {(isExpanded || isMobileOpen) && <span className="text-slate-400 whitespace-nowrap truncate animate-in fade-in duration-300">{item.label}</span>}
                                         </div>
@@ -243,7 +254,11 @@ export default function SistemaLayout({ children }) {
 
                 {/* Area de Perfil y Logout en Sidebar */}
                 <div className="w-full px-2 mt-auto pt-4 mb-2 space-y-1 bg-slate-900 border-t border-slate-800/50 mt-4">
-                    <Link href="/perfil" className={`flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 transition-all text-left w-full ${(!isExpanded && !isMobileOpen) ? 'md:justify-center px-0' : ''}`}>
+                    <Link
+                        href="/perfil"
+                        className={`flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 transition-all text-left w-full ${(!isExpanded && !isMobileOpen) ? 'md:justify-center px-0' : ''}`}
+                        title={(!isExpanded && !isMobileOpen) ? "Tu Cuenta" : undefined}
+                    >
                         <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-slate-300 font-black text-xs shrink-0 border border-slate-700/50 shadow-inner">
                             {initials}
                         </div>

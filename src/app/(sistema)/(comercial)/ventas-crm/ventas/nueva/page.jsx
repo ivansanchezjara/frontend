@@ -6,7 +6,7 @@ import { Button, PageHeader } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import { useToast } from "@/components/ui";
 import { createVenta } from "@/services/apis/ventas";
-import VentaBuilder from "@/components/ventas/VentaBuilder";
+import VentaBuilder from "@/components/ventas/presupuestos/VentaBuilder";
 import Link from "next/link";
 
 export default function NuevaVentaPage() {

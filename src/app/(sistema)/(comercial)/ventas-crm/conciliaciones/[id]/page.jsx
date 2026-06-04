@@ -8,7 +8,7 @@ import { useApi } from '@/hooks/useApi';
 import { getConciliacion, confirmarConciliacion, rechazarConciliacion } from '@/services/apis/ventas';
 import { useToast } from '@/components/ui/feedback/ToastContext';
 import { useConfirm } from '@/components/ui/feedback/ConfirmContext';
-import ConciliacionDetalle from '@/components/ventas/ConciliacionDetalle';
+import ConciliacionDetalle from '@/components/comercial/ventas/shared/ConciliacionDetalle';
 
 // ─── Configuración de estados ───────────────────────────────────
 

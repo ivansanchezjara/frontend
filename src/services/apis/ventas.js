@@ -6,64 +6,53 @@ import {
   toQueryString,
 } from "../api.js";
 
-// ─── Prospectos ─────────────────────────────────────────────────
+// ─── Oportunidades ──────────────────────────────────────────────
 
-export async function getProspectos(params = {}) {
+export async function getOportunidades(params = {}) {
   const query = toQueryString(params);
   return request(
-    `${API_URL}/ventas/prospectos/${query}`,
+    `${API_URL}/ventas/oportunidades/${query}`,
     {
       method: "GET",
       headers: authHeaders(),
       cache: "no-store",
     },
-    "ver prospectos",
+    "ver oportunidades",
   );
 }
 
-export async function getProspecto(id) {
+export async function getOportunidad(id) {
   return request(
-    `${API_URL}/ventas/prospectos/${id}/`,
+    `${API_URL}/ventas/oportunidades/${id}/`,
     {
       headers: authHeaders(),
       cache: "no-store",
     },
-    "ver detalle de prospecto",
+    "ver detalle de oportunidad",
   );
 }
 
-export async function createProspecto(data) {
+export async function createOportunidad(data) {
   return request(
-    `${API_URL}/ventas/prospectos/`,
+    `${API_URL}/ventas/oportunidades/`,
     {
       method: "POST",
       headers: jsonHeaders(),
       body: JSON.stringify(data),
     },
-    "crear prospecto",
+    "crear oportunidad",
   );
 }
 
-export async function updateProspecto(id, data) {
+export async function updateOportunidad(id, data) {
   return request(
-    `${API_URL}/ventas/prospectos/${id}/`,
+    `${API_URL}/ventas/oportunidades/${id}/`,
     {
       method: "PATCH",
       headers: jsonHeaders(),
       body: JSON.stringify(data),
     },
-    "actualizar prospecto",
-  );
-}
-
-export async function convertirProspecto(id) {
-  return request(
-    `${API_URL}/ventas/prospectos/${id}/convertir/`,
-    {
-      method: "POST",
-      headers: authHeaders(),
-    },
-    "convertir prospecto a cliente",
+    "actualizar oportunidad",
   );
 }
 
@@ -499,5 +488,100 @@ export async function getMisCompras(params = {}) {
       cache: "no-store",
     },
     "ver mi historial de compras",
+  );
+}
+
+// ─── Presupuestos ───────────────────────────────────────────────
+
+export async function getPresupuestos(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/ventas/presupuestos/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver presupuestos",
+  );
+}
+
+export async function getPresupuesto(id) {
+  return request(
+    `${API_URL}/ventas/presupuestos/${id}/`,
+    {
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver detalle de presupuesto",
+  );
+}
+
+export async function createPresupuesto(data) {
+  return request(
+    `${API_URL}/ventas/presupuestos/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear presupuesto",
+  );
+}
+
+export async function updatePresupuesto(id, data) {
+  return request(
+    `${API_URL}/ventas/presupuestos/${id}/`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar presupuesto",
+  );
+}
+
+export async function enviarPresupuesto(id) {
+  return request(
+    `${API_URL}/ventas/presupuestos/${id}/enviar/`,
+    {
+      method: "PATCH",
+      headers: authHeaders(),
+    },
+    "enviar presupuesto al cliente",
+  );
+}
+
+export async function aceptarPresupuesto(id) {
+  return request(
+    `${API_URL}/ventas/presupuestos/${id}/aceptar/`,
+    {
+      method: "PATCH",
+      headers: authHeaders(),
+    },
+    "aceptar presupuesto",
+  );
+}
+
+export async function rechazarPresupuesto(id, data = {}) {
+  return request(
+    `${API_URL}/ventas/presupuestos/${id}/rechazar/`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "rechazar presupuesto",
+  );
+}
+
+export async function nuevaVersionPresupuesto(id) {
+  return request(
+    `${API_URL}/ventas/presupuestos/${id}/nueva-version/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "crear nueva versión de presupuesto",
   );
 }

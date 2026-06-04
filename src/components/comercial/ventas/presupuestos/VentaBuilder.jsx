@@ -7,7 +7,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { buscarProductos, getClientes } from "@/services/apis/ventas";
 import { cn } from "@/lib/utils";
 import LineaVentaRow from "./LineaVentaRow";
-import TipoCambioWidget from "./TipoCambioWidget";
+import TipoCambioWidget from "../shared/TipoCambioWidget";
 
 // ─── Constantes ─────────────────────────────────────────────────
 

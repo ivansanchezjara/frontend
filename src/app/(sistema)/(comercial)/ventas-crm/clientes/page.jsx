@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { Search, Building2, Users, Plus, Filter } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Search, Building2, Users, Plus, Filter, Target } from 'lucide-react';
 import { EmptyState, LoadingScreen, PageHeader, Pagination, SearchBar, Button, Badge, Text } from '@/components/ui';
 import { useConfirm } from '@/components/ui';
 import { useToast } from '@/components/ui';
@@ -60,8 +61,15 @@ const FILTER_SCHEMA = {
     search: '',
     tipo_persona: '',
     categoria: '',
+    etapa: '',
     page: 1,
 };
+
+const ETAPA_OPTIONS = [
+    { value: '', label: 'Todas' },
+    { value: 'prospecto', label: 'Prospectos' },
+    { value: 'activo', label: 'Clientes Activos' },
+];
 
 // ─── Componente FilterDropdown ──────────────────────────────────
 
@@ -100,6 +108,7 @@ function FilterDropdown({ value, onChange, icon: Icon, label, options }) {
 // ─── Contenido Principal ────────────────────────────────────────
 
 function ClientesContent() {
+    const router = useRouter();
     const { showToast } = useToast();
     const { danger, confirm } = useConfirm();
     const { filters, setFilter, resetFilters, page, setPage } = useUrlFilters(FILTER_SCHEMA);
@@ -133,9 +142,10 @@ function ClientesContent() {
         if (filters.search) params.search = filters.search;
         if (filters.tipo_persona) params.tipo_persona = filters.tipo_persona;
         if (filters.categoria) params.categoria = filters.categoria;
+        if (filters.etapa) params.etapa = filters.etapa;
 
         fetchClientes(params).then(() => setHasLoadedOnce(true));
-    }, [fetchClientes, filters.search, filters.tipo_persona, filters.categoria, filters.page]);
+    }, [fetchClientes, filters.search, filters.tipo_persona, filters.categoria, filters.etapa, filters.page]);
 
     // --- Acciones ---
     const handleDesactivar = async (cliente) => {
@@ -175,7 +185,7 @@ function ClientesContent() {
     // --- Loading inicial ---
     if (loadingClientes && !hasLoadedOnce) return <LoadingScreen texto="Cargando clientes..." />;
 
-    const hayFiltrosActivos = filters.search !== '' || filters.tipo_persona !== '' || filters.categoria !== '';
+    const hayFiltrosActivos = filters.search !== '' || filters.tipo_persona !== '' || filters.categoria !== '' || filters.etapa !== '';
 
     const limpiarFiltros = () => {
         setBusquedaLocal('');
@@ -194,16 +204,28 @@ function ClientesContent() {
                 subtitle={`CRM · ${count} clientes registrados`}
                 subtitleClassName="text-emerald-600"
             >
-                <Link href="/ventas-crm/clientes/nuevo">
-                    <Button
-                        variant="success"
-                        size="md"
-                        icon={Plus}
-                        className="rounded-xl font-bold text-xs shadow-lg shadow-emerald-100 cursor-pointer"
-                    >
-                        NUEVO CLIENTE
-                    </Button>
-                </Link>
+                <div className="flex items-center gap-2">
+                    <Link href="/ventas-crm/clientes/nuevo-prospecto">
+                        <Button
+                            variant="secondary"
+                            size="md"
+                            icon={Plus}
+                            className="rounded-xl font-bold text-xs cursor-pointer"
+                        >
+                            PROSPECTO
+                        </Button>
+                    </Link>
+                    <Link href="/ventas-crm/clientes/nuevo">
+                        <Button
+                            variant="success"
+                            size="md"
+                            icon={Plus}
+                            className="rounded-xl font-bold text-xs shadow-lg shadow-emerald-100 cursor-pointer"
+                        >
+                            NUEVO CLIENTE
+                        </Button>
+                    </Link>
+                </div>
             </PageHeader>
 
             <main className="flex-1 overflow-y-auto p-8 min-w-0">
@@ -226,6 +248,13 @@ function ClientesContent() {
                         {/* Filtros */}
                         <div className="flex items-center justify-between gap-4 flex-wrap">
                             <div className="flex items-center gap-3 flex-wrap">
+                                <FilterDropdown
+                                    value={filters.etapa}
+                                    onChange={(val) => setFilter('etapa', val)}
+                                    icon={Target}
+                                    label="Etapa"
+                                    options={ETAPA_OPTIONS}
+                                />
                                 <FilterDropdown
                                     value={filters.tipo_persona}
                                     onChange={(val) => setFilter('tipo_persona', val)}
@@ -283,8 +312,9 @@ function ClientesContent() {
                                         {clientes.map(cliente => (
                                             <tr
                                                 key={cliente.id}
+                                                onClick={() => router.push(`/ventas-crm/clientes/${cliente.id}`)}
                                                 className={cn(
-                                                    'border-t border-slate-100 hover:bg-slate-50/50 transition-colors',
+                                                    'border-t border-slate-100 hover:bg-slate-50/50 transition-colors cursor-pointer',
                                                     !cliente.activo && 'opacity-50'
                                                 )}
                                             >
@@ -298,9 +328,14 @@ function ClientesContent() {
                                                     {cliente.nombre_comercial && (
                                                         <p className="text-xs text-slate-400 mt-0.5">{cliente.nombre_comercial}</p>
                                                     )}
-                                                    {cliente.es_extranjero && (
-                                                        <Badge variant="warning" className="mt-1 text-[9px]">Extranjero</Badge>
-                                                    )}
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        {cliente.etapa === 'prospecto' && (
+                                                            <Badge variant="info" className="text-[9px]">Prospecto</Badge>
+                                                        )}
+                                                        {cliente.es_extranjero && (
+                                                            <Badge variant="warning" className="text-[9px]">Extranjero</Badge>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="py-3 px-4 hidden md:table-cell">
                                                     <div className="flex flex-col gap-0.5">
@@ -321,7 +356,7 @@ function ClientesContent() {
                                                         {cliente.ruc || '—'}
                                                     </span>
                                                 </td>
-                                                <td className="py-3 pr-6 pl-4 text-right">
+                                                <td className="py-3 pr-6 pl-4 text-right" onClick={(e) => e.stopPropagation()}>
                                                     {cliente.activo ? (
                                                         <Button
                                                             variant="ghost"

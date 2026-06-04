@@ -6,7 +6,7 @@ import { useApi } from '@/hooks/useApi';
 import { useToast } from '@/components/ui/feedback/ToastContext';
 import { getMovimientosCaja, getSaldoCajaChica, createMovimientoCaja } from '@/services/apis/ventas';
 import { cn } from '@/lib/utils';
-import CajaChicaResumen from '@/components/ventas/CajaChicaResumen';
+import CajaChicaResumen from '@/components/comercial/ventas/shared/CajaChicaResumen';
 
 // ─── Configuración ──────────────────────────────────────────────
 

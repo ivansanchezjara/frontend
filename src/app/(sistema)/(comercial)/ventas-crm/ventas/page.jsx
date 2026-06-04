@@ -15,13 +15,17 @@ const ESTADOS_VENTA = [
     { value: '', label: 'Todos' },
     { value: 'borrador', label: 'Borrador' },
     { value: 'confirmado', label: 'Confirmado' },
-    { value: 'rechazado', label: 'Rechazado' },
+    { value: 'cobrado', label: 'Cobrado' },
+    { value: 'entregado', label: 'Entregado' },
+    { value: 'cancelado', label: 'Cancelado' },
 ];
 
 const ESTADO_BADGE_MAP = {
     borrador: { variant: 'default', label: 'Borrador' },
     confirmado: { variant: 'success', label: 'Confirmado' },
-    rechazado: { variant: 'danger', label: 'Rechazado' },
+    cobrado: { variant: 'primary', label: 'Cobrado' },
+    entregado: { variant: 'info', label: 'Entregado' },
+    cancelado: { variant: 'danger', label: 'Cancelado' },
 };
 
 // ─── Configuración de orígenes ──────────────────────────────────

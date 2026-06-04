@@ -4,8 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import { SearchX, Globe, ShoppingBag, Plus } from "lucide-react";
 import Link from "next/link";
 
-import ClienteForm from "@/components/ventas/ClienteForm";
-import InteraccionTimeline from "@/components/ventas/InteraccionTimeline";
+import ClienteForm from "@/components/comercial/ventas/clientes/ClienteForm";
+import InteraccionTimeline from "@/components/comercial/ventas/clientes/InteraccionTimeline";
 import {
   Button,
   Badge,
