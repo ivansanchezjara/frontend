@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { SearchX, Globe, ShoppingBag, Plus } from "lucide-react";
+import { SearchX, Globe, ShoppingBag, Plus, Tag } from "lucide-react";
 import Link from "next/link";
 
 import ClienteForm from "@/components/comercial/ventas/clientes/ClienteForm";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui";
 import { Heading, Text } from "@/components/ui/basics/Typography";
 import { useApi } from "@/hooks/useApi";
+import { cn } from "@/lib/utils";
 import {
   getCliente,
   updateCliente,
@@ -52,6 +53,73 @@ const TIER_LABELS = {
   mayorista: "Mayorista",
   intercompany: "Intercompany",
 };
+
+const TIER_OPTIONS = [
+  { value: "publico",      label: "Público" },
+  { value: "estudiante",   label: "Estudiante" },
+  { value: "reventa",      label: "Reventa" },
+  { value: "mayorista",    label: "Mayorista" },
+  { value: "intercompany", label: "Intercompany" },
+];
+
+// ─── Componente: Selector de Tier de Precio ──────────────────────
+
+function TierPrecioSection({ clienteId, tierActual, onUpdated }) {
+  const [tier, setTier] = useState(tierActual || "publico");
+  const [saving, setSaving] = useState(false);
+  const { alert: showAlert } = useConfirm();
+
+  const handleSelect = async (nuevoTier) => {
+    if (nuevoTier === tier || saving) return;
+    setSaving(true);
+    const prevTier = tier;
+    setTier(nuevoTier);
+    try {
+      const updated = await updateCliente(clienteId, { tier_precio: nuevoTier });
+      if (onUpdated) onUpdated(updated);
+    } catch {
+      setTier(prevTier);
+      showAlert("No se pudo actualizar el tier de precio.", "Error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-3">
+      <div className="inline-flex items-center bg-slate-100 rounded-xl p-1 gap-0.5">
+        {TIER_OPTIONS.map((opt) => {
+          const isActive = tier === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => handleSelect(opt.value)}
+              disabled={saving}
+              className={cn(
+                "px-4 py-2 rounded-lg text-xs font-bold transition-all duration-150 focus:outline-none whitespace-nowrap",
+                "disabled:opacity-60 disabled:cursor-not-allowed",
+                isActive
+                  ? "bg-white text-slate-800 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
+              )}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-2">
+        <span className={cn(
+          "w-1.5 h-1.5 rounded-full transition-all",
+          saving ? "bg-amber-400 animate-pulse" : "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"
+        )} />
+        <Text variant="label" className="text-slate-400 text-[11px]">
+          {saving ? "Guardando..." : `Tier activo: ${TIER_LABELS[tier] || tier}`}
+        </Text>
+      </div>
+    </div>
+  );
+}
 
 // ─── Componente de Historial de Compras ─────────────────────────
 
@@ -337,6 +405,24 @@ export default function PerfilClientePage() {
               onSave={handleSave}
               saving={saving}
               errors={saveErrors}
+            />
+          </Section>
+
+          {/* Sección: Tier de Precio */}
+          <Section
+            title="Tier de Precio"
+            subtitle="Define qué lista de precios se aplica a este cliente por defecto."
+            action={
+              <div className="flex items-center gap-1.5 text-slate-400">
+                <Tag size={14} />
+                <Text variant="bodyXs">{TIER_LABELS[cliente.tier_precio] || cliente.tier_precio}</Text>
+              </div>
+            }
+          >
+            <TierPrecioSection
+              clienteId={id}
+              tierActual={cliente.tier_precio}
+              onUpdated={setCliente}
             />
           </Section>
 

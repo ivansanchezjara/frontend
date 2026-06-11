@@ -76,6 +76,14 @@ export const modulosActivos = [
     roles: ["Admin", "gestorDeDeposito"],
   },
   {
+    href: "/precios",
+    icon: "💲",
+    title: "Gestión de Precios",
+    desc: "Lista de precios, promociones por volumen y combos.",
+    color: "emerald",
+    roles: ["Admin", "gestorDePrecios"],
+  },
+  {
     href: "/ventas-crm",
     icon: "🤝",
     title: "Ventas y CRM",
@@ -149,6 +157,15 @@ export const navItems = [
     type: "active",
     color: "emerald",
     roles: ["Admin", "gestorDeCatalogo"],
+  },
+  {
+    category: "Comercial",
+    href: "/precios",
+    icon: "💲",
+    label: "Gestión de Precios",
+    type: "active",
+    color: "emerald",
+    roles: ["Admin", "gestorDePrecios"],
   },
   {
     category: "Comercial",

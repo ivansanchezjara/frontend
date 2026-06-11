@@ -33,8 +33,8 @@ import {
 import { cn } from "@/lib/utils";
 import KanbanBoard, {
   KANBAN_COLUMNS,
-} from "@/components/ventas/kanban/KanbanBoard";
-import NuevaOportunidadModal from "@/components/ventas/pipeline/NuevaOportunidadModal";
+} from "@/components/comercial/ventas/kanban/KanbanBoard";
+import NuevaOportunidadModal from "@/components/comercial/ventas/pipeline/NuevaOportunidadModal";
 
 // ─── Configuración ──────────────────────────────────────────────
 
@@ -595,13 +595,13 @@ function TableView({
                       <span className="text-xs text-slate-400">
                         {oport.created_at
                           ? new Date(oport.created_at).toLocaleDateString(
-                              "es-PY",
-                              {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                              }
-                            )
+                            "es-PY",
+                            {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            }
+                          )
                           : "—"}
                       </span>
                     </td>

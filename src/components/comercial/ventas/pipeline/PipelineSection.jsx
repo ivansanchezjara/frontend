@@ -28,7 +28,7 @@ const AVANCE_CONFIG = {
 
 const ETAPA_HINTS = {
   nueva: "Registrá la información del cliente y contactá para avanzar.",
-  contactada: "Definí los productos que le interesan al cliente para pasar a negociación.",
+  contactada: "Identificá las necesidades del cliente y avanzá a negociación para cotizar.",
   negociacion: "Armá el presupuesto, envialo y esperá la respuesta del cliente.",
 };
 

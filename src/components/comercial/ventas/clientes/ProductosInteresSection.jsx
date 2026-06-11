@@ -16,6 +16,23 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { updateOportunidad, buscarProductos } from "@/services/apis/ventas";
 import { cn } from "@/lib/utils";
 
+// Mapea tier_precio del cliente al campo de precio correspondiente
+const TIER_PRECIO_FIELD = {
+  publico:      "precio_0_publico",
+  estudiante:   "precio_1_estudiante",
+  reventa:      "precio_2_reventa",
+  mayorista:    "precio_3_mayorista",
+  intercompany: "precio_4_intercompany",
+};
+
+const TIER_LABELS = {
+  publico:      "Público",
+  estudiante:   "Estudiante",
+  reventa:      "Reventa",
+  mayorista:    "Mayorista",
+  intercompany: "Intercompany",
+};
+
 /**
  * Sección de productos de interés de una oportunidad.
  * Tabla siempre visible. Autoguarda al marcar/desmarcar.
@@ -25,6 +42,7 @@ export default function ProductosInteresSection({
   oportunidadId,
   productos = [],
   editable = false,
+  tierPrecio = "publico",
   onUpdated,
 }) {
   const { showToast } = useToast();
@@ -62,9 +80,12 @@ export default function ProductosInteresSection({
       product_code: v.product_code || "",
       nombre_variante: v.nombre_variante || "",
       producto_nombre: v.producto_nombre || "",
+      brand: v.brand || "",
       precio_0_publico: v.precio_0_publico,
       precio_1_estudiante: v.precio_1_estudiante,
       precio_2_reventa: v.precio_2_reventa,
+      precio_3_mayorista: v.precio_3_mayorista,
+      precio_4_intercompany: v.precio_4_intercompany,
     }));
   }, [busquedaDebounced, searchResults]);
 
@@ -85,6 +106,7 @@ export default function ProductosInteresSection({
             notas: p.notas || "",
           }));
           await updateOportunidad(oportunidadId, { productos: payload });
+          if (onUpdated) onUpdated();
         } catch {
           showToast("Error al guardar productos", "error");
         } finally {
@@ -92,7 +114,7 @@ export default function ProductosInteresSection({
         }
       }, 600);
     },
-    [oportunidadId, showToast]
+    [oportunidadId, showToast, onUpdated]
   );
 
   useEffect(() => {
@@ -129,9 +151,12 @@ export default function ProductosInteresSection({
       product_code: p.variante_sku || "",
       nombre_variante: p.variante_nombre || "",
       producto_nombre: p.producto_nombre || "",
-      precio_0_publico: p._precios?.publico || null,
-      precio_1_estudiante: p._precios?.estudiante || null,
-      precio_2_reventa: p._precios?.reventa || null,
+      brand: p.brand || "",
+      precio_0_publico: p.precio_0_publico ?? p._precios?.publico ?? null,
+      precio_1_estudiante: p.precio_1_estudiante ?? p._precios?.estudiante ?? null,
+      precio_2_reventa: p.precio_2_reventa ?? p._precios?.reventa ?? null,
+      precio_3_mayorista: p.precio_3_mayorista ?? p._precios?.mayorista ?? null,
+      precio_4_intercompany: p.precio_4_intercompany ?? p._precios?.intercompany ?? null,
     }));
 
     const noSeleccionados = resultadosNormalizados.filter(
@@ -144,7 +169,8 @@ export default function ProductosInteresSection({
         (s) =>
           s.producto_nombre.toLowerCase().includes(searchLower) ||
           s.nombre_variante.toLowerCase().includes(searchLower) ||
-          s.product_code.toLowerCase().includes(searchLower)
+          s.product_code.toLowerCase().includes(searchLower) ||
+          s.brand.toLowerCase().includes(searchLower)
       );
       return [...seleccionadosMatch, ...noSeleccionados];
     }
@@ -165,12 +191,15 @@ export default function ProductosInteresSection({
           variante_nombre: fila.nombre_variante || "",
           variante_sku: fila.product_code || "",
           producto_nombre: fila.producto_nombre || "",
+          brand: fila.brand || "",
           cantidad_estimada: 1,
           notas: "",
           _precios: {
             publico: fila.precio_0_publico,
             estudiante: fila.precio_1_estudiante,
             reventa: fila.precio_2_reventa,
+            mayorista: fila.precio_3_mayorista,
+            intercompany: fila.precio_4_intercompany,
           },
         },
       ]);
@@ -185,6 +214,13 @@ export default function ProductosInteresSection({
           : p
       )
     );
+  };
+
+  // ─── Precio según tier del cliente ─────────────────────────
+
+  const getPrecioTier = (fila) => {
+    const field = TIER_PRECIO_FIELD[tierPrecio] || "precio_0_publico";
+    return fila[field];
   };
 
   // ─── Formatear precio ───────────────────────────────────────
@@ -286,7 +322,7 @@ export default function ProductosInteresSection({
         <SearchBar
           value={busqueda}
           onChange={setBusqueda}
-          placeholder="Buscar código, nombre, marca..."
+          placeholder="Buscar por código, nombre, marca..."
         />
 
         {busqueda.length > 0 && busqueda.length < 2 && (
@@ -306,11 +342,15 @@ export default function ProductosInteresSection({
                 <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="py-3 pl-4 pr-2 text-[9px] font-black text-slate-400 uppercase tracking-widest w-11"></th>
-                    <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest w-[130px]">SKU</th>
+                    <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest w-[110px]">SKU</th>
                     <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Producto / Variante</th>
-                    <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-[90px]">Público</th>
-                    <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-[90px]">Estudiante</th>
-                    <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-[90px]">Reventa</th>
+                    <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest hidden lg:table-cell">Marca</th>
+                    {tierPrecio !== "publico" && (
+                      <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-[90px]">Público</th>
+                    )}
+                    <th className="py-3 px-3 text-[9px] font-black text-emerald-600 uppercase tracking-widest text-right w-[100px]">
+                      {TIER_LABELS[tierPrecio] || "Precio"}
+                    </th>
                     <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-[80px]">Cant.</th>
                   </tr>
                 </thead>
@@ -353,19 +393,23 @@ export default function ProductosInteresSection({
                             </Text>
                           )}
                         </td>
-                        <td className="py-2.5 px-3 text-right">
-                          <Text variant="bodyXs" className="font-black text-slate-800">
-                            {formatPrecio(fila.precio_0_publico)}
-                          </Text>
+                        <td className="py-2.5 px-3 hidden lg:table-cell">
+                          {fila.brand && (
+                            <Badge className="text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 uppercase">
+                              {fila.brand}
+                            </Badge>
+                          )}
                         </td>
+                        {tierPrecio !== "publico" && (
+                          <td className="py-2.5 px-3 text-right">
+                            <Text variant="bodyXs" className="font-semibold text-slate-400 line-through">
+                              {formatPrecio(fila.precio_0_publico)}
+                            </Text>
+                          </td>
+                        )}
                         <td className="py-2.5 px-3 text-right">
-                          <Text variant="bodyXs" className="font-semibold text-slate-500">
-                            {formatPrecio(fila.precio_1_estudiante)}
-                          </Text>
-                        </td>
-                        <td className="py-2.5 px-3 text-right">
-                          <Text variant="bodyXs" className="font-semibold text-slate-500">
-                            {formatPrecio(fila.precio_2_reventa)}
+                          <Text variant="bodyXs" className="font-black text-emerald-700">
+                            {formatPrecio(getPrecioTier(fila))}
                           </Text>
                         </td>
                         <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>

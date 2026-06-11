@@ -17,8 +17,8 @@ const ETAPA_HINTS = {
     colorClass: "bg-amber-50 border-amber-100 text-amber-800",
     iconColor: "text-amber-500",
     title: "Definir Intereses",
-    description: "Identificá las necesidades del cliente y cargá los productos o servicios específicos que le interesan para pasar a la etapa de negociación.",
-    action: "Agregá productos de interés en la pestaña de Productos."
+    description: "Identificá las necesidades del cliente. Podés cargar productos de interés opcionalmente antes de pasar a negociación.",
+    action: "Avanzá a Negociación cuando estés listo para cotizar."
   },
   negociacion: {
     icon: Lightbulb,

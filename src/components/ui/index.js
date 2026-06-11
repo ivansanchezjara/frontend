@@ -26,6 +26,7 @@ export { default as QuickLink } from './layout/QuickLink';
 
 // Data Controls
 export { default as ColumnSelector } from './data/ColumnSelector';
+export { default as DataTable } from './data/DataTable';
 export { default as FilerModal } from './data/FilerModal';
 export { default as HistorialCambios } from './data/HistorialCambios';
 export { default as Pagination } from './data/Pagination';
