@@ -55,6 +55,19 @@ export async function getPreciosStats() {
   );
 }
 
+export async function getHistorialPrecios(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/catalogo/precios/historial-precios/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "historial de cambios de precios",
+  );
+}
+
 // ─── Promociones por Volumen ───────────────────────────────────────
 
 export async function getPromociones(params = {}) {

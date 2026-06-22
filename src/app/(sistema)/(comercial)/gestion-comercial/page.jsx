@@ -15,12 +15,14 @@ import {
 
 import TabPromociones from '@/components/comercial/precios/TabPromociones';
 import TabCombos from '@/components/comercial/precios/TabCombos';
+import TabHistorial from '@/components/comercial/precios/TabHistorial';
 import BulkUpdateModal from '@/components/comercial/precios/BulkUpdateModal';
 
 const TABS = [
   { id: 'precios', label: 'Lista de Precios', icon: DollarSign },
   { id: 'promociones', label: 'Promociones por Volumen', icon: Percent },
   { id: 'combos', label: 'Combos / Packs', icon: Package },
+  { id: 'historial', label: 'Historial de Cambios', icon: Clock },
 ];
 
 const PRECIO_FIELDS = [
@@ -443,6 +445,9 @@ export default function PreciosPage() {
 
           {/* ═══════════ TAB: COMBOS ═══════════ */}
           {activeTab === 'combos' && <TabCombos />}
+
+          {/* ═══════════ TAB: HISTORIAL ═══════════ */}
+          {activeTab === 'historial' && <TabHistorial />}
 
         </div>
       </div>
