@@ -1,9 +1,10 @@
 import { Text } from "./Typography";
+import { cn } from "@/lib/utils";
 
-export default function Field({ label, hint, children }) {
+export default function Field({ label, hint, children, className }) {
   return (
-    <div className="space-y-1.5">
-      <Text as="label" variant="label" className="block text-[11px] text-slate-500">
+    <div className={cn("space-y-1.5", className)}>
+      <Text as="label" variant="label" >
         {label}
       </Text>
       {children}

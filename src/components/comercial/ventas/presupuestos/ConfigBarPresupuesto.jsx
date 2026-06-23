@@ -43,7 +43,7 @@ export default function ConfigBarPresupuesto({
           min="1"
           max="90"
           value={vigenciaDias}
-          onChange={(e) => setVigenciaDias(Math.max(1, Math.min(90, Number(e.target.value) || 15)))}
+          onChange={(e) => setVigenciaDias(Math.max(1, Math.min(90, Number(e.target.value) || 3)))}
           className="w-16 text-center text-xs font-bold !py-1 !px-2 !rounded-lg"
           fullWidth={false}
         />

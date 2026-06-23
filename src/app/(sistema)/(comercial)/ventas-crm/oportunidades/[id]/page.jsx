@@ -182,8 +182,6 @@ export default function OportunidadDetallePage() {
                 <PresupuestoSection
                   oportunidadId={id}
                   etapa={etapa}
-                  tierPrecio={oportunidad.cliente_tier_precio || "publico"}
-                  productosInteres={oportunidad.productos || []}
                   onGanada={() => fetchOportunidad(id)}
                 />
               )}

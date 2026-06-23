@@ -1,6 +1,6 @@
 // 1. DICCIONARIO CENTRAL DE FAMILIAS Y ESTILOS
 export const familyStyles = {
-  slate: { label: "General", activeNav: "bg-slate-700 shadow-sm text-white" },
+  slate: { label: "General", activeNav: "bg-slate-700 shadow-sm text-white", borderHover: "hover:border-slate-400", bg: "bg-slate-100", text: "text-slate-600", groupHoverBg: "group-hover:bg-slate-700", line: "bg-slate-200" },
   emerald: {
     label: "Comercial y Ventas",
     activeNav: "bg-emerald-600 shadow-sm text-white",
@@ -55,6 +55,7 @@ export const erpModules = [
     roles: ["Admin", "gestorDeCatalogo", "gestorDeDeposito", "vendedor", "gestorComercial", "cajero"],
   },
 
+
   // --- CATEGORÍA: COMERCIAL ---
   {
     category: "Comercial",
@@ -91,7 +92,7 @@ export const erpModules = [
     href: "/gestion-comercial",
     icon: "💼",
     title: "Gestión Comercial",
-    desc: "Configuración de precios de venta, costos base, márgenes y ofertas.",
+    desc: "Precios, rendimiento de vendedores, análisis de ventas y seguimiento de pedidos.",
     color: "emerald",
     estado: "activo",
     roles: ["Admin", "gestorComercial"],

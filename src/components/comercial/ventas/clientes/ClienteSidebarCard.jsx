@@ -56,7 +56,7 @@ export default function ClienteSidebarCard({ clienteId }) {
             )}
           </div>
           <h3 className="font-black text-sm text-slate-800 truncate" title={cliente.razon_social}>
-            {cliente.razon_social}
+            {cliente.tratamiento ? `${cliente.tratamiento} ` : ""}{cliente.razon_social}
           </h3>
           {cliente.nombre_comercial && (
             <p className="text-xs text-slate-400 font-bold leading-tight">

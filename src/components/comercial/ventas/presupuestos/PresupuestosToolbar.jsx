@@ -1,5 +1,5 @@
 "use client";
-import { Filter } from "lucide-react";
+import { Filter, Plus } from "lucide-react";
 import { SearchBar, Text } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,13 @@ const ESTADOS_PRESUPUESTO = [
   { value: "vencido", label: "Vencido" },
 ];
 
-function FilterDropdown({ value, onChange }) {
+const TIPOS_PRESUPUESTO = [
+  { value: "", label: "Todos" },
+  { value: "pipeline", label: "Pipeline" },
+  { value: "directo", label: "Directo" },
+];
+
+function FilterDropdown({ value, onChange, options, label, ariaLabel }) {
   const isActive = value !== "";
   return (
     <div className="relative flex items-center gap-1.5">
@@ -20,7 +26,7 @@ function FilterDropdown({ value, onChange }) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        aria-label="Filtrar por estado"
+        aria-label={ariaLabel}
         className={cn(
           "appearance-none text-xs font-semibold rounded-lg px-2 py-1.5 pr-6 cursor-pointer",
           "border transition-all outline-none",
@@ -29,9 +35,9 @@ function FilterDropdown({ value, onChange }) {
             : "bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300"
         )}
       >
-        {ESTADOS_PRESUPUESTO.map((opt) => (
+        {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
-            Estado: {opt.label}
+            {label}: {opt.label}
           </option>
         ))}
       </select>
@@ -52,9 +58,12 @@ export default function PresupuestosToolbar({
   onBusquedaChange,
   estado,
   onEstadoChange,
+  tipo,
+  onTipoChange,
   count,
   hayFiltrosActivos,
   onLimpiarFiltros,
+  onNuevoPresupuesto,
 }) {
   return (
     <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative z-20">
@@ -67,7 +76,20 @@ export default function PresupuestosToolbar({
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
-        <FilterDropdown value={estado} onChange={onEstadoChange} />
+        <FilterDropdown
+          value={estado}
+          onChange={onEstadoChange}
+          options={ESTADOS_PRESUPUESTO}
+          label="Estado"
+          ariaLabel="Filtrar por estado"
+        />
+        <FilterDropdown
+          value={tipo}
+          onChange={onTipoChange}
+          options={TIPOS_PRESUPUESTO}
+          label="Tipo"
+          ariaLabel="Filtrar por tipo"
+        />
         {hayFiltrosActivos && (
           <button
             onClick={onLimpiarFiltros}
@@ -78,20 +100,30 @@ export default function PresupuestosToolbar({
         )}
       </div>
 
-      <Text
-        variant="label"
-        className="flex items-center gap-2 text-slate-400 whitespace-nowrap sm:ml-auto"
-      >
-        <span
-          className={cn(
-            "w-1.5 h-1.5 rounded-full",
-            count > 0
-              ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]"
-              : "bg-slate-300"
-          )}
-        />
-        {count} presupuesto{count !== 1 ? "s" : ""}
-      </Text>
+      <div className="flex items-center gap-3 sm:ml-auto">
+        <Text
+          variant="label"
+          className="flex items-center gap-2 text-slate-400 whitespace-nowrap"
+        >
+          <span
+            className={cn(
+              "w-1.5 h-1.5 rounded-full",
+              count > 0
+                ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]"
+                : "bg-slate-300"
+            )}
+          />
+          {count} presupuesto{count !== 1 ? "s" : ""}
+        </Text>
+
+        <button
+          onClick={onNuevoPresupuesto}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors cursor-pointer"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Nuevo Presupuesto
+        </button>
+      </div>
     </div>
   );
 }

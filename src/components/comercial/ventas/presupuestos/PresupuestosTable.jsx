@@ -11,6 +11,11 @@ const ESTADO_BADGE_MAP = {
   vencido: { variant: "warning", label: "Vencido" },
 };
 
+const TIPO_BADGE_MAP = {
+  pipeline: { className: "bg-indigo-50 text-indigo-700 border-indigo-200", label: "Pipeline" },
+  directo: { className: "bg-amber-50 text-amber-700 border-amber-200", label: "Directo" },
+};
+
 function formatMonto(monto, moneda = "USD") {
   if (!monto || Number(monto) === 0) return "—";
   const num = Number(monto);
@@ -48,7 +53,7 @@ function VigenciaChip({ enviado_at, vigencia_dias, estado }) {
 }
 
 /**
- * Tabla de presupuestos. Cada fila navega al detalle de la oportunidad.
+ * Tabla de presupuestos. Cada fila navega a la página dedicada del presupuesto.
  */
 export default function PresupuestosTable({ presupuestos }) {
   const router = useRouter();
@@ -61,6 +66,7 @@ export default function PresupuestosTable({ presupuestos }) {
             {[
               { label: "Oportunidad", className: "py-3 pl-6 pr-4" },
               { label: "Cliente", className: "py-3 px-4" },
+              { label: "Tipo", className: "py-3 px-4 text-center" },
               { label: "Versión", className: "py-3 px-4 text-center" },
               { label: "Estado", className: "py-3 px-4 text-center" },
               { label: "Total", className: "py-3 px-4 text-right" },
@@ -76,21 +82,42 @@ export default function PresupuestosTable({ presupuestos }) {
         </thead>
         <tbody>
           {presupuestos.map((p) => {
-            const badge = ESTADO_BADGE_MAP[p.estado] || { variant: "default", label: p.estado };
+            const estadoBadge = ESTADO_BADGE_MAP[p.estado] || { variant: "default", label: p.estado };
+            const tipoBadge = TIPO_BADGE_MAP[p.tipo] || TIPO_BADGE_MAP.pipeline;
 
             return (
               <tr
                 key={p.id}
-                onClick={() => router.push(`/ventas-crm/oportunidades/${p.oportunidad}`)}
+                onClick={() => router.push(`/ventas-crm/presupuestos/${p.id}`)}
                 className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors cursor-pointer"
               >
                 <td className="py-3 pl-6 pr-4">
-                  <span className="text-sm font-semibold text-slate-800">
-                    {p.oportunidad_titulo || `Oportunidad #${p.oportunidad}`}
-                  </span>
+                  {p.tipo === "directo" ? (
+                    <span className="text-sm text-slate-500">Venta directa</span>
+                  ) : p.oportunidad ? (
+                    <a
+                      href={`/ventas-crm/oportunidades/${p.oportunidad}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
+                    >
+                      {p.oportunidad_titulo || `Oportunidad #${p.oportunidad}`}
+                    </a>
+                  ) : (
+                    <span className="text-sm text-slate-500">—</span>
+                  )}
                 </td>
                 <td className="py-3 px-4">
                   <span className="text-sm text-slate-600">{p.cliente_razon_social}</span>
+                </td>
+                <td className="py-3 px-4 text-center">
+                  <span
+                    className={cn(
+                      "text-[11px] font-semibold px-2 py-0.5 rounded-full border",
+                      tipoBadge.className
+                    )}
+                  >
+                    {tipoBadge.label}
+                  </span>
                 </td>
                 <td className="py-3 px-4 text-center">
                   <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
@@ -98,7 +125,7 @@ export default function PresupuestosTable({ presupuestos }) {
                   </span>
                 </td>
                 <td className="py-3 px-4 text-center">
-                  <Badge variant={badge.variant}>{badge.label}</Badge>
+                  <Badge variant={estadoBadge.variant}>{estadoBadge.label}</Badge>
                 </td>
                 <td className="py-3 px-4 text-right">
                   <span className="text-sm font-semibold text-slate-800">

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import ClienteForm from "@/components/ventas/clientes/ClienteForm";
+import ClienteForm from "@/components/comercial/ventas/clientes/ClienteForm";
 import { PageHeader, Section } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { createCliente } from "@/services/apis/ventas";

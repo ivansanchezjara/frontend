@@ -129,17 +129,22 @@ export default function VentaBuilder({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ─── Calcular precio según tier y moneda ────────────────────
+  // ─── Calcular precio según tier, oferta y moneda ─────────────
   const calcularPrecio = (variante) => {
     const precioField = TIER_PRECIO_FIELD_MAP[tier] || "precio_0_publico";
-    const precioUsd = parseFloat(variante[precioField]) || 0;
+    const precioTierUsd = parseFloat(variante[precioField]) || 0;
+
+    // Verificar si hay oferta vigente mejor que el tier
+    const precioOferta = variante.precio_oferta ? parseFloat(variante.precio_oferta) : null;
+    const tieneOferta = precioOferta !== null && precioOferta < precioTierUsd;
+    const precioUsd = tieneOferta ? precioOferta : precioTierUsd;
 
     let precioMoneda = precioUsd;
     if (ventaData.moneda_negociacion !== "USD" && tipoCambio) {
       precioMoneda = Math.round(precioUsd * parseFloat(tipoCambio.valor));
     }
 
-    return { precioUsd, precioMoneda };
+    return { precioUsd, precioMoneda, tieneOferta, precioOferta, precioTierUsd };
   };
 
   // ─── Agregar producto a las líneas ──────────────────────────
@@ -162,7 +167,7 @@ export default function VentaBuilder({
       onLineasChange(nuevasLineas);
     } else {
       // Agregar nueva línea
-      const { precioUsd, precioMoneda } = calcularPrecio(variante);
+      const { precioUsd, precioMoneda, tieneOferta, precioOferta, precioTierUsd } = calcularPrecio(variante);
       const nuevaLinea = {
         variante_id: variante.id,
         product_code: variante.product_code,
@@ -172,6 +177,10 @@ export default function VentaBuilder({
         precio_moneda: precioMoneda,
         subtotal_usd: precioUsd,
         subtotal_moneda: precioMoneda,
+        tiene_oferta: tieneOferta,
+        precio_oferta: precioOferta,
+        precio_tier_usd: precioTierUsd,
+        oferta_vence: variante.oferta_vence || null,
       };
       onLineasChange([...lineas, nuevaLinea]);
     }
@@ -437,7 +446,7 @@ export default function VentaBuilder({
             {showResultados && resultados.length > 0 && (
               <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-72 overflow-y-auto">
                 {resultados.map((variante) => {
-                  const { precioUsd, precioMoneda } = calcularPrecio(variante);
+                  const { precioUsd, precioMoneda, tieneOferta, precioTierUsd } = calcularPrecio(variante);
                   return (
                     <button
                       key={variante.id}
@@ -446,9 +455,16 @@ export default function VentaBuilder({
                       className="w-full px-4 py-3 text-left hover:bg-emerald-50 transition-colors border-b border-slate-50 last:border-0 flex items-center justify-between gap-3"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-slate-800 truncate">
-                          {variante.nombre_variante || variante.producto_nombre}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-slate-800 truncate">
+                            {variante.nombre_variante || variante.producto_nombre}
+                          </p>
+                          {tieneOferta && (
+                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2 py-0.5 text-[10px] font-bold text-rose-600">
+                              🏷️ OFERTA
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-slate-400 font-mono">
                           {variante.product_code}
                         </p>
@@ -457,7 +473,17 @@ export default function VentaBuilder({
                         <p className="text-sm font-bold text-emerald-700">
                           {formatMonto(precioMoneda, ventaData.moneda_negociacion || "USD")}
                         </p>
-                        {ventaData.moneda_negociacion !== "USD" && (
+                        {tieneOferta && (
+                          <p className="text-[10px] text-slate-400 line-through">
+                            {formatMonto(
+                              ventaData.moneda_negociacion !== "USD" && tipoCambio
+                                ? Math.round(precioTierUsd * parseFloat(tipoCambio.valor))
+                                : precioTierUsd,
+                              ventaData.moneda_negociacion || "USD"
+                            )}
+                          </p>
+                        )}
+                        {!tieneOferta && ventaData.moneda_negociacion !== "USD" && (
                           <p className="text-[10px] text-slate-400">
                             $ {precioUsd.toFixed(2)} USD
                           </p>
@@ -494,8 +520,13 @@ export default function VentaBuilder({
                       Cant.
                     </th>
                     <th className="py-2.5 px-3 text-[10px] font-black uppercase tracking-widest text-right">
-                      P. Unit.
+                      P. Original
                     </th>
+                    {lineas.some((l) => l.tiene_oferta) && (
+                      <th className="py-2.5 px-3 text-[10px] font-black uppercase tracking-widest text-right text-rose-600">
+                        P. Oferta
+                      </th>
+                    )}
                     <th className="py-2.5 px-3 text-[10px] font-black uppercase tracking-widest text-right">
                       Subtotal
                     </th>
@@ -510,6 +541,7 @@ export default function VentaBuilder({
                       moneda={ventaData.moneda_negociacion || "USD"}
                       tier={tier}
                       index={index}
+                      mostrarColumnaOferta={lineas.some((l) => l.tiene_oferta)}
                       onCantidadChange={(val) =>
                         handleCantidadChange(index, val)
                       }

@@ -16,6 +16,7 @@ export default function TablaProductosPresupuesto({
   onToggle, onCantidad, onDescuentoExtra,
 }) {
   const showDualPrice = tierPrecio !== "publico";
+  const hayOfertas = lineas.some((l) => l.tiene_oferta) || filasTabla.some((f) => f.tiene_oferta || f.precio_oferta);
 
   return (
     <div className={cn(
@@ -36,7 +37,10 @@ export default function TablaProductosPresupuesto({
                   <th className="py-3 px-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-[55px]">Dto.</th>
                 </>
               ) : (
-                <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-[90px]">Precio</th>
+                <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-[90px]">P. Original</th>
+              )}
+              {hayOfertas && (
+                <th className="py-3 px-3 text-[9px] font-black text-rose-600 uppercase tracking-widest text-right w-[80px]">P. Oferta</th>
               )}
               <th className="py-3 px-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-[95px]">Nuevo Desc.</th>
               <th className="py-3 px-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-[60px]">Cant.</th>
@@ -66,6 +70,7 @@ export default function TablaProductosPresupuesto({
                   precioTier={filaPrecioTier}
                   descuento={filaDescuento}
                   showDualPrice={showDualPrice}
+                  mostrarColumnaOferta={hayOfertas}
                   onToggle={onToggle}
                   onCantidad={onCantidad}
                   onDescuentoExtra={onDescuentoExtra}
@@ -84,6 +89,11 @@ export default function TablaProductosPresupuesto({
             {showDualPrice && lineas.some((l) => l.descuento_porcentaje > 0) && (
               <span className="ml-2 text-indigo-500">
                 · Precio {TIER_LABELS[tierPrecio]}
+              </span>
+            )}
+            {lineas.some((l) => l.tiene_oferta) && (
+              <span className="ml-2 text-rose-500">
+                · Con oferta vigente
               </span>
             )}
             {lineas.some((l) => l.descuento_extra_tipo !== "ninguno" && l.descuento_extra_valor > 0) && (

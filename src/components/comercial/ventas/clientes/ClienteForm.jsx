@@ -26,6 +26,17 @@ const CATEGORIAS_JURIDICA = [
   { value: "instituto_educativo", label: "Instituto Educativo" },
 ];
 
+const TRATAMIENTO_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "Sr.", label: "Sr." },
+  { value: "Sra.", label: "Sra." },
+  { value: "Dr.", label: "Dr." },
+  { value: "Dra.", label: "Dra." },
+  { value: "Prof.", label: "Prof." },
+  { value: "Prof. Dr.", label: "Prof. Dr." },
+  { value: "Prof. Dra.", label: "Prof. Dra." },
+];
+
 const selectClass =
   "block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500";
 
@@ -70,6 +81,7 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
     tipo_persona: cliente?.tipo_persona || "fisica",
     categoria: cliente?.categoria || "cliente_casual",
     es_extranjero: cliente?.es_extranjero || false,
+    tratamiento: cliente?.tratamiento || "",
     razon_social: cliente?.razon_social || "",
     nombre_comercial: cliente?.nombre_comercial || "",
     telefonoPrefijo: parsedPhone.prefix,
@@ -238,14 +250,33 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
           Datos Principales
         </Text>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label={esJuridica ? "Razón Social *" : "Nombre Completo *"}
-            value={formData.razon_social}
-            onChange={handleChange("razon_social")}
-            maxLength={200}
-            placeholder={esJuridica ? "Nombre legal de la empresa" : "Nombre y apellido"}
-            error={getError("razon_social")}
-          />
+          {/* Tratamiento + Nombre en una fila */}
+          <div className="flex gap-3 md:col-span-2 items-start">
+            <div className="flex flex-col gap-1.5 w-28 shrink-0">
+              <Text as="label" variant="label">Tratamiento</Text>
+              <select
+                className={selectClass}
+                value={formData.tratamiento}
+                onChange={handleChange("tratamiento")}
+              >
+                {TRATAMIENTO_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1 min-w-0">
+              <Input
+                label={esJuridica ? "Razón Social *" : "Nombre Completo *"}
+                value={formData.razon_social}
+                onChange={handleChange("razon_social")}
+                maxLength={200}
+                placeholder={esJuridica ? "Nombre legal de la empresa" : "Nombre y apellido"}
+                error={getError("razon_social")}
+              />
+            </div>
+          </div>
 
           {esJuridica && (
             <Input
@@ -255,6 +286,7 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
               maxLength={200}
               placeholder="Nombre de fantasía"
               error={getError("nombre_comercial")}
+              className="md:col-span-2"
             />
           )}
 

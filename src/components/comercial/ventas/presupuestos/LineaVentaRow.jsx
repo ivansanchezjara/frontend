@@ -3,29 +3,15 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
-const TIER_LABELS = {
-  publico: "Público",
-  estudiante: "Estudiante",
-  reventa: "Reventa",
-  mayorista: "Mayorista",
-  intercompany: "Intercompany",
-};
-
 /**
  * Fila de línea de venta dentro del constructor de venta.
- * Muestra producto, cantidad editable, precio unitario y subtotal.
- *
- * @param {Object} linea - { variante_id, product_code, nombre, cantidad, precio_usd, subtotal_usd, precio_moneda, subtotal_moneda }
- * @param {string} moneda - Moneda de negociación (USD, PYG, BRL)
- * @param {string} tier - Tier de precio aplicado
- * @param {Function} onCantidadChange - Callback al cambiar cantidad
- * @param {Function} onRemove - Callback al eliminar línea
- * @param {number} index - Índice de la línea
+ * Muestra producto, cantidad editable, precio original, precio oferta (si aplica) y subtotal.
  */
 export default function LineaVentaRow({
   linea,
   moneda,
   tier,
+  mostrarColumnaOferta = false,
   onCantidadChange,
   onRemove,
   index,
@@ -42,6 +28,18 @@ export default function LineaVentaRow({
     return `$ ${num.toLocaleString("es-PY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  // Precio original (tier) en la moneda de negociación
+  const precioOriginalMoneda = (() => {
+    if (!linea.tiene_oferta || !linea.precio_tier_usd) return linea.precio_moneda;
+    if (moneda === "USD") return Number(linea.precio_tier_usd);
+    // Convertir tier USD a moneda usando la misma proporción
+    if (linea.precio_usd && linea.precio_usd > 0) {
+      const ratio = linea.precio_moneda / linea.precio_usd;
+      return Math.round(Number(linea.precio_tier_usd) * ratio);
+    }
+    return Number(linea.precio_tier_usd);
+  })();
+
   return (
     <tr className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors group">
       {/* Número */}
@@ -51,14 +49,19 @@ export default function LineaVentaRow({
 
       {/* Producto */}
       <td className="py-3 px-3">
-        <div className="flex flex-col">
+        <div className="flex items-center gap-1.5">
           <span className="text-sm font-semibold text-slate-800">
             {linea.nombre}
           </span>
-          <span className="text-xs text-slate-400 font-mono">
-            {linea.product_code}
-          </span>
+          {linea.tiene_oferta && (
+            <span className="shrink-0 inline-flex items-center gap-0.5 rounded-full bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[9px] font-bold text-rose-600">
+              🏷️
+            </span>
+          )}
         </div>
+        <span className="text-xs text-slate-400 font-mono">
+          {linea.product_code}
+        </span>
       </td>
 
       {/* Cantidad */}
@@ -80,19 +83,30 @@ export default function LineaVentaRow({
         />
       </td>
 
-      {/* Precio unitario */}
+      {/* P. Original */}
       <td className="py-3 px-3 text-right">
-        <div className="flex flex-col items-end">
-          <span className="text-sm font-semibold text-slate-700">
-            {formatMonto(linea.precio_moneda, moneda)}
-          </span>
-          {moneda !== "USD" && (
-            <span className="text-[10px] text-slate-400">
-              $ {Number(linea.precio_usd).toFixed(2)} USD
-            </span>
-          )}
-        </div>
+        <span className={cn(
+          "text-sm tabular-nums",
+          linea.tiene_oferta
+            ? "line-through text-slate-400"
+            : "font-semibold text-slate-700"
+        )}>
+          {formatMonto(precioOriginalMoneda, moneda)}
+        </span>
       </td>
+
+      {/* P. Oferta (columna condicional) */}
+      {mostrarColumnaOferta && (
+        <td className="py-3 px-3 text-right">
+          {linea.tiene_oferta ? (
+            <span className="text-sm font-bold tabular-nums text-rose-600">
+              {formatMonto(linea.precio_moneda, moneda)}
+            </span>
+          ) : (
+            <span className="text-xs text-slate-300">—</span>
+          )}
+        </td>
+      )}
 
       {/* Subtotal */}
       <td className="py-3 px-3 text-right">

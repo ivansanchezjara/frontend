@@ -52,6 +52,7 @@ const PIPELINE_STAGES = [
 // ─── Quick Actions config ───────────────────────────────────────
 
 const QUICK_ACTIONS = [
+  { href: "/ventas-crm/ventas/nueva", icon: ShoppingCart, label: "Venta rápida" },
   { href: "/ventas-crm/oportunidades", icon: Target, label: "Oportunidades" },
   { href: "/ventas-crm/presupuestos", icon: FileText, label: "Presupuestos" },
   { href: "/ventas-crm/clientes", icon: Users, label: "Clientes" },

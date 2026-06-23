@@ -53,14 +53,23 @@ export default function HeroBanner({
           )}
         </div>
 
-        {/* Right — CTA */}
-        <Link
-          href="/ventas-crm/ventas/nueva"
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-white transition-colors shadow-lg shadow-emerald-500/25 self-start lg:self-center"
-        >
-          <Plus className="h-4 w-4" />
-          Nueva venta
-        </Link>
+        {/* Right — Quick actions */}
+        <div className="flex items-center gap-2 self-start lg:self-center">
+          <Link
+            href="/ventas-crm/ventas/nueva"
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-white transition-colors shadow-lg shadow-emerald-500/25"
+          >
+            <Plus className="h-4 w-4" />
+            Venta rápida
+          </Link>
+          <Link
+            href="/ventas-crm/oportunidades"
+            className="inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2.5 text-sm font-medium text-white transition-colors"
+          >
+            <Target className="h-4 w-4" />
+            Nueva oportunidad
+          </Link>
+        </div>
       </div>
 
       {/* Progress bar del mes */}

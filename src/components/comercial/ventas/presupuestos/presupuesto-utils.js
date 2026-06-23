@@ -47,6 +47,44 @@ export function getPrecioPublico(variante) {
 }
 
 /**
+ * Retorna el precio de oferta vigente si existe, o null.
+ */
+export function getPrecioOferta(variante) {
+  if (!variante.precio_oferta) return null;
+  // Si la oferta viene validada del backend (ya filtrada por vigencia),
+  // el campo precio_oferta solo existe si está vigente.
+  return Number(variante.precio_oferta) || null;
+}
+
+/**
+ * Determina el mejor precio unitario para una variante,
+ * considerando el precio de tier y la oferta vigente.
+ * Retorna { precio, tipo: 'oferta' | 'tier', precioOferta, precioTier }
+ */
+export function getPrecioMejor(variante, tier) {
+  const precioTier = getPrecioTier(variante, tier);
+  const precioOferta = getPrecioOferta(variante);
+
+  if (precioOferta !== null && precioOferta < precioTier) {
+    return {
+      precio: precioOferta,
+      tipo: "oferta",
+      precioOferta,
+      precioTier,
+      ofertaVence: variante.oferta_vence || null,
+    };
+  }
+
+  return {
+    precio: precioTier,
+    tipo: "tier",
+    precioOferta,
+    precioTier,
+    ofertaVence: variante.oferta_vence || null,
+  };
+}
+
+/**
  * Calcula el descuento implícito entre precio público y precio de tier.
  * Retorna porcentaje (0-100).
  */

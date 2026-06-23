@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { X } from "lucide-react";
-import { Section, EmptyState, Modal, Button, Input, Text } from "@/components/ui";
+import { Section, EmptyState, Modal, Button, Text } from "@/components/ui";
 import { useToast, useConfirm } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import {
@@ -10,18 +10,18 @@ import {
   enviarPresupuesto,
   aceptarPresupuesto,
   rechazarPresupuesto,
-  nuevaVersionPresupuesto,
 } from "@/services/apis/ventas";
-import ConstructorPresupuesto from "./ConstructorPresupuesto";
-import PresupuestoCard from "./PresupuestoCard";
+import PresupuestoSummaryCard from "./PresupuestoSummaryCard";
 
 const ETAPAS_CON_PRESUPUESTO = ["negociacion", "ganada", "perdida"];
 
 /**
- * Orquestador principal de presupuestos en una oportunidad.
- * Renderiza el constructor (en negociación) y el historial de versiones.
+ * Sección de presupuestos en la vista de oportunidad.
+ * Muestra tarjetas resumen (PresupuestoSummaryCard) en lugar del constructor embebido.
+ * Incluye acciones rápidas (enviar, eliminar, aceptar, rechazar) y estado vacío
+ * con botón "Crear presupuesto" que navega a la página dedicada.
  */
-export default function PresupuestoSection({ oportunidadId, etapa, tierPrecio = "publico", productosInteres = [], onGanada }) {
+export default function PresupuestoSection({ oportunidadId, etapa, onGanada }) {
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const { data: presupuestosData, loading, execute: fetchPresupuestos } =
@@ -50,6 +50,26 @@ export default function PresupuestoSection({ oportunidadId, etapa, tierPrecio = 
       fetchPresupuestos({ oportunidad: oportunidadId });
     } catch (err) {
       showToast(err?.data?.detail || "Error al enviar", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleEliminar = async (id) => {
+    const ok = await confirm(
+      "¿Eliminar este presupuesto borrador? Esta acción no se puede deshacer.",
+      "Eliminar presupuesto",
+      { confirmText: "Eliminar", type: "danger" }
+    );
+    if (!ok) return;
+
+    setActionLoading(`eliminar-${id}`);
+    try {
+      await updatePresupuesto(id, { _method: "DELETE" });
+      showToast("Presupuesto eliminado", "info");
+      fetchPresupuestos({ oportunidad: oportunidadId });
+    } catch {
+      showToast("Error al eliminar", "error");
     } finally {
       setActionLoading(null);
     }
@@ -97,118 +117,49 @@ export default function PresupuestoSection({ oportunidadId, etapa, tierPrecio = 
     }
   };
 
-  const handleNuevaVersion = async (id) => {
-    setActionLoading(`version-${id}`);
-    try {
-      await nuevaVersionPresupuesto(id);
-      showToast("Nueva versión creada en borrador", "success");
-      fetchPresupuestos({ oportunidad: oportunidadId });
-    } catch (err) {
-      showToast(err?.data?.detail || "Error al crear versión", "error");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleEliminar = async (id) => {
-    const ok = await confirm(
-      "¿Eliminar este presupuesto borrador? Esta acción no se puede deshacer.",
-      "Eliminar presupuesto",
-      { confirmText: "Eliminar", type: "danger" }
-    );
-    if (!ok) return;
-
-    setActionLoading(`eliminar-${id}`);
-    try {
-      await updatePresupuesto(id, { _method: "DELETE" });
-      showToast("Presupuesto eliminado", "info");
-      fetchPresupuestos({ oportunidad: oportunidadId });
-    } catch {
-      showToast("Error al eliminar", "error");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
   // ─── Render guards ──────────────────────────────────────────
 
   if (!ETAPAS_CON_PRESUPUESTO.includes(etapa)) return null;
 
-  const borradorActivo = presupuestos.find((p) => p.estado === "borrador");
-  const presupuestosHistoricos = presupuestos.filter((p) => p.estado !== "borrador");
-
   return (
     <>
-      {/* Constructor (solo en negociación) */}
-      {etapa === "negociacion" && (
-        <ConstructorPresupuesto
-          oportunidadId={oportunidadId}
-          presupuestoBorrador={borradorActivo}
-          tierPrecio={tierPrecio}
-          productosInteres={productosInteres}
-          onCreated={() => fetchPresupuestos({ oportunidad: oportunidadId })}
-          onEnviar={handleEnviar}
-          onEliminar={handleEliminar}
-        />
-      )}
-
-      {/* Historial */}
-      {presupuestosHistoricos.length > 0 && (
-        <Section
-          title="Historial de Presupuestos"
-          subtitle={`${presupuestosHistoricos.length} versión${presupuestosHistoricos.length !== 1 ? "es" : ""} registrada${presupuestosHistoricos.length !== 1 ? "s" : ""}`}
-        >
-          <div className="p-5 space-y-4">
-            {presupuestosHistoricos.map((presupuesto) => (
-              <PresupuestoCard
+      <Section
+        title="Presupuestos"
+        subtitle={
+          presupuestos.length > 0
+            ? `${presupuestos.length} presupuesto${presupuestos.length !== 1 ? "s" : ""}`
+            : undefined
+        }
+      >
+        <div className="p-5 space-y-4">
+          {/* Lista de tarjetas resumen */}
+          {presupuestos.length > 0 ? (
+            presupuestos.map((presupuesto) => (
+              <PresupuestoSummaryCard
                 key={presupuesto.id}
                 presupuesto={presupuesto}
-                actionLoading={actionLoading}
                 onEnviar={handleEnviar}
+                onEliminar={handleEliminar}
                 onAceptar={handleAceptar}
                 onRechazar={handleRechazarClick}
-                onNuevaVersion={handleNuevaVersion}
-                etapaActual={etapa}
               />
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* En etapas cerradas sin historial filtrado */}
-      {etapa !== "negociacion" && presupuestos.length > 0 && presupuestosHistoricos.length === 0 && (
-        <Section
-          title="Presupuestos"
-          subtitle={`${presupuestos.length} versión${presupuestos.length !== 1 ? "es" : ""}`}
-        >
-          <div className="p-5 space-y-4">
-            {presupuestos.map((presupuesto) => (
-              <PresupuestoCard
-                key={presupuesto.id}
-                presupuesto={presupuesto}
-                actionLoading={actionLoading}
-                onEnviar={handleEnviar}
-                onAceptar={handleAceptar}
-                onRechazar={handleRechazarClick}
-                onNuevaVersion={handleNuevaVersion}
-                etapaActual={etapa}
+            ))
+          ) : (
+            /* Estado vacío: mostrar "Crear presupuesto" en negociación */
+            etapa === "negociacion" ? (
+              <PresupuestoSummaryCard
+                empty
+                oportunidadId={oportunidadId}
               />
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* Estado vacío */}
-      {etapa !== "negociacion" && presupuestos.length === 0 && !loading && (
-        <Section title="Presupuestos">
-          <div className="p-8">
-            <EmptyState
-              titulo="Sin presupuestos"
-              descripcion="No hay presupuestos asociados a esta oportunidad."
-            />
-          </div>
-        </Section>
-      )}
+            ) : (
+              <EmptyState
+                titulo="Sin presupuestos"
+                descripcion="No hay presupuestos asociados a esta oportunidad."
+              />
+            )
+          )}
+        </div>
+      </Section>
 
       {/* Modal de rechazo */}
       <Modal

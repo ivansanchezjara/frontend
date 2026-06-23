@@ -49,8 +49,8 @@ export default function BulkUpdateModal({ count, onConfirm, onClose }) {
   };
 
   return (
-    <Modal title="Ajuste Masivo de Precios" onClose={onClose} open>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal title="Ajuste Masivo de Precios" onClose={onClose} open size="md">
+      <form onSubmit={handleSubmit} className="p-6 space-y-5">
         <p className="text-sm text-slate-600">
           Aplicar cambio a <strong>{count}</strong> variante{count > 1 ? 's' : ''} seleccionada{count > 1 ? 's' : ''}.
         </p>
@@ -59,7 +59,7 @@ export default function BulkUpdateModal({ count, onConfirm, onClose }) {
           <select
             value={campo}
             onChange={(e) => setCampo(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-700 px-3.5 py-2.5 text-sm font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             aria-label="Campo a modificar"
           >
             {CAMPOS.map((c) => (
@@ -72,7 +72,7 @@ export default function BulkUpdateModal({ count, onConfirm, onClose }) {
           <select
             value={tipoOperacion}
             onChange={(e) => setTipoOperacion(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-700 px-3.5 py-2.5 text-sm font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             aria-label="Tipo de operación"
           >
             {OPERACIONES.map((o) => (
@@ -98,12 +98,12 @@ export default function BulkUpdateModal({ count, onConfirm, onClose }) {
           </div>
         )}
 
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
           <Button variant="ghost" onClick={onClose} type="button">
             Cancelar
           </Button>
           <Button type="submit" disabled={!valor || loading}>
-            {loading ? 'Aplicando...' : 'Aplicar'}
+            {loading ? 'Aplicando...' : 'Aplicar Cambios'}
           </Button>
         </div>
       </form>

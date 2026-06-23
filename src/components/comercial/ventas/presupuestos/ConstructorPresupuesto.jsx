@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import ConfigBarPresupuesto from "./ConfigBarPresupuesto";
 import TablaProductosPresupuesto from "./TablaProductosPresupuesto";
 import {
-  getPrecioTier, getPrecioPublico, calcDescuentoImplicito,
+  getPrecioTier, getPrecioPublico, getPrecioMejor, calcDescuentoImplicito,
   formatFecha, calcSubtotalLinea,
 } from "./presupuesto-utils";
 
@@ -29,7 +29,7 @@ export default function ConstructorPresupuesto({
   const [saving, setSaving] = useState(false);
   const [moneda, setMoneda] = useState(presupuestoBorrador?.moneda || "USD");
   const [notas, setNotas] = useState(presupuestoBorrador?.notas || "");
-  const [vigenciaDias, setVigenciaDias] = useState(presupuestoBorrador?.vigencia_dias || 15);
+  const [vigenciaDias, setVigenciaDias] = useState(presupuestoBorrador?.vigencia_dias || 3);
   const [lineas, setLineas] = useState([]);
   const [showNotas, setShowNotas] = useState(Boolean(presupuestoBorrador?.notas));
 
@@ -78,15 +78,12 @@ export default function ConstructorPresupuesto({
       setLineas(
         productosInteres.map((p) => {
           const precioPublico = Number(p.precio_0_publico) || 0;
-          const tierField = {
-            publico: "precio_0_publico",
-            estudiante: "precio_1_estudiante",
-            reventa: "precio_2_reventa",
-            mayorista: "precio_3_mayorista",
-            intercompany: "precio_4_intercompany",
-          }[tierPrecio] || "precio_0_publico";
-          const precioTier = Number(p[tierField]) || precioPublico;
-          const descuento = calcDescuentoImplicito(precioPublico, precioTier);
+          const mejor = getPrecioMejor(p, tierPrecio);
+          const precioUnitario = mejor.precio;
+          // Si es oferta, no aplicar descuento tier — el precio ya es el final
+          const descuento = mejor.tipo === "oferta"
+            ? 0
+            : calcDescuentoImplicito(precioPublico, precioUnitario);
 
           return {
             variante: p.variante,
@@ -94,12 +91,15 @@ export default function ConstructorPresupuesto({
             variante_sku: p.variante_sku || "",
             producto_nombre: p.producto_nombre || "",
             cantidad: p.cantidad_estimada || 1,
-            precio_unitario: precioTier,
+            precio_unitario: precioUnitario,
             descuento_porcentaje: descuento,
             descuento_extra_tipo: "ninguno",
             descuento_extra_valor: 0,
             precio_publico: precioPublico,
-            precio_tier: precioTier,
+            precio_tier: mejor.precioTier,
+            tiene_oferta: mejor.tipo === "oferta",
+            precio_oferta: mejor.precioOferta,
+            oferta_vence: mejor.ofertaVence,
             notas: "",
           };
         })
@@ -122,6 +122,8 @@ export default function ConstructorPresupuesto({
       precio_2_reventa: v.precio_2_reventa,
       precio_3_mayorista: v.precio_3_mayorista,
       precio_4_intercompany: v.precio_4_intercompany,
+      precio_oferta: v.precio_oferta || null,
+      oferta_vence: v.oferta_vence || null,
     }));
   }, [busquedaDebounced, searchResults]);
 
@@ -142,6 +144,9 @@ export default function ConstructorPresupuesto({
       producto_nombre: l.producto_nombre,
       precio_0_publico: l.precio_publico || l.precio_unitario,
       precio_tier: l.precio_tier || l.precio_unitario,
+      precio_oferta: l.precio_oferta || null,
+      oferta_vence: l.oferta_vence || null,
+      tiene_oferta: l.tiene_oferta || false,
     }));
 
     const noSeleccionados = resultadosNormalizados.filter(
@@ -234,8 +239,13 @@ export default function ConstructorPresupuesto({
       setLineas((prev) => prev.filter((l) => l.variante !== fila.id));
     } else {
       const precioPublico = getPrecioPublico(fila);
-      const precioTier = getPrecioTier(fila, tierPrecio);
-      const descuento = calcDescuentoImplicito(precioPublico, precioTier);
+      const mejor = getPrecioMejor(fila, tierPrecio);
+      const precioUnitario = mejor.precio;
+      // Si es oferta, descuento_porcentaje = 0 porque precio_unitario ya es el precio final de oferta.
+      // Si es tier, descuento = diferencia entre público y tier.
+      const descuento = mejor.tipo === "oferta"
+        ? 0
+        : calcDescuentoImplicito(precioPublico, precioUnitario);
 
       setLineas((prev) => [
         ...prev,
@@ -245,12 +255,15 @@ export default function ConstructorPresupuesto({
           variante_sku: fila.product_code || "",
           producto_nombre: fila.producto_nombre || "",
           cantidad: 1,
-          precio_unitario: precioTier,
+          precio_unitario: precioUnitario,
           descuento_porcentaje: descuento,
           descuento_extra_tipo: "ninguno",
           descuento_extra_valor: 0,
           precio_publico: precioPublico,
-          precio_tier: precioTier,
+          precio_tier: mejor.precioTier,
+          tiene_oferta: mejor.tipo === "oferta",
+          precio_oferta: mejor.precioOferta,
+          oferta_vence: mejor.ofertaVence,
           notas: "",
         },
       ]);

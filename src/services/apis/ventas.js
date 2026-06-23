@@ -585,3 +585,48 @@ export async function nuevaVersionPresupuesto(id) {
     "crear nueva versión de presupuesto",
   );
 }
+
+export async function getTextoPresupuesto(id) {
+  return request(
+    `${API_URL}/ventas/presupuestos/${id}/texto/`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+    },
+    "generar texto del presupuesto",
+  );
+}
+
+export async function crearPresupuestoDirecto(data) {
+  return request(
+    `${API_URL}/ventas/presupuestos/directo/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear presupuesto directo",
+  );
+}
+
+export async function descargarPdfPresupuesto(id) {
+  const res = await fetch(`${API_URL}/ventas/presupuestos/${id}/pdf/`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error("Error al generar PDF");
+
+  // Extraer nombre del archivo del header Content-Disposition
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : `presupuesto_${id}.pdf`;
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}

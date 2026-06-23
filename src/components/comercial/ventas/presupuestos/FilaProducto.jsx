@@ -12,10 +12,12 @@ export default function FilaProducto({
   fila, selected, linea, subtotal,
   precioPublico, precioTier, descuento,
   showDualPrice = true,
+  mostrarColumnaOferta = false,
   onToggle, onCantidad, onDescuentoExtra,
 }) {
   const tipoExtra = linea?.descuento_extra_tipo || "ninguno";
   const valorExtra = linea?.descuento_extra_valor || 0;
+  const tieneOferta = fila.tiene_oferta || (linea?.tiene_oferta) || false;
 
   return (
     <tr
@@ -48,9 +50,16 @@ export default function FilaProducto({
 
       {/* Producto */}
       <td className="py-2.5 px-3">
-        <Text variant="bodyXs" className="font-black text-slate-800 truncate leading-tight group-hover:text-blue-600 transition-colors">
-          {fila.producto_nombre}
-        </Text>
+        <div className="flex items-center gap-1.5">
+          <Text variant="bodyXs" className="font-black text-slate-800 truncate leading-tight group-hover:text-blue-600 transition-colors">
+            {fila.producto_nombre}
+          </Text>
+          {tieneOferta && (
+            <span className="shrink-0 inline-flex items-center rounded-full bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[9px] font-bold text-rose-600">
+              🏷️
+            </span>
+          )}
+        </div>
         {fila.nombre_variante && (
           <Text variant="bodyXs" className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate mt-0.5">
             {fila.nombre_variante}
@@ -64,7 +73,7 @@ export default function FilaProducto({
           <td className="py-2.5 px-3 text-right">
             <Text variant="bodyXs" className={cn(
               "tabular-nums",
-              descuento > 0 ? "line-through text-slate-300" : "text-slate-500"
+              (descuento > 0 || tieneOferta) ? "line-through text-slate-300" : "text-slate-500"
             )}>
               {formatPrecio(precioPublico)}
             </Text>
@@ -72,13 +81,14 @@ export default function FilaProducto({
 
           {/* Precio del tier del cliente */}
           <td className="py-2.5 px-3 text-right">
-            {precioTier > 0 ? (
-              <span className="text-xs font-bold tabular-nums text-indigo-700">
-                {formatPrecio(precioTier)}
-              </span>
-            ) : (
-              <Text variant="muted" className="text-xs">—</Text>
-            )}
+            <span className={cn(
+              "text-xs tabular-nums",
+              tieneOferta
+                ? "line-through text-slate-400"
+                : "font-bold text-indigo-700"
+            )}>
+              {precioTier > 0 ? formatPrecio(precioTier) : "—"}
+            </span>
           </td>
 
           {/* Descuento tier implícito */}
@@ -93,13 +103,28 @@ export default function FilaProducto({
           </td>
         </>
       ) : (
+        /* Single price column: P. Original */
         <td className="py-2.5 px-3 text-right">
-          {precioPublico > 0 ? (
-            <span className="text-xs font-bold tabular-nums text-slate-700">
-              {formatPrecio(precioPublico)}
+          <span className={cn(
+            "text-xs tabular-nums",
+            tieneOferta
+              ? "line-through text-slate-400"
+              : "font-bold text-slate-700"
+          )}>
+            {precioPublico > 0 ? formatPrecio(precioPublico) : "—"}
+          </span>
+        </td>
+      )}
+
+      {/* P. Oferta (columna condicional) */}
+      {mostrarColumnaOferta && (
+        <td className="py-2.5 px-3 text-right">
+          {tieneOferta ? (
+            <span className="text-xs font-bold tabular-nums text-rose-600">
+              {formatPrecio(fila.precio_oferta || linea?.precio_oferta)}
             </span>
           ) : (
-            <Text variant="muted" className="text-xs">—</Text>
+            <span className="text-xs text-slate-300">—</span>
           )}
         </td>
       )}

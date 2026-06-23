@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { logout, getUser } from '@/services/apis/auth.js';
-import { Menu, X, ChevronLeft, ChevronRight, ChevronDown, LogOut } from 'lucide-react';
+import { Menu, X, ChevronLeft, ChevronRight, ChevronDown, LogOut, Settings } from 'lucide-react';
 import { navItems, familyStyles } from '@/config/navigation.js';
 import { BrandMark, Text } from '@/components/ui';
 
@@ -252,23 +252,20 @@ export default function SistemaLayout({ children }) {
                     ))}
                 </nav>
 
-                {/* Area de Perfil y Logout en Sidebar */}
+                {/* Area de Configuración y Logout en Sidebar */}
                 <div className="w-full px-2 mt-auto pt-4 mb-2 space-y-1 bg-slate-900 border-t border-slate-800/50 mt-4">
+                    {/* Botón Configuración (link directo al hub) */}
                     <Link
-                        href="/perfil"
-                        className={`flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 transition-all text-left w-full ${(!isExpanded && !isMobileOpen) ? 'md:justify-center px-0' : ''}`}
-                        title={(!isExpanded && !isMobileOpen) ? "Tu Cuenta" : undefined}
+                        href="/configuraciones"
+                        onClick={() => { setIsMobileOpen(false); setIsExpanded(false); }}
+                        className={`flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 transition-all text-left w-full ${(!isExpanded && !isMobileOpen) ? 'md:justify-center px-0' : ''} ${pathname.startsWith('/configuraciones') || pathname === '/perfil' || pathname === '/empresa' ? 'bg-white/5 text-white' : 'text-slate-400'}`}
+                        title={(!isExpanded && !isMobileOpen) ? "Configuración" : undefined}
                     >
-                        <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-slate-300 font-black text-xs shrink-0 border border-slate-700/50 shadow-inner">
-                            {initials}
+                        <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                            <Settings size={16} />
                         </div>
                         {(isExpanded || isMobileOpen) && (
-                            <div className="truncate flex-1">
-                                <Text variant="label" className="mb-1 text-[9px] leading-none text-slate-500">Tu Cuenta</Text>
-                                <Text variant="bodySm" className="truncate text-xs font-bold leading-none text-white">
-                                    {user?.first_name} {user?.last_name || (user?.first_name ? '' : user?.username)}
-                                </Text>
-                            </div>
+                            <span className="text-xs font-bold truncate flex-1">Configuración</span>
                         )}
                     </Link>
 

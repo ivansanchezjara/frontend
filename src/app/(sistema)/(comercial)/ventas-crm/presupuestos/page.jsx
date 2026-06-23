@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
-import { useRouter } from "next/navigation";
 import { Send, CheckCircle, XCircle } from "lucide-react";
 import {
   EmptyState,
@@ -13,17 +12,17 @@ import { useApi } from "@/hooks/useApi";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { getPresupuestos } from "@/services/apis/ventas";
-import PresupuestosToolbar from "@/components/ventas/presupuestos/PresupuestosToolbar";
-import PresupuestosTable from "@/components/ventas/presupuestos/PresupuestosTable";
+import PresupuestosToolbar from "@/components/comercial/ventas/presupuestos/PresupuestosToolbar";
+import PresupuestosTable from "@/components/comercial/ventas/presupuestos/PresupuestosTable";
+import ClienteSelectorModal from "@/components/comercial/ventas/presupuestos/ClienteSelectorModal";
 import { cn } from "@/lib/utils";
 
-const FILTER_SCHEMA = { search: "", estado: "", page: 1 };
+const FILTER_SCHEMA = { search: "", estado: "", tipo: "", page: 1 };
 const PAGE_SIZE = 24;
 
 // ─── Contenido principal ─────────────────────────────────────────
 
 function PresupuestosContent() {
-  const router = useRouter();
   const { filters, setFilter, resetFilters, page, setPage } = useUrlFilters(FILTER_SCHEMA);
 
   const { data: presupuestosData, loading, execute: fetchPresupuestos } = useApi(getPresupuestos);
@@ -37,6 +36,7 @@ function PresupuestosContent() {
   const [busquedaLocal, setBusquedaLocal] = useState(filters.search);
   const busquedaDebounced = useDebounce(busquedaLocal, 400);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [showClienteModal, setShowClienteModal] = useState(false);
 
   // Sincronizar búsqueda con URL
   useEffect(() => {
@@ -52,8 +52,9 @@ function PresupuestosContent() {
     const params = { page: filters.page };
     if (filters.search) params.search = filters.search;
     if (filters.estado) params.estado = filters.estado;
+    if (filters.tipo) params.tipo = filters.tipo;
     fetchPresupuestos(params).then(() => setHasLoadedOnce(true));
-  }, [fetchPresupuestos, filters.search, filters.page, filters.estado]);
+  }, [fetchPresupuestos, filters.search, filters.page, filters.estado, filters.tipo]);
 
   // Stats — solo una vez al montar
   useEffect(() => {
@@ -64,7 +65,7 @@ function PresupuestosContent() {
 
   if (loading && !hasLoadedOnce) return <LoadingScreen texto="Cargando presupuestos..." />;
 
-  const hayFiltrosActivos = filters.search !== "" || filters.estado !== "";
+  const hayFiltrosActivos = filters.search !== "" || filters.estado !== "" || filters.tipo !== "";
 
   const limpiarFiltros = () => {
     setBusquedaLocal("");
@@ -116,9 +117,12 @@ function PresupuestosContent() {
             onBusquedaChange={setBusquedaLocal}
             estado={filters.estado}
             onEstadoChange={(val) => setFilter("estado", val)}
+            tipo={filters.tipo}
+            onTipoChange={(val) => setFilter("tipo", val)}
             count={count}
             hayFiltrosActivos={hayFiltrosActivos}
             onLimpiarFiltros={limpiarFiltros}
+            onNuevoPresupuesto={() => setShowClienteModal(true)}
           />
 
           {/* Tabla / Empty state */}
@@ -132,13 +136,13 @@ function PresupuestosContent() {
                 descripcion={
                   hayFiltrosActivos
                     ? "Intentá con otros términos o cambiá los filtros."
-                    : "Los presupuestos se crean desde el detalle de una oportunidad en etapa Negociación."
+                    : "Creá un presupuesto desde una oportunidad o usá el botón \"Nuevo Presupuesto\" para venta directa."
                 }
-                textoBoton={hayFiltrosActivos ? "Limpiar filtros" : "Ver oportunidades"}
+                textoBoton={hayFiltrosActivos ? "Limpiar filtros" : "Nuevo Presupuesto"}
                 onAction={
                   hayFiltrosActivos
                     ? limpiarFiltros
-                    : () => router.push("/ventas-crm/oportunidades")
+                    : () => setShowClienteModal(true)
                 }
               />
             ) : (
@@ -158,6 +162,12 @@ function PresupuestosContent() {
 
         </div>
       </main>
+
+      {/* Modal de selección de cliente para nuevo presupuesto directo */}
+      <ClienteSelectorModal
+        open={showClienteModal}
+        onClose={() => setShowClienteModal(false)}
+      />
     </div>
   );
 }

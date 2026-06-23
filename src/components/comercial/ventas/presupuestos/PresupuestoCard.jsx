@@ -1,13 +1,15 @@
 "use client";
 import {
   FileText, Send, Check, X, RefreshCw, ExternalLink, Loader2,
-  Clock, CalendarDays, StickyNote,
+  Clock, CalendarDays, StickyNote, Copy, Download,
 } from "lucide-react";
 import { Button, Badge, Text } from "@/components/ui";
+import { useToast } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import {
   ESTADO_BADGE, formatMonto, formatFechaCorta, calcVigencia,
 } from "./presupuesto-utils";
+import { getTextoPresupuesto, descargarPdfPresupuesto } from "@/services/apis/ventas";
 
 /**
  * Card de presupuesto (historial, no editable).
@@ -152,8 +154,7 @@ function CardLineas({ lineas, moneda }) {
           <tr className="text-left text-[11px] text-slate-400 uppercase tracking-wide">
             <th className="pb-2 font-bold">Producto</th>
             <th className="pb-2 font-bold text-center">Cant.</th>
-            <th className="pb-2 font-bold text-right">P. Público</th>
-            <th className="pb-2 font-bold text-right">P. Unit.</th>
+            <th className="pb-2 font-bold text-right">Precio</th>
             <th className="pb-2 font-bold text-center">Desc. Tier</th>
             {hayDescuentoExtra && (
               <th className="pb-2 font-bold text-center">Desc. Extra</th>
@@ -188,15 +189,21 @@ function CardLineas({ lineas, moneda }) {
                 <td className="py-2 text-center text-slate-600">
                   {linea.cantidad}
                 </td>
-                <td className="py-2 text-right font-mono text-slate-400">
-                  {precioPublico > 0 ? (
-                    <span className={tieneDescuento ? "line-through" : ""}>
-                      {formatMonto(precioPublico, moneda)}
+                <td className="py-2 text-right font-mono">
+                  {tieneDescuento ? (
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span className="line-through text-slate-400 text-xs">
+                        {formatMonto(precioPublico, moneda)}
+                      </span>
+                      <span className="font-semibold text-emerald-700">
+                        {formatMonto(precioUnit, moneda)}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-slate-600">
+                      {formatMonto(precioPublico > 0 ? precioPublico : precioUnit, moneda)}
                     </span>
-                  ) : "—"}
-                </td>
-                <td className="py-2 text-right font-mono text-slate-600">
-                  {formatMonto(linea.precio_unitario, moneda)}
+                  )}
                 </td>
                 <td className="py-2 text-center text-slate-500">
                   {Number(linea.descuento_porcentaje) > 0
@@ -229,6 +236,26 @@ function CardFooter({
   etapaActual, isLoading, actionLoading,
   onEnviar, onAceptar, onRechazar, onNuevaVersion,
 }) {
+  const { showToast } = useToast();
+
+  const handleWhatsApp = async () => {
+    try {
+      const data = await getTextoPresupuesto(id);
+      await navigator.clipboard.writeText(data.texto);
+      showToast("Texto copiado al portapapeles", "success");
+    } catch {
+      showToast("Error al copiar texto", "error");
+    }
+  };
+
+  const handlePdf = async () => {
+    try {
+      await descargarPdfPresupuesto(id);
+    } catch {
+      showToast("Error al descargar PDF", "error");
+    }
+  };
+
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-slate-50/50 border-t border-slate-100">
       <div>
@@ -242,6 +269,32 @@ function CardFooter({
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Compartir — siempre visible si tiene líneas */}
+        {estado !== "borrador" && (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={Copy}
+              onClick={handleWhatsApp}
+              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+              title="Copiar texto para WhatsApp"
+            >
+              Copiar texto
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={Download}
+              onClick={handlePdf}
+              className="text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+              title="Descargar PDF"
+            >
+              PDF
+            </Button>
+          </>
+        )}
+
         {estado === "borrador" && (
           <Button
             variant="primary"

@@ -6,7 +6,7 @@ import { Button, PageHeader } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import { useToast } from "@/components/ui";
 import { createVenta } from "@/services/apis/ventas";
-import VentaBuilder from "@/components/ventas/presupuestos/VentaBuilder";
+import VentaBuilder from "@/components/comercial/ventas/presupuestos/VentaBuilder";
 import Link from "next/link";
 
 export default function NuevaVentaPage() {
@@ -74,8 +74,8 @@ export default function NuevaVentaPage() {
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       {/* HEADER */}
       <PageHeader
-        title="Nueva Venta"
-        subtitle="Comercial · Crear borrador de venta"
+        title="Venta Rápida"
+        subtitle="Mostrador · Crear venta directa"
         subtitleClassName="text-emerald-600"
       >
         <div className="flex items-center gap-3">

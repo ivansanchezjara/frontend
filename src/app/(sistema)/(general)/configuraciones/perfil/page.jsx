@@ -9,11 +9,14 @@ import {
   Save,
   Shield,
   User,
+  Trash2,
+  Image as ImageIcon,
 } from "lucide-react";
 
-import { Badge, Button, Heading, Input, LoadingScreen, Text } from "@/components/ui";
+import { Badge, Button, FilerModal, Heading, Input, LoadingScreen, PageHeader, Text } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import { getProfile, updateProfile } from "@/services/apis/auth.js";
+import { getFullImageUrl } from "@/services/apis/catalogo.js";
 
 function getInitial(profile) {
   return (profile?.first_name?.[0] || profile?.username?.[0] || "?").toUpperCase();
@@ -29,6 +32,8 @@ export default function ProfilePage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [profile, setProfile] = useState(null);
+  const [isFilerOpen, setIsFilerOpen] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState(null);
 
   const { loading } = useApi(getProfile, {
     auto: true,
@@ -48,12 +53,20 @@ export default function ProfilePage() {
     setErrorMsg("");
 
     try {
-      const updated = await updateProfile({
+      const payload = {
         first_name: profile.first_name,
         last_name: profile.last_name,
         email: profile.email,
-      });
+      };
+
+      // Incluir avatar solo si se cambió
+      if (selectedAvatar !== null) {
+        payload.avatar_id = selectedAvatar?.id || null;
+      }
+
+      const updated = await updateProfile(payload);
       setProfile(updated);
+      setSelectedAvatar(null);
       
       // Dispatch standard event to sync user profile changes with the Sidebar Layout immediately
       window.dispatchEvent(new Event("user-updated"));
@@ -70,20 +83,59 @@ export default function ProfilePage() {
   if (loading) return <LoadingScreen message="Cargando tu perfil..." />;
 
   return (
-    <main className="mx-auto max-w-4xl space-y-8 p-4 md:p-10">
+    <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
+      <PageHeader
+        breadcrumbs={[
+          { label: "Configuraciones", href: "/configuraciones" },
+          { label: "Mi Cuenta" },
+        ]}
+        subtitle="Datos personales y permisos de acceso"
+      />
+    <main className="flex-1 overflow-y-auto">
+    <div className="mx-auto max-w-4xl space-y-8 p-4 md:p-10">
       <header className="space-y-2">
         <Heading level={1}>Mi Perfil</Heading>
-        <Text>
-          Gestiona tu información personal y verifica tus permisos de acceso.
-        </Text>
+        <Text>Gestiona tu información personal y verifica tus permisos de acceso.</Text>
       </header>
-
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         <aside className="space-y-6 md:col-span-1">
           <section className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-            <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-blue-600 text-3xl font-black text-white shadow-xl shadow-blue-100">
-              {getInitial(profile)}
-            </div>
+            {/* Avatar con selector */}
+            <button
+              type="button"
+              onClick={() => setIsFilerOpen(true)}
+              className="group relative mb-4 flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-blue-600 text-3xl font-black text-white shadow-xl shadow-blue-100 cursor-pointer overflow-hidden"
+              title="Cambiar foto de perfil"
+            >
+              {(selectedAvatar || profile?.avatar) ? (
+                <img
+                  src={selectedAvatar ? getFullImageUrl(selectedAvatar.url) : profile.avatar}
+                  alt="Avatar"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                getInitial(profile)
+              )}
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                <ImageIcon size={20} className="text-white" />
+              </div>
+            </button>
+
+            {/* Quitar foto */}
+            {(selectedAvatar || profile?.avatar) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedAvatar({ id: null, url: null });
+                  setProfile((prev) => ({ ...prev, avatar: null }));
+                }}
+                className="mb-2 flex items-center gap-1 text-[10px] font-bold text-red-400 hover:text-red-600 transition-colors"
+              >
+                <Trash2 size={12} />
+                Quitar foto
+              </button>
+            )}
+
             <Heading level={3} className="leading-tight">
               {profile?.first_name} {profile?.last_name}
             </Heading>
@@ -204,6 +256,18 @@ export default function ProfilePage() {
           </form>
         </section>
       </div>
+
+      <FilerModal
+        isOpen={isFilerOpen}
+        onClose={() => setIsFilerOpen(false)}
+        initialSearch=""
+        onSelectImage={(img) => {
+          setSelectedAvatar(img);
+          setIsFilerOpen(false);
+        }}
+      />
+    </div>
     </main>
+    </div>
   );
 }
