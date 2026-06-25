@@ -28,7 +28,7 @@ export default function VentaRow({ venta }) {
     >
       <div className="flex-1 min-w-0">
         <Text variant="bodySmBold" className="truncate">
-          {venta.cliente_nombre || "Venta mostrador"}
+          {venta.cliente_nombre || "Sin cliente"}
         </Text>
         <Text variant="mutedXs" className="mt-0.5">
           {venta.comprobante?.numero ? `#${venta.comprobante.numero}` : `V-${venta.id}`}

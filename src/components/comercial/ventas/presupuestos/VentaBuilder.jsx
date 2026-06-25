@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Search, Plus, ShoppingCart, MapPin, User, X } from "lucide-react";
+import { Search, Plus, ShoppingCart, User, X } from "lucide-react";
 import { Button, Input, Field, Section, Badge } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -10,11 +10,6 @@ import LineaVentaRow from "./LineaVentaRow";
 import TipoCambioWidget from "../shared/TipoCambioWidget";
 
 // ─── Constantes ─────────────────────────────────────────────────
-
-const ORIGENES = [
-  { value: "sucursal", label: "Sucursal", icon: MapPin },
-  { value: "campo", label: "Campo", icon: MapPin },
-];
 
 const MONEDAS = [
   { value: "USD", label: "USD ($)", symbol: "$" },
@@ -44,7 +39,7 @@ const selectClass =
 // ─── Componente Principal ───────────────────────────────────────
 
 /**
- * Constructor de venta: permite seleccionar origen, cliente, buscar productos
+ * Constructor de venta: permite seleccionar cliente, buscar productos
  * y agregar líneas de venta con cálculo de precios según tier y moneda.
  *
  * @param {Object} ventaData - Estado actual de la venta
@@ -262,24 +257,7 @@ export default function VentaBuilder({
     <div className="space-y-6">
       {/* ─── Configuración de la venta ─────────────────────────── */}
       <Section title="Configuración de la Venta">
-        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Origen */}
-          <Field label="Origen de la Venta *">
-            <select
-              className={selectClass}
-              value={ventaData.origen || "sucursal"}
-              onChange={(e) =>
-                onVentaChange({ ...ventaData, origen: e.target.value })
-              }
-            >
-              {ORIGENES.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Moneda de negociación */}
           <Field label="Moneda de Negociación">
             <select

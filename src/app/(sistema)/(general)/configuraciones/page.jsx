@@ -34,7 +34,7 @@ export default function ConfiguracionesHubPage() {
       <main className="flex-1 overflow-y-auto p-8 min-w-0">
         <div className="max-w-[1600px] mx-auto">
           <div className="mb-10">
-            <Heading level={2} className="text-slate-900 tracking-tight">Centro de Configuración</Heading>
+            <Heading level={2} className="text-slate-900 tracking-tight">Centro de Configuraciones</Heading>
             <Text className="text-slate-500 font-medium">Seleccioná la sección que deseás gestionar.</Text>
           </div>
 

@@ -1,12 +1,14 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { X } from "lucide-react";
-import { Section, EmptyState, Modal, Button, Text } from "@/components/ui";
+import { useRouter } from "next/navigation";
+import { X, Plus, FileText } from "lucide-react";
+import { Section, Modal, Button, Text } from "@/components/ui";
 import { useToast, useConfirm } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import {
   getPresupuestos,
-  updatePresupuesto,
+  createPresupuesto,
+  deletePresupuesto,
   enviarPresupuesto,
   aceptarPresupuesto,
   rechazarPresupuesto,
@@ -24,7 +26,8 @@ const ETAPAS_CON_PRESUPUESTO = ["negociacion", "ganada", "perdida"];
 export default function PresupuestoSection({ oportunidadId, etapa, onGanada }) {
   const { showToast } = useToast();
   const { confirm } = useConfirm();
-  const { data: presupuestosData, loading, execute: fetchPresupuestos } =
+  const router = useRouter();
+  const { data: presupuestosData, execute: fetchPresupuestos } =
     useApi(getPresupuestos);
   const [actionLoading, setActionLoading] = useState(null);
 
@@ -39,6 +42,26 @@ export default function PresupuestoSection({ oportunidadId, etapa, onGanada }) {
   }, [oportunidadId, fetchPresupuestos]);
 
   const presupuestos = presupuestosData?.results || [];
+
+  // ─── Crear presupuesto y navegar directo ────────────────────
+
+  const handleCrearPresupuesto = async () => {
+    setActionLoading("crear");
+    try {
+      const presupuesto = await createPresupuesto({
+        oportunidad: parseInt(oportunidadId, 10),
+        moneda: "USD",
+        notas: "",
+        vigencia_dias: 3,
+        lineas: [],
+      });
+      router.push(`/ventas-crm/presupuestos/${presupuesto.id}`);
+    } catch (err) {
+      showToast(err?.data?.detail || "Error al crear presupuesto", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   // ─── Acciones ───────────────────────────────────────────────
 
@@ -65,7 +88,7 @@ export default function PresupuestoSection({ oportunidadId, etapa, onGanada }) {
 
     setActionLoading(`eliminar-${id}`);
     try {
-      await updatePresupuesto(id, { _method: "DELETE" });
+      await deletePresupuesto(id);
       showToast("Presupuesto eliminado", "info");
       fetchPresupuestos({ oportunidad: oportunidadId });
     } catch {
@@ -134,29 +157,51 @@ export default function PresupuestoSection({ oportunidadId, etapa, onGanada }) {
         <div className="p-5 space-y-4">
           {/* Lista de tarjetas resumen */}
           {presupuestos.length > 0 ? (
-            presupuestos.map((presupuesto) => (
-              <PresupuestoSummaryCard
-                key={presupuesto.id}
-                presupuesto={presupuesto}
-                onEnviar={handleEnviar}
-                onEliminar={handleEliminar}
-                onAceptar={handleAceptar}
-                onRechazar={handleRechazarClick}
-              />
-            ))
+            <>
+              {presupuestos.map((presupuesto) => (
+                <PresupuestoSummaryCard
+                  key={presupuesto.id}
+                  presupuesto={presupuesto}
+                  onEnviar={handleEnviar}
+                  onEliminar={handleEliminar}
+                  onAceptar={handleAceptar}
+                  onRechazar={handleRechazarClick}
+                />
+              ))}
+              {/* Botón para crear otro presupuesto en negociación */}
+              {etapa === "negociacion" && (
+                <div className="flex justify-center pt-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={Plus}
+                    onClick={handleCrearPresupuesto}
+                    disabled={actionLoading === "crear"}
+                  >
+                    Crear otro presupuesto
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
-            /* Estado vacío: mostrar "Crear presupuesto" en negociación */
-            etapa === "negociacion" ? (
-              <PresupuestoSummaryCard
-                empty
-                oportunidadId={oportunidadId}
-              />
-            ) : (
-              <EmptyState
-                titulo="Sin presupuestos"
-                descripcion="No hay presupuestos asociados a esta oportunidad."
-              />
-            )
+            /* Estado vacío */
+            <div className="flex flex-col items-center justify-center border border-dashed border-slate-200 rounded-xl p-8 gap-3">
+              <FileText className="w-10 h-10 text-slate-300" />
+              <Text variant="bodySm" className="text-slate-500 text-center">
+                No hay presupuestos todavía.
+              </Text>
+              {etapa === "negociacion" && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={Plus}
+                  onClick={handleCrearPresupuesto}
+                  disabled={actionLoading === "crear"}
+                >
+                  Crear presupuesto
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </Section>

@@ -31,9 +31,7 @@ import {
   updateOportunidad,
 } from "@/services/apis/ventas";
 import { cn } from "@/lib/utils";
-import KanbanBoard, {
-  KANBAN_COLUMNS,
-} from "@/components/comercial/ventas/kanban/KanbanBoard";
+import KanbanBoard from "@/components/comercial/ventas/kanban/KanbanBoard";
 import NuevaOportunidadModal from "@/components/comercial/ventas/pipeline/NuevaOportunidadModal";
 
 // ─── Configuración ──────────────────────────────────────────────

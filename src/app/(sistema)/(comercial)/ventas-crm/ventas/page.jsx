@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { Plus, Filter, MapPin, UserCheck, Calendar } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Plus, Filter, UserCheck, Calendar } from 'lucide-react';
 import { EmptyState, LoadingScreen, PageHeader, Pagination, SearchBar, Button, Badge, Text } from '@/components/ui';
 import { useApi } from '@/hooks/useApi';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -28,19 +29,6 @@ const ESTADO_BADGE_MAP = {
     cancelado: { variant: 'danger', label: 'Cancelado' },
 };
 
-// ─── Configuración de orígenes ──────────────────────────────────
-
-const ORIGENES_VENTA = [
-    { value: '', label: 'Todos' },
-    { value: 'sucursal', label: 'Sucursal' },
-    { value: 'campo', label: 'Campo' },
-];
-
-const ORIGEN_BADGE_MAP = {
-    sucursal: { variant: 'primary', label: 'Sucursal' },
-    campo: { variant: 'warning', label: 'Campo' },
-};
-
 // ─── Configuración de monedas ───────────────────────────────────
 
 const MONEDA_LABELS = {
@@ -52,7 +40,6 @@ const MONEDA_LABELS = {
 const FILTER_SCHEMA = {
     search: '',
     estado: '',
-    origen: '',
     vendedor: '',
     fecha_desde: '',
     fecha_hasta: '',
@@ -100,13 +87,6 @@ function EstadoBadge({ estado }) {
     return <Badge variant={config.variant}>{config.label}</Badge>;
 }
 
-// ─── Componente OrigenBadge ─────────────────────────────────────
-
-function OrigenBadge({ origen }) {
-    const config = ORIGEN_BADGE_MAP[origen] || { variant: 'default', label: origen };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
-}
-
 // ─── Formateo de montos ─────────────────────────────────────────
 
 function formatMonto(monto, moneda) {
@@ -118,9 +98,43 @@ function formatMonto(monto, moneda) {
     return num.toLocaleString('es-PY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/**
+ * Calcula el total a mostrar para una venta.
+ * - Si total_usd > 0 (venta confirmada+), lo usa directamente.
+ * - Si es borrador con lineas, suma subtotal_usd de las líneas.
+ * - Si es borrador sin líneas expandidas, muestra "Pendiente".
+ */
+function calcularTotalDisplay(venta) {
+    const totalUsd = Number(venta.total_usd || 0);
+    const totalMoneda = Number(venta.total_moneda_negociacion || 0);
+
+    // Venta ya confirmada: tiene totales calculados
+    if (totalUsd > 0) {
+        if (venta.moneda_negociacion === 'USD') {
+            return { texto: `$${formatMonto(totalUsd, 'USD')}`, pendiente: false };
+        }
+        if (totalMoneda > 0) {
+            return { texto: `${formatMonto(totalMoneda, venta.moneda_negociacion)} ${venta.moneda_negociacion}`, pendiente: false };
+        }
+        return { texto: `$${formatMonto(totalUsd, 'USD')}`, pendiente: false };
+    }
+
+    // Borrador: calcular desde líneas si están disponibles
+    if (venta.lineas && venta.lineas.length > 0) {
+        const sumaLineas = venta.lineas.reduce((acc, l) => acc + Number(l.subtotal_usd || 0), 0);
+        if (sumaLineas > 0) {
+            return { texto: `$${formatMonto(sumaLineas, 'USD')}`, pendiente: false };
+        }
+    }
+
+    // Sin total calculable
+    return { texto: 'Pendiente', pendiente: true };
+}
+
 // ─── Contenido Principal ────────────────────────────────────────
 
 function VentasContent() {
+    const router = useRouter();
     const { filters, setFilter, resetFilters, page, setPage } = useUrlFilters(FILTER_SCHEMA);
 
     const {
@@ -159,21 +173,20 @@ function VentasContent() {
 
     // Cargar ventas cuando cambian filtros en URL
     useEffect(() => {
-        const params = { page: filters.page };
+        const params = { page: filters.page, origen: 'sucursal' };
         if (filters.search) params.search = filters.search;
         if (filters.estado) params.estado = filters.estado;
-        if (filters.origen) params.origen = filters.origen;
         if (filters.vendedor) params.vendedor = filters.vendedor;
         if (filters.fecha_desde) params.fecha_desde = filters.fecha_desde;
         if (filters.fecha_hasta) params.fecha_hasta = filters.fecha_hasta;
 
         fetchVentas(params).then(() => setHasLoadedOnce(true));
-    }, [fetchVentas, filters.search, filters.page, filters.estado, filters.origen, filters.vendedor, filters.fecha_desde, filters.fecha_hasta]);
+    }, [fetchVentas, filters.search, filters.page, filters.estado, filters.vendedor, filters.fecha_desde, filters.fecha_hasta]);
 
     // Pantalla de carga inicial
     if (loading && !hasLoadedOnce) return <LoadingScreen texto="Cargando ventas..." />;
 
-    const hayFiltrosActivos = filters.search !== '' || filters.estado !== '' || filters.origen !== '' || filters.vendedor !== '' || filters.fecha_desde !== '' || filters.fecha_hasta !== '';
+    const hayFiltrosActivos = filters.search !== '' || filters.estado !== '' || filters.vendedor !== '' || filters.fecha_desde !== '' || filters.fecha_hasta !== '';
 
     const limpiarFiltros = () => {
         setBusquedaLocal('');
@@ -186,8 +199,11 @@ function VentasContent() {
 
             {/* HEADER */}
             <PageHeader
-                title="Ventas"
-                subtitle={`Comercial · ${count} ventas registradas`}
+                breadcrumbs={[
+                    { label: 'Ventas y CRM', href: '/ventas-crm' },
+                    { label: 'Ventas' },
+                ]}
+                subtitle={`${count} ventas registradas`}
                 subtitleClassName="text-emerald-600"
             >
                 <Link href="/ventas-crm/ventas/nueva">
@@ -228,13 +244,6 @@ function VentasContent() {
                                     icon={Filter}
                                     label="Estado"
                                     options={ESTADOS_VENTA}
-                                />
-                                <FilterDropdown
-                                    value={filters.origen}
-                                    onChange={(val) => setFilter('origen', val)}
-                                    icon={MapPin}
-                                    label="Origen"
-                                    options={ORIGENES_VENTA}
                                 />
 
                                 {/* Filtro Vendedor */}
@@ -328,45 +337,49 @@ function VentasContent() {
                                         <tr className="bg-slate-50 text-slate-500">
                                             <th className="py-3 pl-6 pr-4 text-[11px] font-black uppercase tracking-widest">ID / Comprobante</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Cliente</th>
-                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Origen</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Estado</th>
-                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-right">Total USD</th>
+                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-right">Total</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Moneda</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest hidden lg:table-cell">Vendedor</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Fecha</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {ventas.map(venta => (
+                                        {ventas.map(venta => {
+                                            const { texto: totalTexto, pendiente } = calcularTotalDisplay(venta);
+                                            return (
                                             <tr
                                                 key={venta.id}
-                                                className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors"
+                                                className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors cursor-pointer"
+                                                onClick={() => router.push(`/ventas-crm/ventas/${venta.id}`)}
                                             >
                                                 <td className="py-3 pl-6 pr-4">
-                                                    <Link
-                                                        href={`/ventas-crm/ventas/${venta.id}`}
-                                                        className="text-sm font-semibold text-slate-800 hover:text-emerald-600 transition-colors"
-                                                    >
+                                                    <span className="text-sm font-semibold text-emerald-600">
                                                         {venta.comprobante?.numero
                                                             ? `#${venta.comprobante.numero}`
                                                             : `V-${venta.id}`
                                                         }
-                                                    </Link>
+                                                    </span>
+                                                    {venta.presupuesto_codigo && (
+                                                        <span className="ml-2 text-[10px] text-slate-400 font-mono">
+                                                            {venta.presupuesto_codigo}
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td className="py-3 px-4">
                                                     <span className="text-sm text-slate-600">
-                                                        {venta.cliente_nombre || venta.cliente?.razon_social || 'Venta mostrador'}
+                                                        {venta.cliente_nombre || 'Sin cliente'}
                                                     </span>
-                                                </td>
-                                                <td className="py-3 px-4 text-center">
-                                                    <OrigenBadge origen={venta.origen} />
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
                                                     <EstadoBadge estado={venta.estado} />
                                                 </td>
                                                 <td className="py-3 px-4 text-right">
-                                                    <span className="text-sm font-semibold text-slate-800">
-                                                        ${formatMonto(venta.total_usd, 'USD')}
+                                                    <span className={cn(
+                                                        'text-sm font-semibold',
+                                                        pendiente ? 'text-slate-400 italic' : 'text-slate-800'
+                                                    )}>
+                                                        {totalTexto}
                                                     </span>
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
@@ -376,7 +389,7 @@ function VentasContent() {
                                                 </td>
                                                 <td className="py-3 px-4 hidden lg:table-cell">
                                                     <span className="text-sm text-slate-600">
-                                                        {venta.vendedor_nombre || venta.vendedor?.username || '—'}
+                                                        {venta.vendedor_nombre || '—'}
                                                     </span>
                                                 </td>
                                                 <td className="py-3 px-4">
@@ -392,7 +405,8 @@ function VentasContent() {
                                                     </span>
                                                 </td>
                                             </tr>
-                                        ))}
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>

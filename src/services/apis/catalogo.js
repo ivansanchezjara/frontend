@@ -105,6 +105,17 @@ export async function eliminarProducto(slug) {
 
 // ─── Variantes ───────────────────────────────────────────────────
 
+export async function getVarianteDetalleVenta(id) {
+  return request(
+    `${API_URL}/catalogo/variantes/${id}/detalle-venta/`,
+    {
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver ficha de producto para venta",
+  );
+}
+
 export async function getVariantes(params = {}) {
   const query = toQueryString(params);
   return request(

@@ -10,7 +10,6 @@ import {
 } from '@/services/apis/precios';
 import {
   DollarSign, Percent, Package, Hash, AlertTriangle, Tag, Clock,
-  Check, X,
 } from 'lucide-react';
 
 import TabPromociones from '@/components/comercial/precios/TabPromociones';
@@ -50,13 +49,12 @@ const COLUMNAS_PRECIOS = [
   { id: 'precio_4_intercompany', label: 'Precio Intercompany' },
   { id: 'precio_oferta', label: 'Precio Oferta' },
   { id: 'tasa_iva', label: 'IVA' },
-  { id: '_actions', label: 'Acciones', required: true },
 ];
 
 const COLUMNAS_VISIBLES_DEFAULT = [
   'product_code', 'nombre_variante',
   'precio_0_publico', 'precio_2_reventa', 'precio_3_mayorista',
-  'precio_oferta', 'tasa_iva', '_actions',
+  'precio_oferta', 'tasa_iva',
 ];
 
 const FILTER_OPTIONS = [
@@ -282,24 +280,7 @@ export default function PreciosPage() {
       minWidth: 60,
       render: (val) => <Badge variant="subtle">{val}%</Badge>,
     },
-    {
-      key: '_actions',
-      label: 'Acciones',
-      align: 'center',
-      required: true,
-      resizable: true,
-      width: 110,
-      minWidth: 80,
-      render: (_, row) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); startEditing(row); }}
-          className="text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-100 hover:text-emerald-700 text-slate-600 transition"
-          aria-label={`Editar precios de ${row.product_code}`}
-        >
-          Editar
-        </button>
-      ),
-    },
+
   ];
 
   return (

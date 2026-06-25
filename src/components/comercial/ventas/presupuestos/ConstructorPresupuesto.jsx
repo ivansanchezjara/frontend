@@ -5,10 +5,9 @@ import {
   Button, Section, SearchBar, EmptyState, LoadingScreen, Text,
 } from "@/components/ui";
 import { useToast } from "@/components/ui";
-import { useApi } from "@/hooks/useApi";
-import { useDebounce } from "@/hooks/useDebounce";
+import { useBuscarProductos } from "@/hooks/useBuscarProductos";
 import {
-  createPresupuesto, updatePresupuesto, buscarProductos,
+  updatePresupuesto,
 } from "@/services/apis/ventas";
 import { cn } from "@/lib/utils";
 import ConfigBarPresupuesto from "./ConfigBarPresupuesto";
@@ -17,13 +16,14 @@ import {
   getPrecioTier, getPrecioPublico, getPrecioMejor, calcDescuentoImplicito,
   formatFecha, calcSubtotalLinea,
 } from "./presupuesto-utils";
+import FichaProductoModal from "./FichaProductoModal";
 
 /**
  * Constructor interactivo de presupuesto (borrador).
  * Permite buscar productos, agregar líneas, configurar moneda/vigencia y auto-guarda.
  */
 export default function ConstructorPresupuesto({
-  oportunidadId, presupuestoBorrador, tierPrecio, productosInteres = [], onCreated, onEnviar, onEliminar,
+  oportunidadId, presupuestoBorrador, tierPrecio, productosInteres = [], onEnviar, onEliminar,
 }) {
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -34,15 +34,13 @@ export default function ConstructorPresupuesto({
   const [showNotas, setShowNotas] = useState(Boolean(presupuestoBorrador?.notas));
 
   // Búsqueda de productos
-  const [busqueda, setBusqueda] = useState("");
-  const busquedaDebounced = useDebounce(busqueda, 400);
-  const { data: searchResults, loading: buscando, execute: buscar } = useApi(buscarProductos);
-
-  useEffect(() => {
-    if (busquedaDebounced.length >= 2) {
-      buscar({ q: busquedaDebounced });
-    }
-  }, [busquedaDebounced, buscar]);
+  const {
+    query: busqueda,
+    setQuery: setBusqueda,
+    resultados: searchResults,
+    buscando,
+    debouncedQuery: busquedaDebounced,
+  } = useBuscarProductos({ debounceMs: 400 });
 
   // ─── Inicialización de líneas ───────────────────────────────
 
@@ -50,20 +48,32 @@ export default function ConstructorPresupuesto({
   useEffect(() => {
     if (presupuestoBorrador?.lineas) {
       setLineas(
-        presupuestoBorrador.lineas.map((l) => ({
-          variante: l.variante,
-          variante_nombre: l.variante_nombre || "",
-          variante_sku: l.variante_sku || "",
-          producto_nombre: l.producto_nombre || "",
-          cantidad: l.cantidad,
-          precio_unitario: Number(l.precio_unitario) || 0,
-          descuento_porcentaje: Number(l.descuento_porcentaje) || 0,
-          descuento_extra_tipo: l.descuento_extra_tipo || "ninguno",
-          descuento_extra_valor: Number(l.descuento_extra_valor) || 0,
-          notas: l.notas || "",
-          precio_publico: Number(l.precio_publico) || Number(l.precio_unitario) || 0,
-          precio_tier: Number(l.precio_unitario) || 0,
-        }))
+        presupuestoBorrador.lineas.map((l) => {
+          const precioPublico = Number(l.precio_publico) || 0;
+          const precioUnitario = Number(l.precio_unitario) || 0;
+          const descuento = Number(l.descuento_porcentaje) || 0;
+          // Detectar si fue un precio de oferta:
+          // precio_publico > precio_unitario y descuento_porcentaje = 0
+          const esOferta = precioPublico > 0 && precioUnitario < precioPublico && descuento === 0;
+
+          return {
+            variante: l.variante,
+            variante_nombre: l.variante_nombre || "",
+            variante_sku: l.variante_sku || "",
+            producto_nombre: l.producto_nombre || "",
+            cantidad: l.cantidad,
+            precio_unitario: precioUnitario,
+            descuento_porcentaje: descuento,
+            descuento_extra_tipo: l.descuento_extra_tipo || "ninguno",
+            descuento_extra_valor: Number(l.descuento_extra_valor) || 0,
+            notas: l.notas || "",
+            precio_publico: precioPublico || precioUnitario,
+            precio_tier: esOferta ? precioPublico : precioUnitario,
+            tiene_oferta: esOferta,
+            precio_oferta: esOferta ? precioUnitario : null,
+            oferta_vence: null,
+          };
+        })
       );
       setMoneda(presupuestoBorrador.moneda || "USD");
       setNotas(presupuestoBorrador.notas || "");
@@ -111,7 +121,7 @@ export default function ConstructorPresupuesto({
 
   const resultadosNormalizados = useMemo(() => {
     if (busquedaDebounced.length < 2) return [];
-    const raw = searchResults?.results || searchResults || [];
+    const raw = searchResults || [];
     return raw.map((v) => ({
       id: v.id,
       product_code: v.product_code || "",
@@ -201,9 +211,6 @@ export default function ConstructorPresupuesto({
 
           if (presupuestoBorrador) {
             await updatePresupuesto(presupuestoBorrador.id, payload);
-          } else {
-            await createPresupuesto(payload);
-            onCreated?.();
           }
         } catch (err) {
           const detail = err?.data?.detail || err?.data?.lineas;
@@ -215,7 +222,7 @@ export default function ConstructorPresupuesto({
         }
       }, 800);
     },
-    [oportunidadId, presupuestoBorrador, onCreated, showToast]
+    [oportunidadId, presupuestoBorrador, showToast]
   );
 
   useEffect(() => {
@@ -290,6 +297,14 @@ export default function ConstructorPresupuesto({
     );
   };
 
+  // ─── Ver stock (modal) ────────────────────────────────────────
+
+  const [fichaVarianteId, setFichaVarianteId] = useState(null);
+
+  const handleVerStock = (fila) => {
+    setFichaVarianteId(fila.id);
+  };
+
   // ─── Cálculos ───────────────────────────────────────────────
 
   const total = useMemo(() => {
@@ -300,7 +315,7 @@ export default function ConstructorPresupuesto({
 
   return (
     <Section
-      title={presupuestoBorrador ? `Presupuesto v${presupuestoBorrador.version} (Borrador)` : "Armar Presupuesto"}
+      title={presupuestoBorrador ? `${presupuestoBorrador.codigo} (Borrador)` : "Armar Presupuesto"}
       subtitle={presupuestoBorrador ? `Creado ${formatFecha(presupuestoBorrador.created_at)}` : "Agregá productos para cotizar"}
       action={
         <div className="flex items-center gap-3">
@@ -395,6 +410,7 @@ export default function ConstructorPresupuesto({
             onToggle={handleToggle}
             onCantidad={handleCantidad}
             onDescuentoExtra={handleDescuentoExtra}
+            onVerStock={handleVerStock}
           />
         ) : buscando ? (
           <LoadingScreen texto="Buscando productos..." />
@@ -410,6 +426,12 @@ export default function ConstructorPresupuesto({
           </div>
         ) : null}
       </div>
+
+      {/* Modal ficha de producto con tabs (Producto + Stock) */}
+      <FichaProductoModal
+        varianteId={fichaVarianteId}
+        onClose={() => setFichaVarianteId(null)}
+      />
     </Section>
   );
 }

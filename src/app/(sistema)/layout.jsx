@@ -259,13 +259,13 @@ export default function SistemaLayout({ children }) {
                         href="/configuraciones"
                         onClick={() => { setIsMobileOpen(false); setIsExpanded(false); }}
                         className={`flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 transition-all text-left w-full ${(!isExpanded && !isMobileOpen) ? 'md:justify-center px-0' : ''} ${pathname.startsWith('/configuraciones') || pathname === '/perfil' || pathname === '/empresa' ? 'bg-white/5 text-white' : 'text-slate-400'}`}
-                        title={(!isExpanded && !isMobileOpen) ? "Configuración" : undefined}
+                        title={(!isExpanded && !isMobileOpen) ? "Configuraciones" : undefined}
                     >
                         <div className="w-8 h-8 flex items-center justify-center shrink-0">
                             <Settings size={16} />
                         </div>
                         {(isExpanded || isMobileOpen) && (
-                            <span className="text-xs font-bold truncate flex-1">Configuración</span>
+                            <span className="text-xs font-bold truncate flex-1">Configuraciones</span>
                         )}
                     </Link>
 

@@ -541,6 +541,17 @@ export async function updatePresupuesto(id, data) {
   );
 }
 
+export async function deletePresupuesto(id) {
+  return request(
+    `${API_URL}/ventas/presupuestos/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "eliminar presupuesto",
+  );
+}
+
 export async function enviarPresupuesto(id) {
   return request(
     `${API_URL}/ventas/presupuestos/${id}/enviar/`,
@@ -572,6 +583,17 @@ export async function rechazarPresupuesto(id, data = {}) {
       body: JSON.stringify(data),
     },
     "rechazar presupuesto",
+  );
+}
+
+export async function revertirBorradorPresupuesto(id) {
+  return request(
+    `${API_URL}/ventas/presupuestos/${id}/revertir-borrador/`,
+    {
+      method: "PATCH",
+      headers: authHeaders(),
+    },
+    "revertir presupuesto a borrador",
   );
 }
 

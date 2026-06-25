@@ -104,7 +104,9 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={() => setIsFilerOpen(true)}
-              className="group relative mb-4 flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-blue-600 text-3xl font-black text-white shadow-xl shadow-blue-100 cursor-pointer overflow-hidden"
+              className={`group relative mb-4 flex h-24 w-24 items-center justify-center rounded-full border-4 border-white text-3xl font-black text-white shadow-xl shadow-slate-200 cursor-pointer overflow-hidden ${
+                (selectedAvatar || profile?.avatar) ? "bg-slate-200" : "bg-blue-600"
+              }`}
               title="Cambiar foto de perfil"
             >
               {(selectedAvatar || profile?.avatar) ? (

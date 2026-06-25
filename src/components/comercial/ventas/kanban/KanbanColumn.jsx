@@ -1,12 +1,16 @@
 "use client";
+import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Plus } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp } from "lucide-react";
 import KanbanCard from "./KanbanCard";
 import { cn } from "@/lib/utils";
+
+const COLLAPSED_LIMIT = 3;
+const COLLAPSIBLE_COLUMNS = ["ganada", "perdida"];
 
 /**
  * Columna individual del tablero Kanban.
@@ -16,7 +20,14 @@ export default function KanbanColumn({ column, items, onClickCard, onNewCard }) 
     id: column.id,
   });
 
+  const isCollapsible = COLLAPSIBLE_COLUMNS.includes(column.id) && items.length > COLLAPSED_LIMIT;
+  const [expanded, setExpanded] = useState(false);
+
   const itemIds = items.map((item) => String(item.id));
+  const visibleItems = isCollapsible && !expanded
+    ? items.slice(0, COLLAPSED_LIMIT)
+    : items;
+  const hiddenCount = items.length - COLLAPSED_LIMIT;
 
   // Calcular monto total de la columna
   const montoTotal = items.reduce(
@@ -92,13 +103,34 @@ export default function KanbanColumn({ column, items, onClickCard, onNewCard }) 
               <p className="text-xs text-slate-300 italic">Sin oportunidades</p>
             </div>
           ) : (
-            items.map((oport) => (
-              <KanbanCard
-                key={oport.id}
-                oportunidad={oport}
-                onClick={() => onClickCard?.(oport)}
-              />
-            ))
+            <>
+              {visibleItems.map((oport) => (
+                <KanbanCard
+                  key={oport.id}
+                  oportunidad={oport}
+                  onClick={() => onClickCard?.(oport)}
+                />
+              ))}
+              {isCollapsible && (
+                <button
+                  type="button"
+                  onClick={() => setExpanded((prev) => !prev)}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
+                >
+                  {expanded ? (
+                    <>
+                      <ChevronUp className="w-3.5 h-3.5" />
+                      Mostrar menos
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                      Ver {hiddenCount} más
+                    </>
+                  )}
+                </button>
+              )}
+            </>
           )}
         </SortableContext>
       </div>

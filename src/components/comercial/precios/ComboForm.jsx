@@ -119,7 +119,7 @@ export default function ComboForm({ initial, onClose }) {
       onClose={onClose}
       open
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
         <Field label="Nombre del combo">
           <Input
             value={form.nombre}
@@ -153,7 +153,7 @@ export default function ComboForm({ initial, onClose }) {
             placeholder="Buscar variante para agregar..."
             value={searchVariante}
             onChange={(e) => setSearchVariante(e.target.value)}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all"
           />
 
           {form.items.length === 0 && (
@@ -167,7 +167,7 @@ export default function ComboForm({ initial, onClose }) {
               <select
                 value={item.variante || ''}
                 onChange={(e) => updateItem(idx, 'variante', e.target.value)}
-                className="flex-1 border rounded px-2 py-1.5 text-sm"
+                className="flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all"
                 aria-label={`Variante del ítem ${idx + 1}`}
               >
                 <option value="">Seleccionar variante...</option>

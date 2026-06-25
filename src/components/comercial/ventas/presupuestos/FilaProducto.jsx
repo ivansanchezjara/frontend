@@ -2,26 +2,33 @@
 import { Check, Percent, DollarSign } from "lucide-react";
 import { Badge, Input, Text } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { formatPrecio } from "./presupuesto-utils";
+import { formatPrecio, TIER_LABELS } from "./presupuesto-utils";
 
 /**
  * Fila de producto en la tabla del constructor de presupuesto.
- * Muestra checkbox, SKU, nombre, precios, descuento tier, descuento extra, cantidad y subtotal.
+ * Columna "Precio" unificada: muestra precio original tachado + precio actual
+ * con indicador de oferta o descuento tier integrado.
  */
 export default function FilaProducto({
   fila, selected, linea, subtotal,
-  precioPublico, precioTier, descuento,
-  showDualPrice = true,
-  mostrarColumnaOferta = false,
-  onToggle, onCantidad, onDescuentoExtra,
+  precioPublico, precioTier, descuento, tierPrecio,
+  onToggle, onCantidad, onDescuentoExtra, onVerStock,
 }) {
   const tipoExtra = linea?.descuento_extra_tipo || "ninguno";
   const valorExtra = linea?.descuento_extra_valor || 0;
   const tieneOferta = fila.tiene_oferta || (linea?.tiene_oferta) || false;
 
+  // Precio efectivo que se usa (oferta o tier)
+  const precioEfectivo = tieneOferta
+    ? (fila.precio_oferta || linea?.precio_oferta || precioTier)
+    : precioTier;
+
+  // ¿Hay diferencia entre público y efectivo?
+  const hayDiferencia = precioPublico > 0 && precioEfectivo > 0 && precioEfectivo < precioPublico;
+
   return (
     <tr
-      onClick={() => onToggle(fila)}
+      onClick={() => onVerStock(fila)}
       className={cn(
         "transition-colors cursor-pointer group",
         selected
@@ -30,13 +37,16 @@ export default function FilaProducto({
       )}
     >
       {/* Checkbox */}
-      <td className="py-2.5 pl-4 pr-2">
-        <div className={cn(
-          "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
-          selected
-            ? "bg-emerald-500 border-emerald-500 shadow-sm shadow-emerald-200"
-            : "border-slate-300 bg-white group-hover:border-emerald-300"
-        )}>
+      <td className="py-2.5 pl-4 pr-2" onClick={(e) => e.stopPropagation()}>
+        <div
+          onClick={() => onToggle(fila)}
+          className={cn(
+            "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer",
+            selected
+              ? "bg-emerald-500 border-emerald-500 shadow-sm shadow-emerald-200"
+              : "border-slate-300 bg-white hover:border-emerald-300"
+          )}
+        >
           {selected && <Check className="w-3 h-3 text-white" />}
         </div>
       </td>
@@ -50,16 +60,9 @@ export default function FilaProducto({
 
       {/* Producto */}
       <td className="py-2.5 px-3">
-        <div className="flex items-center gap-1.5">
-          <Text variant="bodyXs" className="font-black text-slate-800 truncate leading-tight group-hover:text-blue-600 transition-colors">
-            {fila.producto_nombre}
-          </Text>
-          {tieneOferta && (
-            <span className="shrink-0 inline-flex items-center rounded-full bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[9px] font-bold text-rose-600">
-              🏷️
-            </span>
-          )}
-        </div>
+        <Text variant="bodyXs" className="font-black text-slate-800 truncate leading-tight group-hover:text-blue-600 transition-colors">
+          {fila.producto_nombre}
+        </Text>
         {fila.nombre_variante && (
           <Text variant="bodyXs" className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate mt-0.5">
             {fila.nombre_variante}
@@ -67,69 +70,37 @@ export default function FilaProducto({
         )}
       </td>
 
-      {/* Precio público (referencia, tachado si hay descuento) */}
-      {showDualPrice ? (
-        <>
-          <td className="py-2.5 px-3 text-right">
-            <Text variant="bodyXs" className={cn(
-              "tabular-nums",
-              (descuento > 0 || tieneOferta) ? "line-through text-slate-300" : "text-slate-500"
-            )}>
+      {/* Precio (columna unificada) */}
+      <td className="py-2.5 px-3 text-right">
+        <div className="space-y-0.5">
+          {/* Precio público tachado si hay diferencia */}
+          {hayDiferencia && (
+            <div className="text-[11px] text-slate-400 tabular-nums">
               {formatPrecio(precioPublico)}
-            </Text>
-          </td>
-
-          {/* Precio del tier del cliente */}
-          <td className="py-2.5 px-3 text-right">
-            <span className={cn(
-              "text-xs tabular-nums",
-              tieneOferta
-                ? "line-through text-slate-400"
-                : "font-bold text-indigo-700"
-            )}>
-              {precioTier > 0 ? formatPrecio(precioTier) : "—"}
-            </span>
-          </td>
-
-          {/* Descuento tier implícito */}
-          <td className="py-2.5 px-2 text-center">
-            {descuento > 0 ? (
-              <Badge variant="success" className="text-[9px] px-1.5 py-0.5">
-                -{descuento}%
-              </Badge>
-            ) : (
-              <Text variant="muted" className="text-xs">—</Text>
-            )}
-          </td>
-        </>
-      ) : (
-        /* Single price column: P. Original */
-        <td className="py-2.5 px-3 text-right">
-          <span className={cn(
-            "text-xs tabular-nums",
-            tieneOferta
-              ? "line-through text-slate-400"
-              : "font-bold text-slate-700"
-          )}>
-            {precioPublico > 0 ? formatPrecio(precioPublico) : "—"}
-          </span>
-        </td>
-      )}
-
-      {/* P. Oferta (columna condicional) */}
-      {mostrarColumnaOferta && (
-        <td className="py-2.5 px-3 text-right">
-          {tieneOferta ? (
-            <span className="text-xs font-bold tabular-nums text-rose-600">
-              {formatPrecio(fila.precio_oferta || linea?.precio_oferta)}
-            </span>
-          ) : (
-            <span className="text-xs text-slate-300">—</span>
+            </div>
           )}
-        </td>
-      )}
+          {/* Precio efectivo */}
+          <div className={cn(
+            "text-xs font-bold tabular-nums",
+            tieneOferta ? "text-emerald-600" : "text-slate-700"
+          )}>
+            {precioEfectivo > 0 ? formatPrecio(precioEfectivo) : "—"}
+            {tieneOferta && (
+              <span className="ml-1 text-[8px] font-bold bg-emerald-100 text-emerald-700 px-1 py-px rounded">
+                OFERTA
+              </span>
+            )}
+          </div>
+          {/* Descuento tier (si no es oferta y hay descuento) */}
+          {!tieneOferta && descuento > 0 && (
+            <div className="text-[10px] text-indigo-500">
+              -{descuento}% {TIER_LABELS[tierPrecio] || "tier"}
+            </div>
+          )}
+        </div>
+      </td>
 
-      {/* Nuevo descuento negociado */}
+      {/* Descuento extra negociado */}
       <td className="py-2.5 px-2 text-center" onClick={(e) => e.stopPropagation()}>
         {selected ? (
           <DescuentoExtraInput
@@ -177,7 +148,6 @@ export default function FilaProducto({
 
 function DescuentoExtraInput({ tipo, valor, precioUnitario, onChange }) {
   const handleTipoToggle = () => {
-    // Ciclo: ninguno → porcentaje → monto → ninguno
     if (tipo === "ninguno") {
       onChange("porcentaje", 0);
     } else if (tipo === "porcentaje") {
@@ -202,7 +172,7 @@ function DescuentoExtraInput({ tipo, valor, precioUnitario, onChange }) {
       <button
         onClick={handleTipoToggle}
         className="px-2 py-1 rounded-md text-[10px] font-bold text-slate-400 bg-slate-50 border border-slate-200 hover:border-amber-300 hover:text-amber-600 transition-all cursor-pointer"
-        title="Agregar nuevo descuento"
+        title="Agregar descuento extra"
       >
         + Desc.
       </button>

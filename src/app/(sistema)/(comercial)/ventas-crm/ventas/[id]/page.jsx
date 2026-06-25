@@ -272,12 +272,12 @@ export default function VentaDetallePage() {
                                 <InfoItem
                                     icon={User}
                                     label="Cliente"
-                                    value={venta.cliente_nombre || venta.cliente?.razon_social || 'Venta mostrador'}
+                                    value={venta.cliente_nombre || 'Sin cliente'}
                                 />
                                 <InfoItem
                                     icon={User}
                                     label="Vendedor"
-                                    value={venta.vendedor_nombre || venta.vendedor?.username || '—'}
+                                    value={venta.vendedor_nombre || '—'}
                                 />
                                 <InfoItem
                                     icon={Calendar}
@@ -313,6 +313,13 @@ export default function VentaDetallePage() {
                                         icon={Calendar}
                                         label="Fecha de Confirmación"
                                         value={formatFecha(venta.confirmed_at)}
+                                    />
+                                )}
+                                {venta.presupuesto_codigo && (
+                                    <InfoItem
+                                        icon={FileText}
+                                        label="Presupuesto Origen"
+                                        value={venta.presupuesto_codigo}
                                     />
                                 )}
                             </div>
@@ -352,9 +359,17 @@ export default function VentaDetallePage() {
                                                     {idx + 1}
                                                 </td>
                                                 <td className="py-3 px-4">
-                                                    <span className="text-sm font-semibold text-slate-700">
-                                                        {linea.variante_nombre || linea.variante?.nombre || linea.variante?.product_code || `Variante #${linea.variante_id || linea.variante}`}
-                                                    </span>
+                                                    <div>
+                                                        <span className="text-sm font-semibold text-slate-700">
+                                                            {linea.producto_nombre || linea.variante_nombre || `Variante #${linea.variante}`}
+                                                        </span>
+                                                        {linea.producto_nombre && linea.variante_nombre && (
+                                                            <div className="text-xs text-slate-400">{linea.variante_nombre}</div>
+                                                        )}
+                                                        {linea.variante_codigo && (
+                                                            <div className="text-xs text-slate-400 font-mono">{linea.variante_codigo}</div>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
                                                     <span className="text-sm font-semibold text-slate-700">

@@ -11,7 +11,7 @@ export const familyStyles = {
     line: "bg-emerald-200",
   },
   blue: {
-    label: "Operaciones y Logística",
+    label: "Logística y Servicios",
     activeNav: "bg-blue-600 shadow-sm text-white",
     borderHover: "hover:border-blue-500",
     bg: "bg-blue-50",
@@ -98,9 +98,9 @@ export const erpModules = [
     roles: ["Admin", "gestorComercial"],
   },
 
-  // --- CATEGORÍA: OPERACIONES ---
+  // --- CATEGORÍA: LOGÍSTICA Y SERVICIOS ---
   {
-    category: "Operaciones",
+    category: "Logística y Servicios",
     href: "/inventario/stock",
     icon: "📦",
     title: "Stock y Disponibilidad",
@@ -110,7 +110,7 @@ export const erpModules = [
     roles: ["Admin", "gestorDeDeposito"],
   },
   {
-    category: "Operaciones",
+    category: "Logística y Servicios",
     href: "/movimientos",
     icon: "🏢",
     title: "Gestión de Movimientos",
@@ -120,11 +120,21 @@ export const erpModules = [
     roles: ["Admin", "gestorDeDeposito"],
   },
   {
-    category: "Operaciones",
+    category: "Logística y Servicios",
     href: "#",
     icon: "🔧",
     title: "Asistencia Técnica",
-    desc: "Servicio post-venta y reparaciones de equipos.",
+    desc: "Órdenes de servicio, gestión de técnicos y equipos atendidos.",
+    color: "blue",
+    estado: "proximamente",
+    roles: ["Admin"],
+  },
+  {
+    category: "Logística y Servicios",
+    href: "#",
+    icon: "🛡️",
+    title: "Servicio Posventa",
+    desc: "Garantías, reclamos y devoluciones.",
     color: "blue",
     estado: "proximamente",
     roles: ["Admin"],
@@ -140,13 +150,6 @@ export const erpModules = [
     color: "purple",
     estado: "activo",
     roles: ["Admin", "cajero", "gestorDeDeposito"],
-    children: [
-      { href: "/caja/cola", icon: "🧾", title: "Cola de Cobro", roles: ["Admin", "cajero"] },
-      { href: "/caja/sesiones", icon: "💰", title: "Sesiones de Caja", roles: ["Admin", "cajero"] },
-      { href: "/caja/entrega", icon: "📦", title: "Entrega de Mercadería", roles: ["Admin", "gestorDeDeposito"] },
-      { href: "/caja/facturas", icon: "📄", title: "Facturas y Comprobantes", roles: ["Admin", "cajero"] },
-      { href: "/caja/timbrados", icon: "🔖", title: "Timbrados", roles: ["Admin"] },
-    ],
   },
   {
     category: "Finanzas",

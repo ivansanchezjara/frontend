@@ -67,7 +67,7 @@ export default function PresupuestosTable({ presupuestos }) {
               { label: "Oportunidad", className: "py-3 pl-6 pr-4" },
               { label: "Cliente", className: "py-3 px-4" },
               { label: "Tipo", className: "py-3 px-4 text-center" },
-              { label: "Versión", className: "py-3 px-4 text-center" },
+              { label: "Código", className: "py-3 px-4 text-center" },
               { label: "Estado", className: "py-3 px-4 text-center" },
               { label: "Total", className: "py-3 px-4 text-right" },
               { label: "Vendedor", className: "py-3 px-4 hidden md:table-cell" },
@@ -121,7 +121,7 @@ export default function PresupuestosTable({ presupuestos }) {
                 </td>
                 <td className="py-3 px-4 text-center">
                   <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                    v{p.version}
+                    {p.codigo}
                   </span>
                 </td>
                 <td className="py-3 px-4 text-center">

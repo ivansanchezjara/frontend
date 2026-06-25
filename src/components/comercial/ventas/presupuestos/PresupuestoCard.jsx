@@ -25,7 +25,7 @@ export default function PresupuestoCard({
   etapaActual,
 }) {
   const {
-    id, version, estado, moneda, total, lineas, notas,
+    id, codigo, estado, moneda, total, lineas, notas,
     venta_id, created_at, enviado_at, respondido_at, vigencia_dias,
   } = presupuesto;
 
@@ -44,7 +44,7 @@ export default function PresupuestoCard({
     )}>
       {/* Header */}
       <CardHeader
-        version={version}
+        codigo={codigo}
         estadoBadge={estadoBadge}
         vigencia={vigencia}
         created_at={created_at}
@@ -93,13 +93,13 @@ export default function PresupuestoCard({
 
 // ─── Sub-componentes internos ───────────────────────────────────
 
-function CardHeader({ version, estadoBadge, vigencia, created_at, enviado_at, respondido_at, vigencia_dias, estado }) {
+function CardHeader({ codigo, estadoBadge, vigencia, created_at, enviado_at, respondido_at, vigencia_dias, estado }) {
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-slate-50/80 border-b border-slate-100">
       <div className="flex items-center gap-3">
         <FileText className="w-4 h-4 text-slate-400" />
         <Text variant="bodySmBold" as="span">
-          Versión {version}
+          {codigo}
         </Text>
         <Badge variant={estadoBadge.variant} className="text-[10px]">
           {estadoBadge.label}

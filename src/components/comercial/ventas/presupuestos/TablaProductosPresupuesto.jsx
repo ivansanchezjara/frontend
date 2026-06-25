@@ -9,15 +9,13 @@ import {
 
 /**
  * Tabla de productos del constructor de presupuesto.
- * Si tierPrecio es "publico", muestra una sola columna de precio (sin duplicar).
+ * Columna "Precio" unificada que muestra precio original tachado + precio actual
+ * con badge OFERTA si aplica, o descuento tier.
  */
 export default function TablaProductosPresupuesto({
   filasTabla, lineas, selectedIds, tierPrecio, moneda, total, isLoading,
-  onToggle, onCantidad, onDescuentoExtra,
+  onToggle, onCantidad, onDescuentoExtra, onVerStock,
 }) {
-  const showDualPrice = tierPrecio !== "publico";
-  const hayOfertas = lineas.some((l) => l.tiene_oferta) || filasTabla.some((f) => f.tiene_oferta || f.precio_oferta);
-
   return (
     <div className={cn(
       "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-opacity duration-200",
@@ -30,19 +28,8 @@ export default function TablaProductosPresupuesto({
               <th className="py-3 pl-4 pr-2 text-[9px] font-black text-slate-400 uppercase tracking-widest w-11"></th>
               <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest w-[100px]">SKU</th>
               <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Producto</th>
-              {showDualPrice ? (
-                <>
-                  <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-[80px]">P. Público</th>
-                  <th className="py-3 px-3 text-[9px] font-black text-emerald-600 uppercase tracking-widest text-right w-[80px]">P. {TIER_LABELS[tierPrecio]}</th>
-                  <th className="py-3 px-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-[55px]">Dto.</th>
-                </>
-              ) : (
-                <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-[90px]">P. Original</th>
-              )}
-              {hayOfertas && (
-                <th className="py-3 px-3 text-[9px] font-black text-rose-600 uppercase tracking-widest text-right w-[80px]">P. Oferta</th>
-              )}
-              <th className="py-3 px-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-[95px]">Nuevo Desc.</th>
+              <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-[120px]">Precio</th>
+              <th className="py-3 px-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-[95px]">Desc. Extra</th>
               <th className="py-3 px-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center w-[60px]">Cant.</th>
               <th className="py-3 px-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-[85px]">Subtotal</th>
             </tr>
@@ -69,11 +56,11 @@ export default function TablaProductosPresupuesto({
                   precioPublico={filaPrecioPublico}
                   precioTier={filaPrecioTier}
                   descuento={filaDescuento}
-                  showDualPrice={showDualPrice}
-                  mostrarColumnaOferta={hayOfertas}
+                  tierPrecio={tierPrecio}
                   onToggle={onToggle}
                   onCantidad={onCantidad}
                   onDescuentoExtra={onDescuentoExtra}
+                  onVerStock={onVerStock}
                 />
               );
             })}
@@ -86,19 +73,19 @@ export default function TablaProductosPresupuesto({
         <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-t border-slate-200">
           <Text variant="label" className="text-slate-400">
             {lineas.length} línea{lineas.length !== 1 ? "s" : ""}
-            {showDualPrice && lineas.some((l) => l.descuento_porcentaje > 0) && (
+            {tierPrecio !== "publico" && lineas.some((l) => l.descuento_porcentaje > 0) && (
               <span className="ml-2 text-indigo-500">
                 · Precio {TIER_LABELS[tierPrecio]}
               </span>
             )}
             {lineas.some((l) => l.tiene_oferta) && (
-              <span className="ml-2 text-rose-500">
+              <span className="ml-2 text-emerald-600">
                 · Con oferta vigente
               </span>
             )}
             {lineas.some((l) => l.descuento_extra_tipo !== "ninguno" && l.descuento_extra_valor > 0) && (
               <span className="ml-2 text-amber-600">
-                · Con nuevo desc.
+                · Con desc. extra
               </span>
             )}
           </Text>

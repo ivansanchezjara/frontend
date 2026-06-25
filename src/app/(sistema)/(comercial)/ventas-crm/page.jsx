@@ -2,8 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  ShoppingCart, Users, Wallet, Package,
-  ArrowRightLeft, FileText, Target,
+  ShoppingCart, Users, FileText, Target, MapPin,
 } from "lucide-react";
 import {
   LoadingScreen, PageHeader, Section, EmptyState,
@@ -12,10 +11,9 @@ import {
 import { useApi } from "@/hooks/useApi";
 import {
   getVentas, getOportunidades, getPresupuestos,
-  getSaldoCajaChica, getAlmacenVirtual, getInteracciones,
+  getInteracciones,
 } from "@/services/apis/ventas";
 import { getUser } from "@/services/apis/auth";
-import { cn } from "@/lib/utils";
 
 import HeroBanner from "@/components/comercial/ventas/dashboard/HeroBanner";
 import PipelineOverview from "@/components/comercial/ventas/dashboard/PipelineOverview";
@@ -52,20 +50,18 @@ const PIPELINE_STAGES = [
 // ─── Quick Actions config ───────────────────────────────────────
 
 const QUICK_ACTIONS = [
+  { href: "/ventas-crm/ventas", icon: ShoppingCart, label: "Ventas" },
+  { href: "/ventas-crm/ventas-campo", icon: MapPin, label: "Ventas en Campo" },
   { href: "/ventas-crm/ventas/nueva", icon: ShoppingCart, label: "Venta rápida" },
   { href: "/ventas-crm/oportunidades", icon: Target, label: "Oportunidades" },
   { href: "/ventas-crm/presupuestos", icon: FileText, label: "Presupuestos" },
   { href: "/ventas-crm/clientes", icon: Users, label: "Clientes" },
-  { href: "/ventas-crm/almacen-virtual", icon: Package, label: "Almacén" },
-  { href: "/ventas-crm/caja-chica", icon: Wallet, label: "Caja chica" },
-  { href: "/ventas-crm/conciliaciones", icon: ArrowRightLeft, label: "Conciliaciones" },
 ];
 
 // ─── Página Principal ───────────────────────────────────────────
 
 export default function VentasCrmPage() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  const [tieneAlmacenVirtual, setTieneAlmacenVirtual] = useState(false);
 
   const { data: ventasHoyData, execute: fetchVentasHoy } = useApi(getVentas);
   const { data: ventasMesData, execute: fetchVentasMes } = useApi(getVentas);
@@ -77,8 +73,6 @@ export default function VentasCrmPage() {
   const { data: oportGanadas, execute: fetchOportGanadas } = useApi(getOportunidades);
   const { data: oportPerdidas, execute: fetchOportPerdidas } = useApi(getOportunidades);
   const { data: actividadesData, execute: fetchActividades } = useApi(getInteracciones);
-  const { data: saldoData, execute: fetchSaldo } = useApi(getSaldoCajaChica);
-  const { execute: fetchAlmacen } = useApi(getAlmacenVirtual);
 
   useEffect(() => {
     const hoy = getFechaHoy();
@@ -93,15 +87,7 @@ export default function VentasCrmPage() {
     fetchOportNegociacion({ etapa: "negociacion" });
     fetchOportGanadas({ etapa: "ganada", page_size: 1 });
     fetchOportPerdidas({ etapa: "perdida", page_size: 1 });
-    fetchActividades({ ordering: "proxima_accion_fecha", page_size: 6 });
-
-    fetchAlmacen()
-      .then((data) => {
-        const hasData = data && ((Array.isArray(data) && data.length > 0) || data?.results?.length > 0);
-        setTieneAlmacenVirtual(!!hasData);
-        return fetchSaldo();
-      })
-      .catch(() => setTieneAlmacenVirtual(false))
+    fetchActividades({ ordering: "proxima_accion_fecha", page_size: 6 })
       .finally(() => setHasLoadedOnce(true));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -176,13 +162,15 @@ export default function VentasCrmPage() {
             ))}
           </div>
 
+          {/* Accesos rápidos (desktop) */}
+          <div className="hidden sm:flex flex-wrap gap-2">
+            {QUICK_ACTIONS.map((action) => (
+              <QuickLink key={action.href} {...action} />
+            ))}
+          </div>
+
           {/* Metrics Row */}
-          <div className={cn(
-            "grid gap-4",
-            tieneAlmacenVirtual
-              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
-              : "grid-cols-1 sm:grid-cols-3"
-          )}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard
               icon={ShoppingCart}
               iconBg="bg-emerald-50"
@@ -210,21 +198,6 @@ export default function VentasCrmPage() {
               subtext="esperando respuesta"
               href="/ventas-crm/presupuestos?estado=enviado"
             />
-            {tieneAlmacenVirtual && (
-              <StatCard
-                icon={Wallet}
-                iconBg="bg-purple-50"
-                iconColor="text-purple-600"
-                label="Caja chica"
-                value={
-                  saldoData?.saldos?.USD?.saldo != null
-                    ? `$${formatearMonto(saldoData.saldos.USD.saldo)}`
-                    : "—"
-                }
-                subtext="USD"
-                href="/ventas-crm/caja-chica"
-              />
-            )}
           </div>
 
           {/* Actions + Presupuestos Grid */}
