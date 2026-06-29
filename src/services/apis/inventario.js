@@ -58,3 +58,19 @@ export async function getLotesPorVarianteId(varianteId) {
     "ver lotes por variante",
   );
 }
+
+// ─── Lotes disponibles por Variante + Depósito ──────────────────
+
+export async function getLotesDisponibles(varianteId, depositoId) {
+  const params = [`variante=${varianteId}`];
+  if (depositoId) params.push(`deposito=${depositoId}`);
+  return request(
+    `${API_URL}/inventario/stock-lotes/?${params.join("&")}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver lotes disponibles para asignación",
+  );
+}

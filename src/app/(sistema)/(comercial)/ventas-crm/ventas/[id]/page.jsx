@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
     CheckCircle2,
+    Pencil,
     User,
     Calendar,
     MapPin,
@@ -190,16 +191,27 @@ export default function VentaDetallePage() {
             >
                 <div className="flex items-center gap-3">
                     {esBorrador && (
-                        <Button
-                            variant="success"
-                            size="md"
-                            icon={CheckCircle2}
-                            onClick={handleConfirmar}
-                            disabled={confirmando}
-                            className="rounded-xl font-bold text-xs shadow-lg shadow-emerald-100"
-                        >
-                            {confirmando ? 'CONFIRMANDO...' : 'CONFIRMAR VENTA'}
-                        </Button>
+                        <>
+                            <Button
+                                variant="secondary"
+                                size="md"
+                                icon={Pencil}
+                                onClick={() => router.push(`/ventas-crm/ventas/${id}/editar`)}
+                                className="rounded-xl font-bold text-xs"
+                            >
+                                EDITAR BORRADOR
+                            </Button>
+                            <Button
+                                variant="success"
+                                size="md"
+                                icon={CheckCircle2}
+                                onClick={handleConfirmar}
+                                disabled={confirmando}
+                                className="rounded-xl font-bold text-xs shadow-lg shadow-emerald-100"
+                            >
+                                {confirmando ? 'CONFIRMANDO...' : 'CONFIRMAR VENTA'}
+                            </Button>
+                        </>
                     )}
                 </div>
             </PageHeader>
@@ -368,6 +380,21 @@ export default function VentaDetallePage() {
                                                         )}
                                                         {linea.variante_codigo && (
                                                             <div className="text-xs text-slate-400 font-mono">{linea.variante_codigo}</div>
+                                                        )}
+                                                        {linea.asignaciones && linea.asignaciones.length > 0 && (
+                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                {linea.asignaciones.map((a) => (
+                                                                    <span key={a.id || a.lote} className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-700 rounded px-1.5 py-0.5">
+                                                                        <span className="font-mono font-semibold">{a.lote_codigo}</span>
+                                                                        <span>×{a.cantidad}</span>
+                                                                        {a.vencimiento && (
+                                                                            <span className="text-emerald-500">
+                                                                                · {new Date(a.vencimiento + 'T00:00:00').toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </td>

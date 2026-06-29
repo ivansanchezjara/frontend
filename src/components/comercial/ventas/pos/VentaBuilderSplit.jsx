@@ -2,17 +2,19 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Search, User, X, ShoppingCart, Plus, Minus, Trash2,
-  Package, Tag, RefreshCw, Info, UserPlus, Save, Loader2,
+  Package, Tag, RefreshCw, Info, UserPlus, Save, Loader2, Warehouse, Layers,
 } from "lucide-react";
-import { Button, Badge, Text, Input, PhoneInput, validatePhone, buildPhoneValue, Modal } from "@/components/ui";
+import { Button, Badge, Text, Input, PhoneInput, validatePhone, buildPhoneValue, Modal, DataTable } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBuscarProductos } from "@/hooks/useBuscarProductos";
 import { getClientes, createCliente } from "@/services/apis/ventas";
+import { getDepositos } from "@/services/apis/movimientos";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui";
 import TipoCambioWidget from "../shared/TipoCambioWidget";
 import FichaProductoModal from "../presupuestos/FichaProductoModal";
+import LoteSelectorModal from "./LoteSelectorModal";
 
 // ─── Constantes ─────────────────────────────────────────────────
 
@@ -45,6 +47,150 @@ function formatMonto(monto, moneda) {
   if (moneda === "BRL") return `R$ ${num.toLocaleString("es-PY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return `$ ${num.toLocaleString("es-PY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
+function getStockValue(variante) {
+  return variante?.stock ?? variante?.stock_disponible ?? variante?.stock_total ?? variante?.stock_actual ?? null;
+}
+
+function getStockClasses(stock) {
+  if (stock === 0) return "text-rose-600 bg-rose-50 border-rose-100";
+  if (stock != null && stock <= 5) return "text-amber-600 bg-amber-50 border-amber-100";
+  if (stock != null) return "text-emerald-600 bg-emerald-50 border-emerald-100";
+  return "text-slate-500 bg-slate-100 border-slate-200";
+}
+
+function formatStockLabel(stock) {
+  if (stock === 0) return "Sin stock";
+  if (stock == null) return "Stock —";
+  return `Stock ${stock}`;
+}
+
+// ─── Columnas de la tabla de resultados ─────────────────────────
+
+function buildProductColumns({ calcularPrecio, moneda, tipoCambio, carritoIds, agregarProducto, setFichaVarianteId }) {
+  return [
+    {
+      key: 'codigo',
+      label: 'SKU',
+      resizable: true,
+      width: 120,
+      minWidth: 80,
+      cellClassName: 'truncate max-w-0',
+      render: (_, row) => (
+        <Text variant="bodyXs" className="font-mono text-[10px] font-black text-slate-600 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 uppercase truncate inline-block max-w-full group-hover:bg-emerald-100 group-hover:border-emerald-200 transition-colors">
+          {row.product_code}
+        </Text>
+      ),
+    },
+    {
+      key: 'producto',
+      label: 'Producto / Variante',
+      resizable: true,
+      width: 260,
+      minWidth: 180,
+      cellClassName: 'max-w-0',
+      render: (_, row) => {
+        const enCarrito = carritoIds[row.id] || 0;
+        return (
+          <div className="min-w-0">
+            <Text variant="bodyXs" className="font-black text-slate-800 truncate leading-tight group-hover:text-emerald-600 transition-colors">
+              {row.producto_nombre}
+            </Text>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              {row.nombre_variante && row.nombre_variante !== row.producto_nombre && (
+                <Text variant="bodyXs" className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate">
+                  {row.nombre_variante}
+                </Text>
+              )}
+              {row.brand && (
+                <Text variant="bodyXs" className="text-[10px] text-slate-300 truncate">
+                  · {row.brand}
+                </Text>
+              )}
+            </div>
+            {enCarrito > 0 && (
+              <Badge className="mt-1 bg-emerald-50 text-emerald-700 border border-emerald-200 py-0 px-1.5 rounded text-[9px] font-bold">
+                ×{enCarrito} en carrito
+              </Badge>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'stock',
+      label: 'Stock',
+      resizable: true,
+      width: 70,
+      minWidth: 55,
+      render: (_, row) => {
+        const stock = getStockValue(row);
+        return (
+          <Badge className={cn(
+            "px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap shadow-sm",
+            stock === 0
+              ? 'bg-rose-50 text-rose-600 border-rose-100'
+              : stock != null && stock <= 5
+                ? 'bg-amber-50 text-amber-600 border-amber-100'
+                : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+          )}>
+            {stock === 0 ? "Agotado" : stock != null ? stock : "—"}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'precio',
+      label: 'Precio',
+      resizable: true,
+      width: 100,
+      minWidth: 80,
+      render: (_, row) => {
+        const { precioMoneda, tieneOferta, precioTierUsd } = calcularPrecio(row);
+        return (
+          <div className="text-right">
+            <span className={cn("text-xs font-bold", tieneOferta ? "text-rose-600" : "text-emerald-700")}>
+              {formatMonto(precioMoneda, moneda)}
+            </span>
+            {tieneOferta && (
+              <div className="text-[9px] text-slate-400 line-through">
+                {formatMonto(
+                  moneda !== "USD" && tipoCambio
+                    ? Math.round(precioTierUsd * parseFloat(tipoCambio.valor))
+                    : precioTierUsd,
+                  moneda
+                )}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'acciones',
+      label: '',
+      width: 80,
+      minWidth: 70,
+      render: (_, row) => (
+        <div className="flex items-center gap-1 justify-end">
+          <button
+            onClick={(e) => { e.stopPropagation(); setFichaVarianteId(row.id); }}
+            className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-all"
+            title="Ver ficha"
+          >
+            <Info size={12} />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); agregarProducto(row); }}
+            className="w-7 h-7 rounded-lg border border-emerald-200 bg-emerald-50 flex items-center justify-center text-emerald-600 hover:bg-emerald-100 hover:border-emerald-300 transition-all"
+            title="Agregar al carrito"
+          >
+            <Plus size={12} />
+          </button>
+        </div>
+      ),
+    },
+  ];
+}
 
 // ─── Componente Principal ───────────────────────────────────────
 
@@ -64,6 +210,9 @@ export default function VentaBuilderSplit({
   // ─── Modal ficha de producto ────────────────────────────────
   const [fichaVarianteId, setFichaVarianteId] = useState(null);
 
+  // ─── Modal selector de lotes ────────────────────────────────
+  const [loteSelectorIndex, setLoteSelectorIndex] = useState(null);
+
   // ─── Búsqueda de clientes ──────────────────────────────────
   const [busquedaCliente, setBusquedaCliente] = useState("");
   const busquedaClienteDebounced = useDebounce(busquedaCliente, 400);
@@ -76,6 +225,21 @@ export default function VentaBuilderSplit({
 
   // ─── Tipo de cambio ─────────────────────────────────────────
   const [tipoCambio, setTipoCambio] = useState(null);
+
+  // ─── Depósitos ──────────────────────────────────────────────
+  const [depositos, setDepositos] = useState([]);
+  const { execute: fetchDepositos } = useApi(getDepositos);
+
+  useEffect(() => {
+    fetchDepositos().then((data) => {
+      const items = Array.isArray(data) ? data : (data?.results || []);
+      setDepositos(items);
+      // Auto-seleccionar si solo hay un depósito
+      if (items.length === 1 && !ventaData.deposito_sucursal) {
+        onVentaChange({ ...ventaData, deposito_sucursal: items[0].id });
+      }
+    }).catch(() => { });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tier = ventaData.cliente?.tier_precio || "publico";
   const moneda = ventaData.moneda_negociacion || "USD";
@@ -125,10 +289,22 @@ export default function VentaBuilderSplit({
 
   // ─── Agregar producto ───────────────────────────────────────
   const agregarProducto = useCallback((variante) => {
+    const stockDisponible = getStockValue(variante);
+    if (stockDisponible === 0) {
+      showToast("No hay stock disponible para este producto.", "error");
+      return;
+    }
+
     const existente = lineas.findIndex((l) => l.variante_id === variante.id);
     if (existente >= 0) {
       const nuevas = [...lineas];
-      const nueva = { ...nuevas[existente], cantidad: nuevas[existente].cantidad + 1 };
+      const nueva = { ...nuevas[existente] };
+      const siguienteCantidad = nueva.cantidad + 1;
+      if (stockDisponible != null && siguienteCantidad > stockDisponible) {
+        showToast(`No hay stock suficiente. Stock disponible: ${stockDisponible}.`, "error");
+        return;
+      }
+      nueva.cantidad = siguienteCantidad;
       nueva.subtotal_usd = nueva.precio_usd * nueva.cantidad;
       nueva.subtotal_moneda = nueva.precio_moneda * nueva.cantidad;
       nuevas[existente] = nueva;
@@ -142,6 +318,7 @@ export default function VentaBuilderSplit({
         nombre_variante: variante.nombre_variante || "",
         brand: variante.brand || "",
         cantidad: 1,
+        stock: stockDisponible,
         precio_usd: precioUsd,
         precio_moneda: precioMoneda,
         subtotal_usd: precioUsd,
@@ -153,7 +330,7 @@ export default function VentaBuilderSplit({
       }]);
     }
     searchInputRef.current?.focus();
-  }, [lineas, onLineasChange, calcularPrecio]);
+  }, [lineas, onLineasChange, calcularPrecio, showToast]);
 
   // ─── Keyboard: Enter agrega primer resultado ────────────────
   const handleSearchKeyDown = (e) => {
@@ -167,7 +344,12 @@ export default function VentaBuilderSplit({
   const handleCantidad = (index, delta) => {
     const nuevas = [...lineas];
     const nueva = { ...nuevas[index] };
-    nueva.cantidad = Math.max(1, nueva.cantidad + delta);
+    const siguienteCantidad = Math.max(1, nueva.cantidad + delta);
+    if (nueva.stock != null && siguienteCantidad > nueva.stock) {
+      showToast(`No hay stock suficiente. Stock disponible: ${nueva.stock}.`, "error");
+      return;
+    }
+    nueva.cantidad = siguienteCantidad;
     nueva.subtotal_usd = nueva.precio_usd * nueva.cantidad;
     nueva.subtotal_moneda = nueva.precio_moneda * nueva.cantidad;
     nuevas[index] = nueva;
@@ -178,9 +360,15 @@ export default function VentaBuilderSplit({
     const num = parseInt(val, 10);
     if (num > 0) {
       const nuevas = [...lineas];
-      const nueva = { ...nuevas[index], cantidad: num };
-      nueva.subtotal_usd = nueva.precio_usd * num;
-      nueva.subtotal_moneda = nueva.precio_moneda * num;
+      const nueva = { ...nuevas[index] };
+      if (nueva.stock != null && num > nueva.stock) {
+        showToast(`No hay stock suficiente. Stock disponible: ${nueva.stock}.`, "error");
+        nueva.cantidad = nueva.stock;
+      } else {
+        nueva.cantidad = num;
+      }
+      nueva.subtotal_usd = nueva.precio_usd * nueva.cantidad;
+      nueva.subtotal_moneda = nueva.precio_moneda * nueva.cantidad;
       nuevas[index] = nueva;
       onLineasChange(nuevas);
     }
@@ -336,6 +524,21 @@ export default function VentaBuilderSplit({
                 </button>
               ))}
             </div>
+
+            {/* Depósito */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Warehouse size={14} className="text-slate-400" />
+              <select
+                value={ventaData.deposito_sucursal || ""}
+                onChange={(e) => onVentaChange({ ...ventaData, deposito_sucursal: e.target.value ? Number(e.target.value) : null })}
+                className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-all"
+              >
+                <option value="">Depósito...</option>
+                {depositos.map((dep) => (
+                  <option key={dep.id} value={dep.id}>{dep.nombre}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* TC widget */}
@@ -367,87 +570,18 @@ export default function VentaBuilderSplit({
         </div>
 
         {/* Resultados */}
-        <div className="flex-1 overflow-y-auto px-5 py-3">
+        <div className="flex-1 overflow-y-auto px-3 py-2">
           {resultados.length > 0 ? (
-            <div className="grid grid-cols-1 gap-2">
-              {resultados.map((variante) => {
-                const { precioMoneda, tieneOferta, precioTierUsd } = calcularPrecio(variante);
-                const enCarrito = carritoIds[variante.id] || 0;
-
-                return (
-                  <div
-                    key={variante.id}
-                    className={cn(
-                      "w-full px-4 py-3 rounded-xl border text-left transition-all flex items-center gap-3",
-                      "hover:border-emerald-300 hover:bg-emerald-50/50 hover:shadow-sm",
-                      enCarrito > 0
-                        ? "border-emerald-200 bg-emerald-50/30"
-                        : "border-slate-200 bg-white"
-                    )}
-                  >
-                    {/* Info button */}
-                    <button
-                      onClick={() => setFichaVarianteId(variante.id)}
-                      className="shrink-0 w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-all"
-                      title="Ver ficha y stock"
-                    >
-                      <Info size={14} />
-                    </button>
-
-                    {/* Contenido clickeable para agregar */}
-                    <button
-                      onClick={() => agregarProducto(variante)}
-                      className="flex-1 min-w-0 text-left"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-800 truncate">
-                          {variante.producto_nombre}
-                        </span>
-                        {tieneOferta && (
-                          <span className="shrink-0 text-[9px] font-bold bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded-full border border-rose-200">
-                            OFERTA
-                          </span>
-                        )}
-                        {enCarrito > 0 && (
-                          <span className="shrink-0 text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
-                            ×{enCarrito}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-slate-400 font-mono">{variante.product_code}</span>
-                        {variante.nombre_variante && variante.nombre_variante !== variante.producto_nombre && (
-                          <span className="text-xs text-slate-500">· {variante.nombre_variante}</span>
-                        )}
-                        {variante.brand && (
-                          <span className="text-xs text-slate-400">· {variante.brand}</span>
-                        )}
-                      </div>
-                    </button>
-
-                    {/* Precio */}
-                    <div className="text-right shrink-0">
-                      <p className={cn(
-                        "text-sm font-bold",
-                        tieneOferta ? "text-rose-600" : "text-emerald-700"
-                      )}>
-                        {formatMonto(precioMoneda, moneda)}
-                      </p>
-                      {tieneOferta && (
-                        <p className="text-[10px] text-slate-400 line-through">
-                          {formatMonto(
-                            moneda !== "USD" && tipoCambio
-                              ? Math.round(precioTierUsd * parseFloat(tipoCambio.valor))
-                              : precioTierUsd,
-                            moneda
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <DataTable
+              columns={buildProductColumns({ calcularPrecio, moneda, tipoCambio, carritoIds, agregarProducto, setFichaVarianteId })}
+              data={resultados}
+              rowKey="id"
+              onRowClick={(row) => agregarProducto(row)}
+              variant="rounded"
+              size="sm"
+              fixedLayout
+              className="select-none"
+            />
           ) : busquedaDebounced.length >= 2 && !buscando ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Package size={32} className="text-slate-200 mb-2" />
@@ -533,26 +667,60 @@ export default function VentaBuilderSplit({
 
                   <div className="flex items-center justify-between mt-2">
                     {/* Controles de cantidad */}
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleCantidad(index, -1)}
-                        className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:border-slate-300 transition-all"
-                      >
-                        <Minus size={12} />
-                      </button>
-                      <input
-                        type="number"
-                        min="1"
-                        value={linea.cantidad}
-                        onChange={(e) => handleCantidadInput(index, e.target.value)}
-                        className="w-12 h-7 text-center text-sm font-bold text-slate-700 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300"
-                      />
-                      <button
-                        onClick={() => handleCantidad(index, 1)}
-                        className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-600 transition-all"
-                      >
-                        <Plus size={12} />
-                      </button>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleCantidad(index, -1)}
+                          className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:border-slate-300 transition-all"
+                        >
+                          <Minus size={12} />
+                        </button>
+                        <input
+                          type="number"
+                          min="1"
+                          value={linea.cantidad}
+                          onChange={(e) => handleCantidadInput(index, e.target.value)}
+                          className="w-12 h-7 text-center text-sm font-bold text-slate-700 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300"
+                        />
+                        <button
+                          onClick={() => handleCantidad(index, 1)}
+                          className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-600 transition-all"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-medium",
+                        linea.stock === 0 ? "text-rose-600" : linea.stock != null && linea.stock <= 5 ? "text-amber-600" : "text-slate-500"
+                      )}>
+                        {linea.stock == null ? "Stock —" : `Stock disponible: ${linea.stock}`}
+                      </span>
+                      {/* Asignación de lotes */}
+                      {ventaData.deposito_sucursal && (
+                        <div className="mt-1">
+                          {linea.asignaciones && linea.asignaciones.length > 0 ? (
+                            <button
+                              onClick={() => setLoteSelectorIndex(index)}
+                              className="flex items-center gap-1 text-[10px] text-emerald-600 hover:text-emerald-700 font-semibold cursor-pointer"
+                            >
+                              <Layers size={10} />
+                              {linea.asignaciones.map((a) => (
+                                <span key={a.lote} className="bg-emerald-50 border border-emerald-200 rounded px-1 py-px">
+                                  {a.lote_codigo} ({a.cantidad})
+                                </span>
+                              ))}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setLoteSelectorIndex(index)}
+                              className="flex items-center gap-1 text-[10px] text-amber-600 hover:text-amber-700 font-semibold cursor-pointer"
+                            >
+                              <Layers size={10} />
+                              Asignar lotes
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Precio × cant = subtotal */}
@@ -603,6 +771,22 @@ export default function VentaBuilderSplit({
       <FichaProductoModal
         varianteId={fichaVarianteId}
         onClose={() => setFichaVarianteId(null)}
+      />
+
+      {/* Modal selector de lotes */}
+      <LoteSelectorModal
+        open={loteSelectorIndex !== null}
+        onClose={() => setLoteSelectorIndex(null)}
+        variante={loteSelectorIndex !== null ? lineas[loteSelectorIndex] : null}
+        cantidadRequerida={loteSelectorIndex !== null ? lineas[loteSelectorIndex]?.cantidad : 0}
+        depositoId={ventaData.deposito_sucursal}
+        asignacionesActuales={loteSelectorIndex !== null ? (lineas[loteSelectorIndex]?.asignaciones || []) : []}
+        onConfirmar={(asignaciones) => {
+          if (loteSelectorIndex === null) return;
+          const nuevas = [...lineas];
+          nuevas[loteSelectorIndex] = { ...nuevas[loteSelectorIndex], asignaciones };
+          onLineasChange(nuevas);
+        }}
       />
 
       {/* Modal nuevo cliente */}
