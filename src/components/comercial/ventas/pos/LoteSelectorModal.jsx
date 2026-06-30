@@ -1,42 +1,41 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { Package, Calendar, AlertTriangle, Check, RotateCcw } from "lucide-react";
+import { Package, Calendar, AlertTriangle, Check, RotateCcw, Warehouse } from "lucide-react";
 import Modal from "@/components/ui/feedback/Modal";
 import { Button, Badge } from "@/components/ui";
 import { Text } from "@/components/ui/basics/Typography";
 import { useApi } from "@/hooks/useApi";
-import { getLotesDisponibles } from "@/services/apis/inventario";
+import { getLotesPorVarianteId } from "@/services/apis/inventario";
 
 /**
  * Modal para seleccionar/reasignar lotes a una línea de venta.
+ * Muestra TODOS los lotes disponibles (de todos los depósitos) con columna de depósito.
  *
  * Props:
  * - open: boolean
  * - onClose: () => void
  * - variante: { variante_id, nombre, nombre_variante, product_code }
  * - cantidadRequerida: number — cantidad total que debe cubrirse
- * - depositoId: number — depósito del que se muestran lotes
  * - asignacionesActuales: [{ lote: id, cantidad }] — asignaciones existentes
- * - onConfirmar: (asignaciones: [{ lote, lote_codigo, vencimiento, cantidad }]) => void
+ * - onConfirmar: (asignaciones: [{ lote, lote_codigo, vencimiento, deposito_nombre, cantidad }]) => void
  */
 export default function LoteSelectorModal({
   open,
   onClose,
   variante,
   cantidadRequerida,
-  depositoId,
   asignacionesActuales = [],
   onConfirmar,
 }) {
-  const { data: lotesRaw, loading, execute: fetchLotes } = useApi(getLotesDisponibles);
+  const { data: lotesRaw, loading, execute: fetchLotes } = useApi(getLotesPorVarianteId);
   const [asignaciones, setAsignaciones] = useState({});
 
-  // Cargar lotes al abrir
+  // Cargar lotes al abrir (todos los depósitos)
   useEffect(() => {
-    if (open && variante?.variante_id && depositoId) {
-      fetchLotes(variante.variante_id, depositoId);
+    if (open && variante?.variante_id) {
+      fetchLotes(variante.variante_id);
     }
-  }, [open, variante?.variante_id, depositoId, fetchLotes]);
+  }, [open, variante?.variante_id, fetchLotes]);
 
   // Inicializar asignaciones con las actuales
   useEffect(() => {
@@ -88,6 +87,7 @@ export default function LoteSelectorModal({
     const nuevas = {};
     for (const lote of lotes) {
       if (restante <= 0) break;
+      if (isVencido(lote.vencimiento)) continue;
       const asignar = Math.min(restante, lote.cantidad);
       nuevas[lote.id] = asignar;
       restante -= asignar;
@@ -104,6 +104,7 @@ export default function LoteSelectorModal({
           lote: Number(loteId),
           lote_codigo: lote?.lote_codigo || "",
           vencimiento: lote?.vencimiento || null,
+          deposito_nombre: lote?.deposito_nombre || "",
           cantidad,
         };
       });
@@ -126,7 +127,7 @@ export default function LoteSelectorModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Seleccionar Lotes" size="lg">
+    <Modal open={open} onClose={onClose} title="Seleccionar Lotes" size="xl">
       <div className="p-6 space-y-4">
         {/* Info del producto */}
         <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
@@ -192,20 +193,23 @@ export default function LoteSelectorModal({
             </Text>
           </div>
         ) : (
-          <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-100">
+          <div className="max-h-80 overflow-y-auto rounded-xl border border-slate-100">
             <table className="w-full text-left">
               <thead className="sticky top-0 bg-slate-50 z-10">
                 <tr>
-                  <th className="py-2.5 px-4 text-[10px] font-black uppercase text-slate-500 tracking-wide">
+                  <th className="py-2.5 px-3 text-[10px] font-black uppercase text-slate-500 tracking-wide">
                     Lote
                   </th>
-                  <th className="py-2.5 px-4 text-[10px] font-black uppercase text-slate-500 tracking-wide">
+                  <th className="py-2.5 px-3 text-[10px] font-black uppercase text-slate-500 tracking-wide">
+                    Depósito
+                  </th>
+                  <th className="py-2.5 px-3 text-[10px] font-black uppercase text-slate-500 tracking-wide">
                     Vencimiento
                   </th>
-                  <th className="py-2.5 px-4 text-[10px] font-black uppercase text-slate-500 tracking-wide text-center">
+                  <th className="py-2.5 px-3 text-[10px] font-black uppercase text-slate-500 tracking-wide text-center">
                     Disponible
                   </th>
-                  <th className="py-2.5 px-4 text-[10px] font-black uppercase text-slate-500 tracking-wide text-center">
+                  <th className="py-2.5 px-3 text-[10px] font-black uppercase text-slate-500 tracking-wide text-center">
                     Asignar
                   </th>
                 </tr>
@@ -221,12 +225,20 @@ export default function LoteSelectorModal({
                         asignado > 0 ? "bg-emerald-50/50" : "hover:bg-slate-50/50"
                       } ${vencido ? "opacity-60" : ""}`}
                     >
-                      <td className="py-2.5 px-4">
+                      <td className="py-2.5 px-3">
                         <span className="text-sm font-mono font-semibold text-slate-700">
                           {lote.lote_codigo}
                         </span>
                       </td>
-                      <td className="py-2.5 px-4">
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-1">
+                          <Warehouse size={11} className="text-slate-400" />
+                          <span className="text-xs font-medium text-slate-600">
+                            {lote.deposito_nombre}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3">
                         <div className="flex items-center gap-1.5">
                           <Calendar size={12} className={vencido ? "text-red-400" : "text-slate-400"} />
                           <span className={`text-sm ${vencido ? "text-red-600 font-semibold" : "text-slate-600"}`}>
@@ -239,12 +251,12 @@ export default function LoteSelectorModal({
                           )}
                         </div>
                       </td>
-                      <td className="py-2.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         <span className="text-sm font-semibold text-slate-700">
                           {lote.cantidad}
                         </span>
                       </td>
-                      <td className="py-2.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         <input
                           type="number"
                           min={0}

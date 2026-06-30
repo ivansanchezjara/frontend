@@ -139,7 +139,7 @@ export default function EditarVentaPage() {
         origen: ventaData.origen,
         moneda_negociacion: ventaData.moneda_negociacion,
         cliente: ventaData.cliente?.id || null,
-        deposito_sucursal: ventaData.deposito_sucursal || null,
+        requiere_factura_legal: ventaData.requiere_factura_legal ?? true,
         lineas: lineas.map((l) => ({
           variante: l.variante_id,
           cantidad: l.cantidad,
@@ -153,8 +153,9 @@ export default function EditarVentaPage() {
       showToast("Venta actualizada correctamente", "success");
       router.push(`/ventas-crm/ventas/${id}`);
     } catch (err) {
-      const detail = err?.data?.detail || err?.message || "Error al actualizar la venta.";
-      showToast(detail, "error");
+      const errorData = err?.data || {};
+      const detail = errorData?.detail || err?.message || "Error al actualizar la venta.";
+      showToast(typeof detail === 'string' ? detail : JSON.stringify(detail), "error");
     } finally {
       setSaving(false);
     }

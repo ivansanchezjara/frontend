@@ -10,6 +10,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useBuscarProductos } from "@/hooks/useBuscarProductos";
 import { getClientes, createCliente } from "@/services/apis/ventas";
 import { getDepositos } from "@/services/apis/movimientos";
+import { getLotesPorVarianteId } from "@/services/apis/inventario";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui";
 import TipoCambioWidget from "../shared/TipoCambioWidget";
@@ -288,6 +289,41 @@ export default function VentaBuilderSplit({
   }, [tier, moneda, tipoCambio]);
 
   // ─── Agregar producto ───────────────────────────────────────
+
+  // Auto-asignar lotes FEFO para una línea
+  const autoAsignarFEFO = useCallback(async (varianteId, cantidad) => {
+    try {
+      const data = await getLotesPorVarianteId(varianteId);
+      const items = Array.isArray(data) ? data : (data?.results || []);
+      const lotes = items
+        .filter((l) => l.cantidad > 0)
+        .filter((l) => !l.vencimiento || new Date(l.vencimiento) >= new Date())
+        .sort((a, b) => {
+          if (!a.vencimiento) return 1;
+          if (!b.vencimiento) return -1;
+          return a.vencimiento.localeCompare(b.vencimiento);
+        });
+
+      let restante = cantidad;
+      const asignaciones = [];
+      for (const lote of lotes) {
+        if (restante <= 0) break;
+        const asignar = Math.min(restante, lote.cantidad);
+        asignaciones.push({
+          lote: lote.id,
+          lote_codigo: lote.lote_codigo,
+          vencimiento: lote.vencimiento,
+          deposito_nombre: lote.deposito_nombre || "",
+          cantidad: asignar,
+        });
+        restante -= asignar;
+      }
+      return asignaciones;
+    } catch {
+      return [];
+    }
+  }, []);
+
   const agregarProducto = useCallback((variante) => {
     const stockDisponible = getStockValue(variante);
     if (stockDisponible === 0) {
@@ -311,7 +347,7 @@ export default function VentaBuilderSplit({
       onLineasChange(nuevas);
     } else {
       const { precioUsd, precioMoneda, tieneOferta, precioOferta, precioTierUsd } = calcularPrecio(variante);
-      onLineasChange([...lineas, {
+      const nuevaLinea = {
         variante_id: variante.id,
         product_code: variante.product_code,
         nombre: variante.producto_nombre,
@@ -327,10 +363,27 @@ export default function VentaBuilderSplit({
         precio_oferta: precioOferta,
         precio_tier_usd: precioTierUsd,
         oferta_vence: variante.oferta_vence || null,
-      }]);
+        asignaciones: [],
+      };
+      const nuevasLineas = [...lineas, nuevaLinea];
+      onLineasChange(nuevasLineas);
+
+      // Auto-asignar FEFO en background
+      const idx = nuevasLineas.length - 1;
+      autoAsignarFEFO(variante.id, 1).then((asignaciones) => {
+        if (asignaciones.length > 0) {
+          onLineasChange((prev) => {
+            const copy = [...prev];
+            if (copy[idx]?.variante_id === variante.id) {
+              copy[idx] = { ...copy[idx], asignaciones };
+            }
+            return copy;
+          });
+        }
+      });
     }
     searchInputRef.current?.focus();
-  }, [lineas, onLineasChange, calcularPrecio, showToast]);
+  }, [lineas, onLineasChange, calcularPrecio, showToast, autoAsignarFEFO]);
 
   // ─── Keyboard: Enter agrega primer resultado ────────────────
   const handleSearchKeyDown = (e) => {
@@ -354,6 +407,17 @@ export default function VentaBuilderSplit({
     nueva.subtotal_moneda = nueva.precio_moneda * nueva.cantidad;
     nuevas[index] = nueva;
     onLineasChange(nuevas);
+
+    // Re-asignar FEFO con la nueva cantidad
+    autoAsignarFEFO(nueva.variante_id, siguienteCantidad).then((asignaciones) => {
+      onLineasChange((prev) => {
+        const copy = [...prev];
+        if (copy[index]?.variante_id === nueva.variante_id) {
+          copy[index] = { ...copy[index], asignaciones };
+        }
+        return copy;
+      });
+    });
   };
 
   const handleCantidadInput = (index, val) => {
@@ -371,6 +435,17 @@ export default function VentaBuilderSplit({
       nueva.subtotal_moneda = nueva.precio_moneda * nueva.cantidad;
       nuevas[index] = nueva;
       onLineasChange(nuevas);
+
+      // Re-asignar FEFO con la nueva cantidad
+      autoAsignarFEFO(nueva.variante_id, nueva.cantidad).then((asignaciones) => {
+        onLineasChange((prev) => {
+          const copy = [...prev];
+          if (copy[index]?.variante_id === nueva.variante_id) {
+            copy[index] = { ...copy[index], asignaciones };
+          }
+          return copy;
+        });
+      });
     }
   };
 
@@ -696,7 +771,6 @@ export default function VentaBuilderSplit({
                         {linea.stock == null ? "Stock —" : `Stock disponible: ${linea.stock}`}
                       </span>
                       {/* Asignación de lotes */}
-                      {ventaData.deposito_sucursal && (
                         <div className="mt-1">
                           {linea.asignaciones && linea.asignaciones.length > 0 ? (
                             <button
@@ -720,7 +794,6 @@ export default function VentaBuilderSplit({
                             </button>
                           )}
                         </div>
-                      )}
                     </div>
 
                     {/* Precio × cant = subtotal */}
@@ -779,7 +852,6 @@ export default function VentaBuilderSplit({
         onClose={() => setLoteSelectorIndex(null)}
         variante={loteSelectorIndex !== null ? lineas[loteSelectorIndex] : null}
         cantidadRequerida={loteSelectorIndex !== null ? lineas[loteSelectorIndex]?.cantidad : 0}
-        depositoId={ventaData.deposito_sucursal}
         asignacionesActuales={loteSelectorIndex !== null ? (lineas[loteSelectorIndex]?.asignaciones || []) : []}
         onConfirmar={(asignaciones) => {
           if (loteSelectorIndex === null) return;
