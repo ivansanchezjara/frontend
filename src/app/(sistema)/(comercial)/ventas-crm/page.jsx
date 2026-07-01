@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  ShoppingCart, Users, FileText, Target, MapPin,
+  ShoppingCart, Users, FileText, Target, MapPin, GraduationCap,
 } from "lucide-react";
 import {
   LoadingScreen, PageHeader, Section, EmptyState,
@@ -56,6 +56,7 @@ const QUICK_ACTIONS = [
   { href: "/ventas-crm/oportunidades", icon: Target, label: "Oportunidades" },
   { href: "/ventas-crm/presupuestos", icon: FileText, label: "Presupuestos" },
   { href: "/ventas-crm/clientes", icon: Users, label: "Clientes" },
+  { href: "/ventas-crm/instituciones", icon: GraduationCap, label: "Instituciones" },
 ];
 
 // ─── Página Principal ───────────────────────────────────────────

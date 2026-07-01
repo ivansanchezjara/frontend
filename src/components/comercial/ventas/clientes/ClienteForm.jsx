@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Input, Button, Field, Toggle, PhoneInput, validatePhone, buildPhoneValue, PHONE_PREFIXES } from "@/components/ui";
 import { Text } from "@/components/ui/basics/Typography";
 import { cn } from "@/lib/utils";
+import { DEPARTAMENTOS, CIUDADES_POR_DEPARTAMENTO, getAllCiudades } from "@/config/paraguay";
 
 // ─── Configuración ──────────────────────────────────────────────
 
@@ -42,6 +43,79 @@ const selectClass =
 
 const textareaClass =
   "block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none placeholder:text-slate-400";
+
+// ─── Componente: Buscador de Ciudad ─────────────────────────────
+
+function CiudadSelect({ departamento, value, onChange, className }) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+
+  // Ciudades disponibles según departamento seleccionado
+  const ciudadesDisponibles = departamento
+    ? (CIUDADES_POR_DEPARTAMENTO[departamento] || [])
+    : getAllCiudades();
+
+  // Filtrar por búsqueda
+  const filtered = search
+    ? ciudadesDisponibles.filter((c) =>
+        c.toLowerCase().includes(search.toLowerCase())
+      )
+    : ciudadesDisponibles;
+
+  const handleSelect = (ciudad) => {
+    // Simular event para handleChange
+    onChange({ target: { value: ciudad } });
+    setSearch("");
+    setOpen(false);
+  };
+
+  const handleInputChange = (e) => {
+    setSearch(e.target.value);
+    setOpen(true);
+    // Si el texto coincide exactamente con una ciudad, seleccionarla
+    const exact = ciudadesDisponibles.find(
+      (c) => c.toLowerCase() === e.target.value.toLowerCase()
+    );
+    if (exact) {
+      onChange({ target: { value: exact } });
+    } else {
+      onChange({ target: { value: e.target.value } });
+    }
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        className={className}
+        value={open ? search : value}
+        onFocus={() => { setOpen(true); setSearch(value); }}
+        onBlur={() => setTimeout(() => setOpen(false), 200)}
+        onChange={handleInputChange}
+        placeholder="Buscar ciudad..."
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg">
+          {filtered.slice(0, 30).map((ciudad) => (
+            <button
+              key={ciudad}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleSelect(ciudad)}
+              className={cn(
+                "w-full text-left px-3.5 py-2 text-sm hover:bg-slate-50 transition-colors",
+                ciudad === value && "bg-blue-50 text-blue-700 font-semibold"
+              )}
+            >
+              {ciudad}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Helper: parsear teléfono guardado en BD → { prefix, number } ──
 // El formato guardado es "+595 981000000" o "981000000" (sin prefijo)
@@ -89,6 +163,10 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
     correo_electronico: cliente?.correo_electronico || "",
     ruc: cliente?.ruc || "",
     documento_extranjero: cliente?.documento_extranjero || "",
+    cedula: cliente?.cedula || "",
+    registro_profesional: cliente?.registro_profesional || "",
+    departamento: cliente?.departamento || "",
+    ciudad: cliente?.ciudad || "",
     direccion: cliente?.direccion || "",
     misma_direccion_entrega: cliente?.misma_direccion_entrega ?? true,
     direccion_entrega: cliente?.direccion_entrega || "",
@@ -111,7 +189,21 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
         categoria: categoriasDisponibles[0]?.value || "",
       }));
     }
+    // Limpiar tratamiento si es persona jurídica
+    if (formData.tipo_persona === "juridica" && formData.tratamiento) {
+      setFormData((prev) => ({ ...prev, tratamiento: "" }));
+    }
   }, [formData.tipo_persona]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Limpiar ciudad si cambia el departamento y la ciudad no pertenece al nuevo
+  useEffect(() => {
+    if (formData.departamento && formData.ciudad) {
+      const ciudadesValidas = CIUDADES_POR_DEPARTAMENTO[formData.departamento] || [];
+      if (!ciudadesValidas.includes(formData.ciudad)) {
+        setFormData((prev) => ({ ...prev, ciudad: "" }));
+      }
+    }
+  }, [formData.departamento]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (field) => (e) => {
     const value = e?.target ? e.target.value : e;
@@ -252,20 +344,22 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Tratamiento + Nombre en una fila */}
           <div className="flex gap-3 md:col-span-2 items-start">
-            <div className="flex flex-col gap-1.5 w-28 shrink-0">
-              <Text as="label" variant="label">Tratamiento</Text>
-              <select
-                className={selectClass}
-                value={formData.tratamiento}
-                onChange={handleChange("tratamiento")}
-              >
-                {TRATAMIENTO_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!esJuridica && (
+              <div className="flex flex-col gap-1.5 w-28 shrink-0">
+                <Text as="label" variant="label">Tratamiento</Text>
+                <select
+                  className={selectClass}
+                  value={formData.tratamiento}
+                  onChange={handleChange("tratamiento")}
+                >
+                  {TRATAMIENTO_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <Input
                 label={esJuridica ? "Razón Social *" : "Nombre Completo *"}
@@ -332,6 +426,30 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
             error={getError("ruc")}
           />
 
+          {/* Cédula de identidad */}
+          {!esJuridica && (
+            <Input
+              label="Cédula de Identidad"
+              value={formData.cedula}
+              onChange={handleChange("cedula")}
+              maxLength={20}
+              placeholder="1.234.567"
+              error={getError("cedula")}
+            />
+          )}
+
+          {/* Registro profesional */}
+          {!esJuridica && (
+            <Input
+              label="Nro. Registro Profesional"
+              value={formData.registro_profesional}
+              onChange={handleChange("registro_profesional")}
+              maxLength={50}
+              placeholder="Nro. de matrícula o registro"
+              error={getError("registro_profesional")}
+            />
+          )}
+
           {/* Documento extranjero — solo si es extranjero */}
           {formData.es_extranjero && (
             <Input
@@ -349,9 +467,42 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
       {/* ─── Direcciones ───────────────────────────────────────── */}
       <div>
         <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
-          Direcciones (Opcional)
+          Ubicación (Opcional)
         </Text>
         <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="Departamento">
+              <select
+                className={selectClass}
+                value={formData.departamento}
+                onChange={handleChange("departamento")}
+              >
+                <option value="">— Seleccionar —</option>
+                {DEPARTAMENTOS.map((dep) => (
+                  <option key={dep} value={dep}>{dep}</option>
+                ))}
+              </select>
+              {getError("departamento") && (
+                <Text variant="bodySm" className="mt-1 text-xs text-red-500">
+                  {getError("departamento")}
+                </Text>
+              )}
+            </Field>
+            <Field label="Ciudad">
+              <CiudadSelect
+                departamento={formData.departamento}
+                value={formData.ciudad}
+                onChange={handleChange("ciudad")}
+                className={selectClass}
+              />
+              {getError("ciudad") && (
+                <Text variant="bodySm" className="mt-1 text-xs text-red-500">
+                  {getError("ciudad")}
+                </Text>
+              )}
+            </Field>
+          </div>
+
           <Field label="Dirección">
             <textarea
               className={textareaClass}

@@ -121,13 +121,13 @@ export const erpModules = [
   },
   {
     category: "Logística y Servicios",
-    href: "#",
+    href: "/asistencia-tecnica",
     icon: "🔧",
     title: "Asistencia Técnica",
     desc: "Órdenes de servicio, gestión de técnicos y equipos atendidos.",
     color: "blue",
-    estado: "proximamente",
-    roles: ["Admin"],
+    estado: "activo",
+    roles: ["Admin", "tecnico", "coordinadorTecnico"],
   },
   {
     category: "Logística y Servicios",
@@ -173,25 +173,25 @@ export const erpModules = [
   },
   {
     category: "Finanzas",
-    href: "#",
+    href: "/finanzas-gastos",
     icon: "💸",
     title: "Finanzas y Gastos",
-    desc: "Flujo de caja, gastos fijos y rentabilidad macro.",
+    desc: "Registro y control de gastos operativos de la empresa.",
     color: "purple",
-    estado: "proximamente",
+    estado: "activo",
     roles: ["Admin"],
   },
 
   // --- CATEGORÍA: EQUIPO ---
   {
     category: "Equipo",
-    href: "#",
+    href: "/recursos-humanos",
     icon: "👥",
     title: "Recursos Humanos",
-    desc: "Legajos, asistencia y gestión de equipo.",
+    desc: "Legajos, asistencia, contratos, evaluaciones y gestión de equipo.",
     color: "amber",
-    estado: "proximamente",
-    roles: ["Admin"],
+    estado: "activo",
+    roles: ["Admin", "gestorDeRRHH"],
   },
 ];
 

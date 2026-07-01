@@ -105,6 +105,18 @@ export async function createCliente(data) {
   );
 }
 
+export async function bulkCreateProspectos(prospectos) {
+  return request(
+    `${API_URL}/ventas/clientes/bulk/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify({ prospectos }),
+    },
+    "carga masiva de prospectos",
+  );
+}
+
 export async function updateCliente(id, data) {
   return request(
     `${API_URL}/ventas/clientes/${id}/`,
@@ -651,4 +663,104 @@ export async function descargarPdfPresupuesto(id) {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+// ─── Instituciones ──────────────────────────────────────────────
+
+export async function getInstituciones(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return request(
+    `${API_URL}/ventas/instituciones/${query ? `?${query}` : ""}`,
+    { headers: authHeaders() },
+    "listar instituciones",
+  );
+}
+
+export async function getInstitucion(id) {
+  return request(
+    `${API_URL}/ventas/instituciones/${id}/`,
+    { headers: authHeaders() },
+    "obtener institución",
+  );
+}
+
+export async function createInstitucion(data) {
+  return request(
+    `${API_URL}/ventas/instituciones/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear institución",
+  );
+}
+
+export async function updateInstitucion(id, data) {
+  return request(
+    `${API_URL}/ventas/instituciones/${id}/`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar institución",
+  );
+}
+
+export async function deleteInstitucion(id) {
+  return request(
+    `${API_URL}/ventas/instituciones/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "eliminar institución",
+  );
+}
+
+// ─── Especialidades / Carreras ──────────────────────────────────
+
+export async function getEspecialidades(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return request(
+    `${API_URL}/ventas/especialidades/${query ? `?${query}` : ""}`,
+    { headers: authHeaders() },
+    "listar especialidades",
+  );
+}
+
+export async function createEspecialidad(data) {
+  return request(
+    `${API_URL}/ventas/especialidades/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear especialidad",
+  );
+}
+
+export async function updateEspecialidad(id, data) {
+  return request(
+    `${API_URL}/ventas/especialidades/${id}/`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar especialidad",
+  );
+}
+
+export async function deleteEspecialidad(id) {
+  return request(
+    `${API_URL}/ventas/especialidades/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "eliminar especialidad",
+  );
 }

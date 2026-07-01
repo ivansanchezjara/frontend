@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { logout, getUser } from '@/services/apis/auth.js';
+import TrackingWidget from '@/components/asistencia/TrackingWidget';
 import { Menu, X, ChevronLeft, ChevronRight, ChevronDown, LogOut, Settings } from 'lucide-react';
 import { navItems, familyStyles } from '@/config/navigation.js';
 import { BrandMark, Text } from '@/components/ui';
@@ -288,6 +289,9 @@ export default function SistemaLayout({ children }) {
                     {children}
                 </div>
             </main>
+
+            {/* Widget de tracking GPS para técnicos */}
+            <TrackingWidget />
 
         </div>
     );

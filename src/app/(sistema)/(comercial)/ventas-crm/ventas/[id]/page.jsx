@@ -4,6 +4,7 @@ import { useRouter, useParams } from 'next/navigation';
 import {
     CheckCircle2,
     Pencil,
+    Trash2,
     User,
     Calendar,
     MapPin,
@@ -16,7 +17,7 @@ import {
 import { PageHeader, LoadingScreen, Badge, Button, Section } from '@/components/ui';
 import { Text } from '@/components/ui/basics/Typography';
 import { useApi } from '@/hooks/useApi';
-import { getVenta, confirmarVenta } from '@/services/apis/ventas';
+import { getVenta, confirmarVenta, eliminarVenta } from '@/services/apis/ventas';
 import { useToast } from '@/components/ui/feedback/ToastContext';
 import { useConfirm } from '@/components/ui/feedback/ConfirmContext';
 
@@ -148,6 +149,25 @@ export default function VentaDetallePage() {
         }
     };
 
+    // ─── Acción Eliminar ────────────────────────────────────────
+
+    const handleEliminar = async () => {
+        const ok = await confirm(
+            '¿Estás seguro de eliminar este borrador? Esta acción no se puede deshacer.',
+            'Eliminar Borrador',
+            { confirmText: 'Eliminar', type: 'danger' }
+        );
+        if (!ok) return;
+
+        try {
+            await eliminarVenta(id);
+            showToast('Borrador eliminado', 'info');
+            router.push('/ventas-crm/ventas');
+        } catch {
+            showToast('Error al eliminar el borrador', 'error');
+        }
+    };
+
     // ─── Estados de carga y error ───────────────────────────────
 
     if (loading && !hasLoaded) {
@@ -192,6 +212,15 @@ export default function VentaDetallePage() {
                 <div className="flex items-center gap-3">
                     {esBorrador && (
                         <>
+                            <Button
+                                variant="danger"
+                                size="md"
+                                icon={Trash2}
+                                onClick={handleEliminar}
+                                className="rounded-xl font-bold text-xs"
+                            >
+                                ELIMINAR
+                            </Button>
                             <Button
                                 variant="secondary"
                                 size="md"
