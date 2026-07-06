@@ -719,6 +719,52 @@ export async function deleteInstitucion(id) {
   );
 }
 
+export async function bulkCreateInstituciones(instituciones) {
+  return request(
+    `${API_URL}/ventas/instituciones/bulk/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify({ instituciones }),
+    },
+    "carga masiva de instituciones",
+  );
+}
+
+// ─── Sedes de Instituciones ─────────────────────────────────────
+
+export async function getSedesInstitucion(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return request(
+    `${API_URL}/ventas/sedes-institucion/${query ? `?${query}` : ""}`,
+    { headers: authHeaders() },
+    "listar sedes",
+  );
+}
+
+export async function createSedeInstitucion(data) {
+  return request(
+    `${API_URL}/ventas/sedes-institucion/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear sede",
+  );
+}
+
+export async function deleteSedeInstitucion(id) {
+  return request(
+    `${API_URL}/ventas/sedes-institucion/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "eliminar sede",
+  );
+}
+
 // ─── Especialidades / Carreras ──────────────────────────────────
 
 export async function getEspecialidades(params = {}) {
