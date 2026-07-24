@@ -7,6 +7,7 @@ export { default as Field } from './basics/Field';
 export { default as Toggle } from './basics/Toggle';
 export { default as TagsInput } from './basics/TagsInput';
 export { default as PhoneInput, validatePhone, buildPhoneValue, PHONE_PREFIXES } from './basics/PhoneInput';
+export { default as AddressInput } from './basics/AddressInput';
 export * from './basics/Typography';
 
 // Feedback
@@ -28,6 +29,8 @@ export { default as QuickLink } from './layout/QuickLink';
 export { default as ColumnSelector } from './data/ColumnSelector';
 export { default as DataTable } from './data/DataTable';
 export { default as FilerModal } from './data/FilerModal';
+export { FilterDropdown } from './data/FilterDropdown';
+export { SortableHeader } from './data/SortableHeader';
 export { default as HistorialCambios } from './data/HistorialCambios';
 export { default as Pagination } from './data/Pagination';
 export { default as ResizableHeader } from './data/ResizableHeader';

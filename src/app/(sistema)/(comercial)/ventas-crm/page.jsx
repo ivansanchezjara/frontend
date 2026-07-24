@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ShoppingCart, Users, FileText, Target, MapPin, GraduationCap,
+  Building2, Truck,
 } from "lucide-react";
 import {
   LoadingScreen, PageHeader, Section, EmptyState,
@@ -55,7 +56,10 @@ const QUICK_ACTIONS = [
   { href: "/ventas-crm/ventas/nueva", icon: ShoppingCart, label: "Venta rápida" },
   { href: "/ventas-crm/oportunidades", icon: Target, label: "Oportunidades" },
   { href: "/ventas-crm/presupuestos", icon: FileText, label: "Presupuestos" },
-  { href: "/ventas-crm/clientes", icon: Users, label: "Clientes" },
+  { href: "/ventas-crm/contactos", icon: Users, label: "Contactos" },
+  { href: "/ventas-crm/contactos/personas", icon: Users, label: "Personas" },
+  { href: "/ventas-crm/contactos/clinicas", icon: Building2, label: "Clínicas" },
+  { href: "/ventas-crm/contactos/mayoristas", icon: Truck, label: "Mayoristas" },
   { href: "/ventas-crm/instituciones", icon: GraduationCap, label: "Instituciones" },
 ];
 

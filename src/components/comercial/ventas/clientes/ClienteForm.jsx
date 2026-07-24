@@ -152,6 +152,7 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
   const parsedPhone = parsePhoneValue(cliente?.telefono || "");
 
   const [formData, setFormData] = useState({
+    etapa: cliente?.etapa || "activo",
     tipo_persona: cliente?.tipo_persona || "fisica",
     categoria: cliente?.categoria || "cliente_casual",
     es_extranjero: cliente?.es_extranjero || false,
@@ -228,17 +229,28 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
     const newErrors = {};
     if (!formData.razon_social.trim()) newErrors.razon_social = "Este campo es obligatorio.";
 
-    if (!formData.telefono.trim()) {
+    const isProspecto = formData.etapa === "prospecto";
+
+    if (!formData.telefono.trim() && !isProspecto) {
       newErrors.telefono = "Este campo es obligatorio.";
-    } else {
+    } else if (formData.telefono.trim()) {
       const phoneErr = validatePhone(formData.telefonoPrefijo, formData.telefono);
       if (phoneErr) newErrors.telefono = phoneErr;
     }
 
-    if (!formData.correo_electronico.trim()) {
-      newErrors.correo_electronico = "Este campo es obligatorio.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo_electronico)) {
+    if (!isProspecto) {
+      if (!formData.correo_electronico.trim()) {
+        newErrors.correo_electronico = "Este campo es obligatorio.";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo_electronico)) {
+        newErrors.correo_electronico = "El correo no tiene un formato válido.";
+      }
+    } else if (formData.correo_electronico.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo_electronico)) {
       newErrors.correo_electronico = "El correo no tiene un formato válido.";
+    }
+
+    // Prospectos: al menos teléfono o correo
+    if (isProspecto && !formData.telefono.trim() && !formData.correo_electronico.trim()) {
+      newErrors.telefono = "Debe proporcionar al menos teléfono o correo.";
     }
 
     // RUC obligatorio para jurídica nacional
@@ -289,7 +301,19 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
         <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
           Clasificación
         </Text>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Etapa */}
+          <Field label="Etapa *">
+            <select
+              className={selectClass}
+              value={formData.etapa}
+              onChange={handleChange("etapa")}
+            >
+              <option value="activo">Cliente Activo</option>
+              <option value="prospecto">Prospecto</option>
+            </select>
+          </Field>
+
           {/* Tipo de persona */}
           <Field label="Tipo de Persona *">
             <select
@@ -334,6 +358,13 @@ export default function ClienteForm({ cliente, onSave, saving = false, errors = 
             />
           </div>
         </div>
+        {formData.etapa === "prospecto" && (
+          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <Text variant="mutedXs" className="text-amber-700">
+              Los prospectos solo requieren nombre + teléfono o correo. Los demás campos son opcionales.
+            </Text>
+          </div>
+        )}
       </div>
 
       {/* ─── Datos Principales ─────────────────────────────────── */}

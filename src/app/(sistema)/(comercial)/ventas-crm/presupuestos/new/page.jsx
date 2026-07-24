@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -13,7 +13,7 @@ import { createPresupuesto } from "@/services/apis/ventas";
  * El flujo principal ya no pasa por acá (se crea directo desde la oportunidad),
  * pero se mantiene por si alguien tiene la URL guardada.
  */
-export default function NuevoPresupuestoPage() {
+function NuevoPresupuestoContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { showToast } = useToast();
@@ -71,4 +71,12 @@ export default function NuevoPresupuestoPage() {
   }
 
   return <LoadingScreen texto="Creando presupuesto..." />;
+}
+
+export default function NuevoPresupuestoPage() {
+  return (
+    <Suspense fallback={<LoadingScreen texto="Cargando..." />}>
+      <NuevoPresupuestoContent />
+    </Suspense>
+  );
 }

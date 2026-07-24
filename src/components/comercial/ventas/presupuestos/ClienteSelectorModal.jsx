@@ -165,7 +165,7 @@ export default function ClienteSelectorModal({ open, onClose }) {
               No se encontraron clientes
             </p>
             <Link
-              href="/ventas-crm/clientes"
+              href="/ventas-crm/contactos"
               className="inline-flex items-center gap-1.5 text-sm text-emerald-600 hover:text-emerald-700 font-medium"
             >
               <ExternalLink className="h-3.5 w-3.5" />

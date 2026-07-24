@@ -124,7 +124,7 @@ export default function ClienteSidebarCard({ clienteId }) {
       {/* Botón Ver Más */}
       <div className="pt-2 border-t border-slate-100">
         <Link
-          href={`/ventas-crm/clientes/${clienteId}`}
+          href={`/ventas-crm/contactos/${clienteId}`}
           className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-600 transition-all active:scale-[0.98]"
         >
           <ExternalLink className="w-3 h-3" />

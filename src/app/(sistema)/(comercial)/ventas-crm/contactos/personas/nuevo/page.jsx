@@ -2,31 +2,30 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import ClienteForm from "@/components/comercial/ventas/clientes/ClienteForm";
+import { PersonaForm } from "@/components/comercial/personas";
 import { PageHeader, Section } from "@/components/ui";
 import { useToast } from "@/components/ui";
-import { createCliente } from "@/services/apis/ventas";
+import { createPersona } from "@/services/apis/ventas";
 
-export default function NuevoClientePage() {
+export default function NuevaPersonaPage() {
   const router = useRouter();
   const { showToast } = useToast();
 
   const [saving, setSaving] = useState(false);
   const [saveErrors, setSaveErrors] = useState(null);
 
-  // ─── Guardar nuevo cliente ──────────────────────────────────
   const handleSave = async (formData) => {
     setSaving(true);
     setSaveErrors(null);
     try {
-      const nuevoCliente = await createCliente(formData);
-      showToast("Cliente creado exitosamente", "success");
-      router.push(`/ventas-crm/clientes/${nuevoCliente.id}`);
+      const nueva = await createPersona(formData);
+      showToast("Persona creada exitosamente", "success");
+      router.push(`/ventas-crm/contactos/personas/${nueva.id}`);
     } catch (err) {
       if (err.status === 400 && err.data) {
         setSaveErrors(err.data);
       } else {
-        const detail = err?.data?.detail || err?.message || "Error al crear el cliente";
+        const detail = err?.data?.detail || err?.message || "Error al crear la persona";
         showToast(detail, "error");
       }
     } finally {
@@ -38,20 +37,22 @@ export default function NuevoClientePage() {
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       <PageHeader
         breadcrumbs={[
-          { label: "Clientes", href: "/ventas-crm/clientes" },
-          { label: "Nuevo Cliente" },
+          { label: "Ventas y CRM", href: "/ventas-crm" },
+          { label: "Contactos", href: "/ventas-crm/contactos" },
+          { label: "Personas", href: "/ventas-crm/contactos/personas" },
+          { label: "Nueva Persona" },
         ]}
-        subtitle="CRM · Registrar un nuevo cliente"
-        subtitleClassName="text-emerald-600"
+        subtitle="Registrar una nueva persona"
+        subtitleClassName="text-blue-600"
       />
 
       <main className="flex-1 overflow-y-auto p-8 min-w-0">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <Section
-            title="Datos del Cliente"
-            subtitle="Complete los campos para registrar un nuevo cliente. Los campos con * son obligatorios."
+            title="Datos de la Persona"
+            subtitle="Los campos con * son obligatorios. Podés completar los opcionales después."
           >
-            <ClienteForm
+            <PersonaForm
               onSave={handleSave}
               saving={saving}
               errors={saveErrors}

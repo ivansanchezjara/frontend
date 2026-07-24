@@ -338,10 +338,10 @@ export default function PerfilClientePage() {
           </Text>
           <Button
             as={Link}
-            href="/ventas-crm/clientes"
+            href="/ventas-crm/contactos"
             className="mt-6 bg-slate-900 text-white font-black hover:bg-slate-800 shadow-lg active:scale-[0.98]"
           >
-            Volver a Clientes
+            Volver a Contactos
           </Button>
         </div>
       </main>
@@ -359,7 +359,7 @@ export default function PerfilClientePage() {
       <PageHeader
         breadcrumbs={[
           { label: "Ventas y CRM", href: "/ventas-crm" },
-          { label: "Clientes", href: "/ventas-crm/clientes" },
+          { label: "Contactos", href: "/ventas-crm/contactos" },
           { label: cliente.razon_social },
         ]}
         subtitle={
@@ -445,7 +445,7 @@ export default function PerfilClientePage() {
             title="Interacciones"
             subtitle="Historial de contacto con el cliente, más recientes primero."
             action={
-              <Link href={`/ventas-crm/clientes/${id}/nueva-interaccion`}>
+              <Link href={`/ventas-crm/contactos/${id}/nueva-interaccion`}>
                 <Button
                   variant="ghost"
                   size="sm"

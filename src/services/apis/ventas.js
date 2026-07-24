@@ -56,110 +56,429 @@ export async function updateOportunidad(id, data) {
   );
 }
 
-// ─── Clientes ───────────────────────────────────────────────────
+// ─── Cuentas Comerciales (búsqueda global para selects) ─────────
 
-export async function getVendedores() {
-  return request(
-    `${API_URL}/ventas/clientes/vendedores/`,
-    {
-      headers: authHeaders(),
-      cache: "no-store",
-    },
-    "ver vendedores disponibles",
-  );
-}
-
-export async function getClientes(params = {}) {
+export async function getCuentas(params = {}) {
   const query = toQueryString(params);
   return request(
-    `${API_URL}/ventas/clientes/${query}`,
+    `${API_URL}/ventas/cuentas/${query}`,
     {
       method: "GET",
       headers: authHeaders(),
       cache: "no-store",
     },
-    "ver clientes",
+    "ver cuentas comerciales",
   );
 }
 
-export async function getCliente(id) {
+export async function getCuenta(id) {
   return request(
-    `${API_URL}/ventas/clientes/${id}/`,
+    `${API_URL}/ventas/cuentas/${id}/`,
     {
       headers: authHeaders(),
       cache: "no-store",
     },
-    "ver detalle de cliente",
+    "ver detalle de cuenta comercial",
   );
 }
 
-export async function createCliente(data) {
+// ─── Personas (profesionales, estudiantes, etc.) ────────────────
+
+export async function getPersonas(params = {}) {
+  const query = toQueryString(params);
   return request(
-    `${API_URL}/ventas/clientes/`,
+    `${API_URL}/ventas/personas/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver personas",
+  );
+}
+
+export async function getPersona(id) {
+  return request(
+    `${API_URL}/ventas/personas/${id}/`,
+    {
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver detalle de persona",
+  );
+}
+
+export async function createPersona(data) {
+  return request(
+    `${API_URL}/ventas/personas/`,
     {
       method: "POST",
       headers: jsonHeaders(),
       body: JSON.stringify(data),
     },
-    "crear cliente",
+    "crear persona",
   );
 }
 
-export async function bulkCreateProspectos(prospectos) {
+export async function updatePersona(id, data) {
   return request(
-    `${API_URL}/ventas/clientes/bulk/`,
-    {
-      method: "POST",
-      headers: jsonHeaders(),
-      body: JSON.stringify({ prospectos }),
-    },
-    "carga masiva de prospectos",
-  );
-}
-
-export async function updateCliente(id, data) {
-  return request(
-    `${API_URL}/ventas/clientes/${id}/`,
+    `${API_URL}/ventas/personas/${id}/`,
     {
       method: "PATCH",
       headers: jsonHeaders(),
       body: JSON.stringify(data),
     },
-    "actualizar cliente",
+    "actualizar persona",
   );
 }
 
-export async function desactivarCliente(id) {
+export async function deletePersona(id) {
   return request(
-    `${API_URL}/ventas/clientes/${id}/desactivar/`,
+    `${API_URL}/ventas/personas/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "desactivar persona",
+  );
+}
+
+export async function reactivarPersona(id) {
+  return request(
+    `${API_URL}/ventas/personas/${id}/reactivar/`,
     {
       method: "POST",
       headers: authHeaders(),
     },
-    "desactivar cliente",
+    "reactivar persona",
   );
 }
 
-export async function reactivarCliente(id) {
+export async function habilitarOnlinePersona(id) {
   return request(
-    `${API_URL}/ventas/clientes/${id}/reactivar/`,
+    `${API_URL}/ventas/personas/${id}/habilitar-online/`,
     {
       method: "POST",
       headers: authHeaders(),
     },
-    "reactivar cliente",
+    "habilitar cuenta online",
   );
 }
+
+export async function deshabilitarOnlinePersona(id) {
+  return request(
+    `${API_URL}/ventas/personas/${id}/deshabilitar-online/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "deshabilitar cuenta online",
+  );
+}
+
+export async function bulkCreatePersonas(personas) {
+  return request(
+    `${API_URL}/ventas/personas/bulk/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify({ personas }),
+    },
+    "carga masiva de personas",
+  );
+}
+
+// ─── Clínicas ───────────────────────────────────────────────────
+
+export async function getClinicas(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/ventas/clinicas/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver clínicas",
+  );
+}
+
+export async function getClinica(id) {
+  return request(
+    `${API_URL}/ventas/clinicas/${id}/`,
+    {
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver detalle de clínica",
+  );
+}
+
+export async function createClinica(data) {
+  return request(
+    `${API_URL}/ventas/clinicas/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear clínica",
+  );
+}
+
+export async function updateClinica(id, data) {
+  return request(
+    `${API_URL}/ventas/clinicas/${id}/`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar clínica",
+  );
+}
+
+export async function deleteClinica(id) {
+  return request(
+    `${API_URL}/ventas/clinicas/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "desactivar clínica",
+  );
+}
+
+// ─── Mayoristas ─────────────────────────────────────────────────
+
+export async function getMayoristas(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/ventas/mayoristas/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver mayoristas",
+  );
+}
+
+export async function getMayorista(id) {
+  return request(
+    `${API_URL}/ventas/mayoristas/${id}/`,
+    {
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver detalle de mayorista",
+  );
+}
+
+export async function createMayorista(data) {
+  return request(
+    `${API_URL}/ventas/mayoristas/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear mayorista",
+  );
+}
+
+export async function updateMayorista(id, data) {
+  return request(
+    `${API_URL}/ventas/mayoristas/${id}/`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar mayorista",
+  );
+}
+
+// ─── Relaciones de Personas ─────────────────────────────────────
+
+export async function getFormaciones(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/ventas/formaciones-academicas/${query}`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver formaciones académicas",
+  );
+}
+
+export async function createFormacion(data) {
+  return request(
+    `${API_URL}/ventas/formaciones-academicas/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "crear formación académica",
+  );
+}
+
+export async function updateFormacion(id, data) {
+  return request(
+    `${API_URL}/ventas/formaciones-academicas/${id}/`,
+    { method: "PATCH", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "actualizar formación académica",
+  );
+}
+
+export async function deleteFormacion(id) {
+  return request(
+    `${API_URL}/ventas/formaciones-academicas/${id}/`,
+    { method: "DELETE", headers: authHeaders() },
+    "eliminar formación académica",
+  );
+}
+
+export async function getVinculosLaborales(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/ventas/vinculos-laborales/${query}`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver vínculos laborales",
+  );
+}
+
+export async function createVinculoLaboral(data) {
+  return request(
+    `${API_URL}/ventas/vinculos-laborales/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "crear vínculo laboral",
+  );
+}
+
+export async function deleteVinculoLaboral(id) {
+  return request(
+    `${API_URL}/ventas/vinculos-laborales/${id}/`,
+    { method: "DELETE", headers: authHeaders() },
+    "eliminar vínculo laboral",
+  );
+}
+
+export async function updateVinculoLaboral(id, data) {
+  return request(
+    `${API_URL}/ventas/vinculos-laborales/${id}/`,
+    { method: "PATCH", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "actualizar vínculo laboral",
+  );
+}
+
+export async function getVinculosDocentes(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/ventas/vinculos-docentes/${query}`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver vínculos docentes",
+  );
+}
+
+export async function createVinculoDocente(data) {
+  return request(
+    `${API_URL}/ventas/vinculos-docentes/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "crear vínculo docente",
+  );
+}
+
+export async function deleteVinculoDocente(id) {
+  return request(
+    `${API_URL}/ventas/vinculos-docentes/${id}/`,
+    { method: "DELETE", headers: authHeaders() },
+    "eliminar vínculo docente",
+  );
+}
+
+export async function getCargosDirectivos(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/ventas/cargos-directivos/${query}`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver cargos directivos",
+  );
+}
+
+export async function createCargoDirectivo(data) {
+  return request(
+    `${API_URL}/ventas/cargos-directivos/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "crear cargo directivo",
+  );
+}
+
+export async function deleteCargoDirectivo(id) {
+  return request(
+    `${API_URL}/ventas/cargos-directivos/${id}/`,
+    { method: "DELETE", headers: authHeaders() },
+    "eliminar cargo directivo",
+  );
+}
+
+export async function getRegistrosProfesionales(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/ventas/registros-profesionales/${query}`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver registros profesionales",
+  );
+}
+
+export async function createRegistroProfesional(data) {
+  return request(
+    `${API_URL}/ventas/registros-profesionales/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "crear registro profesional",
+  );
+}
+
+export async function updateRegistroProfesional(id, data) {
+  return request(
+    `${API_URL}/ventas/registros-profesionales/${id}/`,
+    { method: "PATCH", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "actualizar registro profesional",
+  );
+}
+
+// ─── Aliases de compatibilidad (legacy → nuevo) ─────────────────
+// Estos mantienen el código existente del frontend funcionando
+// mientras se migran los componentes uno a uno.
+
+export const getClientes = getPersonas;
+export const getCliente = getPersona;
+export const createCliente = createPersona;
+export const updateCliente = updatePersona;
+export const desactivarCliente = deletePersona;
+export const reactivarCliente = reactivarPersona;
 
 export async function habilitarCuentaOnline(id) {
-  return request(
-    `${API_URL}/ventas/clientes/${id}/habilitar-cuenta-online/`,
-    {
-      method: "POST",
-      headers: authHeaders(),
-    },
-    "habilitar cuenta online del cliente",
-  );
+  // TODO: re-implementar cuando el portal online esté listo
+  console.warn("habilitarCuentaOnline: funcionalidad pendiente de migración");
+  return { message: "Funcionalidad en migración" };
+}
+
+export async function bulkCreateProspectos(prospectos) {
+  // Crea prospectos uno a uno usando el endpoint de personas
+  const resultados = { creados: 0, errores: 0, detalle_creados: [], detalle_errores: [] };
+  for (let i = 0; i < prospectos.length; i++) {
+    const item = prospectos[i];
+    try {
+      const persona = await createPersona({
+        razon_social: item.razon_social,
+        telefono: item.telefono || "",
+        ruc: item.ruc || "",
+        etapa: "prospecto",
+      });
+      resultados.creados++;
+      resultados.detalle_creados.push(persona);
+    } catch (err) {
+      resultados.errores++;
+      resultados.detalle_errores.push({ fila: i + 1, nombre: item.razon_social, error: String(err) });
+    }
+  }
+  return resultados;
 }
 
 // ─── Interacciones ──────────────────────────────────────────────
@@ -731,82 +1050,70 @@ export async function bulkCreateInstituciones(instituciones) {
   );
 }
 
-// ─── Sedes de Instituciones ─────────────────────────────────────
+// Nota: cada institución/sede es un registro independiente.
+// Usar createInstitucion / updateInstitucion / deleteInstitucion.
 
-export async function getSedesInstitucion(params = {}) {
-  const query = new URLSearchParams(params).toString();
+export async function getInstitucionHistorial(id) {
   return request(
-    `${API_URL}/ventas/sedes-institucion/${query ? `?${query}` : ""}`,
-    { headers: authHeaders() },
-    "listar sedes",
-  );
-}
-
-export async function createSedeInstitucion(data) {
-  return request(
-    `${API_URL}/ventas/sedes-institucion/`,
+    `${API_URL}/ventas/instituciones/${id}/historial/`,
     {
-      method: "POST",
-      headers: jsonHeaders(),
-      body: JSON.stringify(data),
-    },
-    "crear sede",
-  );
-}
-
-export async function deleteSedeInstitucion(id) {
-  return request(
-    `${API_URL}/ventas/sedes-institucion/${id}/`,
-    {
-      method: "DELETE",
       headers: authHeaders(),
+      cache: "no-store",
     },
-    "eliminar sede",
+    "ver historial de institución",
   );
 }
 
-// ─── Especialidades / Carreras ──────────────────────────────────
+// ─── Oferta Académica (carreras, programas, cursos) ─────────────
 
-export async function getEspecialidades(params = {}) {
+export async function getOfertaAcademica(params = {}) {
   const query = new URLSearchParams(params).toString();
   return request(
-    `${API_URL}/ventas/especialidades/${query ? `?${query}` : ""}`,
+    `${API_URL}/ventas/oferta-academica/${query ? `?${query}` : ""}`,
     { headers: authHeaders() },
-    "listar especialidades",
+    "listar oferta académica",
   );
 }
 
-export async function createEspecialidad(data) {
+export async function getOfertaAcademicaById(id) {
   return request(
-    `${API_URL}/ventas/especialidades/`,
+    `${API_URL}/ventas/oferta-academica/${id}/`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver detalle de oferta académica",
+  );
+}
+
+export async function createOfertaAcademica(data) {
+  return request(
+    `${API_URL}/ventas/oferta-academica/`,
     {
       method: "POST",
       headers: jsonHeaders(),
       body: JSON.stringify(data),
     },
-    "crear especialidad",
+    "crear oferta académica",
   );
 }
 
-export async function updateEspecialidad(id, data) {
+export async function updateOfertaAcademica(id, data) {
   return request(
-    `${API_URL}/ventas/especialidades/${id}/`,
+    `${API_URL}/ventas/oferta-academica/${id}/`,
     {
       method: "PATCH",
       headers: jsonHeaders(),
       body: JSON.stringify(data),
     },
-    "actualizar especialidad",
+    "actualizar oferta académica",
   );
 }
 
-export async function deleteEspecialidad(id) {
+export async function deleteOfertaAcademica(id) {
   return request(
-    `${API_URL}/ventas/especialidades/${id}/`,
+    `${API_URL}/ventas/oferta-academica/${id}/`,
     {
       method: "DELETE",
       headers: authHeaders(),
     },
-    "eliminar especialidad",
+    "eliminar oferta académica",
   );
 }

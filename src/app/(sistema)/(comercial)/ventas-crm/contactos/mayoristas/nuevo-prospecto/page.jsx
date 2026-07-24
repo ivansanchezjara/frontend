@@ -2,22 +2,28 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Loader2, UserPlus, Check, Upload, FileSpreadsheet, AlertCircle, X, Download,
+  Loader2, Truck, Check, Upload, FileSpreadsheet, AlertCircle, X, Download,
 } from "lucide-react";
 
-import { PageHeader, Section, Button, Input } from "@/components/ui";
+import { PageHeader, Section, Button, Input, Field } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { Text } from "@/components/ui/basics/Typography";
 import { cn } from "@/lib/utils";
-import { createCliente, bulkCreateProspectos } from "@/services/apis/ventas";
-import { getUser } from "@/services/apis/auth";
+import { createMayorista } from "@/services/apis/ventas";
+import { DEPARTAMENTOS, CIUDADES_POR_DEPARTAMENTO } from "@/config/paraguay";
+import { normalizeGeoRow } from "@/lib/normalizeGeo";
 
-// ─── Tab Selector ───────────────────────────────────────────────
+// ─── Configuracion ──────────────────────────────────────────────
 
 const TABS = [
-  { id: "unitario", label: "Uno a uno", icon: UserPlus },
+  { id: "unitario", label: "Uno a uno", icon: Truck },
   { id: "masivo", label: "Carga masiva", icon: FileSpreadsheet },
 ];
+
+const selectClass =
+  "block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500";
+
+// ─── Tab Selector ───────────────────────────────────────────────
 
 function TabSelector({ active, onChange }) {
   return (
@@ -52,15 +58,25 @@ function TabUnitario({ recientes, setRecientes }) {
   const { showToast } = useToast();
   const nombreRef = useRef(null);
 
-  const [formData, setFormData] = useState({ razon_social: "", telefono: "", ruc: "" });
+  const [formData, setFormData] = useState({
+    razon_social: "",
+    telefono: "",
+    ruc: "",
+    zona_cobertura: "",
+    departamento: "",
+    ciudad: "",
+  });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    nombreRef.current?.focus();
-  }, []);
+  const ciudades = formData.departamento
+    ? (CIUDADES_POR_DEPARTAMENTO[formData.departamento] || [])
+    : [];
 
-  const handleChange = (field) => (value) => {
+  useEffect(() => { nombreRef.current?.focus(); }, []);
+
+  const handleChange = (field) => (e) => {
+    const value = e?.target ? e.target.value : e;
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => { const n = { ...prev }; delete n[field]; return n; });
@@ -69,29 +85,30 @@ function TabUnitario({ recientes, setRecientes }) {
 
   const handleSave = async () => {
     const newErrors = {};
-    if (!formData.razon_social.trim()) newErrors.razon_social = "El nombre es obligatorio.";
-    if (!formData.telefono.trim()) newErrors.telefono = "El celular es obligatorio.";
+    if (!formData.razon_social.trim()) newErrors.razon_social = "La razón social es obligatoria.";
+    if (!formData.telefono.trim()) newErrors.telefono = "El teléfono es obligatorio.";
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
 
     setSaving(true);
     setErrors({});
     try {
-      const user = getUser();
       const payload = {
-        etapa: "prospecto",
         razon_social: formData.razon_social.trim(),
         telefono: formData.telefono.trim(),
-        tier_precio: "publico",
-        vendedor: user?.id,
+        tier_precio: "mayorista",
       };
       if (formData.ruc.trim()) payload.ruc = formData.ruc.trim();
-      const nuevo = await createCliente(payload);
+      if (formData.zona_cobertura.trim()) payload.zona_cobertura = formData.zona_cobertura.trim();
+      if (formData.departamento) payload.departamento = formData.departamento;
+      if (formData.ciudad) payload.ciudad = formData.ciudad;
+
+      const nuevo = await createMayorista(payload);
       setRecientes((prev) => [
-        { id: nuevo.id, nombre: nuevo.razon_social, telefono: nuevo.telefono },
+        { id: nuevo.id, nombre: nuevo.razon_social, telefono: nuevo.telefono, zona: nuevo.zona_cobertura },
         ...prev,
       ]);
-      setFormData({ razon_social: "", telefono: "", ruc: "" });
-      showToast(`Prospecto "${nuevo.razon_social}" creado`, "success");
+      setFormData({ razon_social: "", telefono: "", ruc: "", zona_cobertura: "", departamento: "", ciudad: "" });
+      showToast(`Mayorista "${nuevo.razon_social}" creado como prospecto`, "success");
       setTimeout(() => nombreRef.current?.focus(), 50);
     } catch (err) {
       if (err.status === 400 && err.data) {
@@ -114,35 +131,72 @@ function TabUnitario({ recientes, setRecientes }) {
 
   return (
     <Section
-      title="Registrar Prospecto"
-      subtitle="Nombre y celular. Enter para guardar y seguir."
+      title="Registrar Prospecto — Mayorista"
+      subtitle="Distribuidores y revendedores B2B potenciales. Enter para guardar y seguir."
     >
       <div className="p-6 space-y-4" onKeyDown={handleKeyDown}>
-        <Input
-          ref={nombreRef}
-          label="Nombre *"
-          value={formData.razon_social}
-          onChange={(e) => handleChange("razon_social")(e.target.value)}
-          placeholder="Nombre completo"
-          maxLength={200}
-          error={errors.razon_social}
-        />
-        <Input
-          label="Celular *"
-          value={formData.telefono}
-          onChange={(e) => handleChange("telefono")(e.target.value)}
-          placeholder="+595 981 123456"
-          maxLength={20}
-          error={errors.telefono}
-        />
-        <Input
-          label="RUC (opcional)"
-          value={formData.ruc}
-          onChange={(e) => handleChange("ruc")(e.target.value)}
-          placeholder="80000000-0"
-          maxLength={20}
-          error={errors.ruc}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            ref={nombreRef}
+            label="Razón Social *"
+            value={formData.razon_social}
+            onChange={handleChange("razon_social")}
+            placeholder="Distribuidora Dental SRL"
+            maxLength={200}
+            error={errors.razon_social}
+          />
+          <Input
+            label="Teléfono *"
+            value={formData.telefono}
+            onChange={handleChange("telefono")}
+            placeholder="021 555444"
+            maxLength={30}
+            error={errors.telefono}
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="RUC"
+            value={formData.ruc}
+            onChange={handleChange("ruc")}
+            placeholder="80000000-0"
+            maxLength={20}
+            error={errors.ruc}
+          />
+          <Input
+            label="Zona de Cobertura"
+            value={formData.zona_cobertura}
+            onChange={handleChange("zona_cobertura")}
+            placeholder="Ciudad del Este, Encarnación..."
+            maxLength={200}
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="Departamento">
+            <select
+              className={selectClass}
+              value={formData.departamento}
+              onChange={(e) => setFormData((p) => ({ ...p, departamento: e.target.value, ciudad: "" }))}
+            >
+              <option value="">— Seleccionar —</option>
+              {DEPARTAMENTOS.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Ciudad">
+            <select
+              className={selectClass}
+              value={formData.ciudad}
+              onChange={handleChange("ciudad")}
+            >
+              <option value="">— Seleccionar —</option>
+              {ciudades.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
         {errors.non_field_errors && (
           <p className="text-sm text-red-600 font-medium">{errors.non_field_errors}</p>
         )}
@@ -152,7 +206,7 @@ function TabUnitario({ recientes, setRecientes }) {
             variant="primary"
             onClick={handleSave}
             disabled={saving}
-            icon={saving ? Loader2 : UserPlus}
+            icon={saving ? Loader2 : Truck}
             className={saving ? "[&_svg]:animate-spin" : ""}
           >
             {saving ? "Guardando..." : "Guardar y Siguiente"}
@@ -163,13 +217,12 @@ function TabUnitario({ recientes, setRecientes }) {
   );
 }
 
-// ─── Tab Masivo ─────────────────────────────────────────────────
+// ─── CSV Parser ─────────────────────────────────────────────────
 
 function parseCSV(text) {
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length === 0) return [];
 
-  // Detectar separador (tab, ; o ,)
   const firstLine = lines[0];
   let sep = ",";
   if (firstLine.includes("\t")) sep = "\t";
@@ -177,65 +230,47 @@ function parseCSV(text) {
 
   const rows = lines.map((line) => line.split(sep).map((c) => c.trim().replace(/^["']|["']$/g, "")));
 
-  // Detectar si primera fila es header
   const header = rows[0].map((h) => h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s*\(.*?\)\s*/g, "").trim());
   const KNOWN_HEADERS = [
-    "nombre", "razon_social", "name", "alumno", "contacto",
-    "telefono", "celular", "phone", "cel", "whatsapp", "numero",
-    "departamento", "ciudad", "city",
-    "cedula", "ci", "documento",
-    "registro_profesional", "registro", "matricula", "nro_registro",
-    "categoria", "tipo",
-    "correo", "email", "correo_electronico",
+    "nombre", "razon_social", "empresa",
+    "telefono", "celular", "phone",
     "ruc",
+    "zona", "zona_cobertura", "cobertura",
+    "departamento", "ciudad",
   ];
   const hasHeader = header.some((h) => KNOWN_HEADERS.includes(h));
-
   const dataRows = hasHeader ? rows.slice(1) : rows;
 
-  // Mapear columnas
-  let nameCol = 0;
-  let phoneCol = 1;
-  let depCol = -1;
-  let cityCol = -1;
-  let cedulaCol = -1;
-  let regProCol = -1;
-  let emailCol = -1;
-  let catCol = -1;
-  let rucCol = -1;
+  let nameCol = 0, phoneCol = 1, rucCol = -1, zonaCol = -1, depCol = -1, cityCol = -1;
 
   if (hasHeader) {
     const find = (keywords) => header.findIndex((h) => keywords.includes(h));
-    const nameIdx = find(["nombre", "razon_social", "name", "alumno", "contacto"]);
-    const phoneIdx = find(["telefono", "celular", "phone", "cel", "whatsapp", "numero"]);
-    depCol = find(["departamento"]);
-    cityCol = find(["ciudad", "city"]);
-    cedulaCol = find(["cedula", "ci", "documento"]);
-    regProCol = find(["registro_profesional", "registro", "matricula", "nro_registro"]);
-    emailCol = find(["correo", "email", "correo_electronico"]);
-    catCol = find(["categoria", "tipo"]);
+    const nameIdx = find(["nombre", "razon_social", "empresa"]);
+    const phoneIdx = find(["telefono", "celular", "phone"]);
     rucCol = find(["ruc"]);
+    zonaCol = find(["zona", "zona_cobertura", "cobertura"]);
+    depCol = find(["departamento"]);
+    cityCol = find(["ciudad"]);
     if (nameIdx >= 0) nameCol = nameIdx;
     if (phoneIdx >= 0) phoneCol = phoneIdx;
   }
 
   return dataRows
-    .map((row) => {
-      const item = {
-        razon_social: row[nameCol] || "",
-        telefono: row[phoneCol] || "",
-      };
+    .map((row, idx) => {
+      const item = { razon_social: row[nameCol] || "", telefono: row[phoneCol] || "", _fila: idx + 1, _errores: [] };
+      if (rucCol >= 0 && row[rucCol]) item.ruc = row[rucCol];
+      if (zonaCol >= 0 && row[zonaCol]) item.zona_cobertura = row[zonaCol];
       if (depCol >= 0 && row[depCol]) item.departamento = row[depCol];
       if (cityCol >= 0 && row[cityCol]) item.ciudad = row[cityCol];
-      if (cedulaCol >= 0 && row[cedulaCol]) item.cedula = row[cedulaCol];
-      if (regProCol >= 0 && row[regProCol]) item.registro_profesional = row[regProCol];
-      if (emailCol >= 0 && row[emailCol]) item.correo_electronico = row[emailCol];
-      if (catCol >= 0 && row[catCol]) item.categoria = row[catCol];
-      if (rucCol >= 0 && row[rucCol]) item.ruc = row[rucCol];
+      // Normalizar departamento/ciudad
+      const geoErrors = normalizeGeoRow(item);
+      if (geoErrors.length > 0) item._errores.push(...geoErrors);
       return item;
     })
     .filter((r) => r.razon_social || r.telefono);
 }
+
+// ─── Tab Masivo ─────────────────────────────────────────────────
 
 function TabMasivo({ recientes, setRecientes }) {
   const { showToast } = useToast();
@@ -249,22 +284,20 @@ function TabMasivo({ recientes, setRecientes }) {
   const handleDownloadTemplate = () => {
     const headers = [
       "Nombre (obligatorio)",
-      "Celular (obligatorio)",
+      "Telefono (obligatorio)",
       "RUC (opcional)",
+      "Zona Cobertura (opcional)",
       "Departamento (opcional)",
       "Ciudad (opcional)",
-      "Cedula (opcional)",
-      "Correo (opcional)",
-      "Categoria (opcional)",
     ];
-    const example1 = "Juan Pérez;0981123456;80012345-6;Central;Asunción;1234567;juan@email.com;odontólogo";
-    const example2 = "Dental Plus SRL;021555444;80098765-2;Central;San Lorenzo;;;distribuidor";
+    const example1 = "Distribuidora Dental SRL;021555444;80012345-6;Ciudad del Este, Encarnación;Alto Paraná;Ciudad del Este";
+    const example2 = "MedSupply SA;061222333;80098765-2;Asunción y alrededores;Central;Asunción";
     const csvContent = [headers.join(";"), example1, example2].join("\n");
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", "plantilla_prospectos.csv");
+    link.setAttribute("download", "plantilla_prospectos_mayoristas.csv");
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -274,23 +307,20 @@ function TabMasivo({ recientes, setRecientes }) {
   const processFile = useCallback((file) => {
     if (!file) return;
     const ext = file.name.split(".").pop().toLowerCase();
-    if (!["csv", "txt", "tsv", "xls", "xlsx"].includes(ext)) {
+    if (!["csv", "txt", "tsv"].includes(ext)) {
       showToast("Formato no soportado. Usá CSV, TXT o TSV.", "error");
       return;
     }
-
-    if (["xls", "xlsx"].includes(ext)) {
-      // Para Excel usamos un approach de texto plano — pedirle que guarde como CSV
-      showToast("Guardá el Excel como CSV (separado por comas) e intentá de nuevo.", "info");
-      return;
-    }
-
     const reader = new FileReader();
     reader.onload = (e) => {
-      const text = e.target.result;
-      const parsed = parseCSV(text);
-      if (parsed.length === 0) {
-        showToast("No se encontraron datos en el archivo.", "error");
+      const parsed = parseCSV(e.target.result);
+      if (parsed.length === 0) { showToast("No se encontraron datos.", "error"); return; }
+      if (parsed.length > 200) { showToast("Máximo 200 filas.", "error"); return; }
+      // Verificar errores de geo
+      const filasConError = parsed.filter((r) => r._errores && r._errores.length > 0);
+      if (filasConError.length > 0) {
+        const msg = filasConError.slice(0, 3).map((r) => `Fila ${r._fila}: ${r._errores.join(", ")}`).join(". ");
+        showToast(`Ubicaciones no válidas: ${msg}`, "error");
         return;
       }
       setPreview(parsed);
@@ -302,49 +332,63 @@ function TabMasivo({ recientes, setRecientes }) {
   const handleDrop = useCallback((e) => {
     e.preventDefault();
     setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    processFile(file);
+    processFile(e.dataTransfer.files[0]);
   }, [processFile]);
 
-  const handleFileSelect = (e) => {
-    processFile(e.target.files[0]);
-    e.target.value = "";
-  };
+  const handleFileSelect = (e) => { processFile(e.target.files[0]); e.target.value = ""; };
 
   const handleUpload = async () => {
     if (preview.length === 0) return;
     setUploading(true);
     setResult(null);
-    try {
-      const res = await bulkCreateProspectos(preview);
-      setResult(res);
-      if (res.detalle_creados?.length > 0) {
-        setRecientes((prev) => [
-          ...res.detalle_creados.map((c) => ({
-            id: c.id,
-            nombre: c.razon_social,
-            telefono: c.telefono,
-          })),
-          ...prev,
-        ]);
+
+    const resultados = { creados: 0, errores: 0, detalle_creados: [], detalle_errores: [] };
+
+    for (let i = 0; i < preview.length; i++) {
+      const item = preview[i];
+      try {
+        const payload = {
+          razon_social: item.razon_social,
+          telefono: item.telefono || "",
+          tier_precio: "mayorista",
+        };
+        if (item.ruc) payload.ruc = item.ruc;
+        if (item.zona_cobertura) payload.zona_cobertura = item.zona_cobertura;
+        if (item.departamento) payload.departamento = item.departamento;
+        if (item.ciudad) payload.ciudad = item.ciudad;
+
+        const mayorista = await createMayorista(payload);
+        resultados.creados++;
+        resultados.detalle_creados.push(mayorista);
+      } catch (err) {
+        resultados.errores++;
+        resultados.detalle_errores.push({
+          fila: i + 1, nombre: item.razon_social,
+          error: err?.data?.detail || err?.data?.razon_social?.[0] || String(err),
+        });
       }
-      showToast(`${res.creados} prospectos creados`, res.errores > 0 ? "warning" : "success");
-      if (res.errores === 0) setPreview([]);
-    } catch (err) {
-      showToast(err?.data?.detail || "Error al subir prospectos", "error");
-    } finally {
-      setUploading(false);
     }
+
+    setResult(resultados);
+    if (resultados.detalle_creados.length > 0) {
+      setRecientes((prev) => [
+        ...resultados.detalle_creados.map((c) => ({
+          id: c.id, nombre: c.razon_social, telefono: c.telefono, zona: c.zona_cobertura,
+        })),
+        ...prev,
+      ]);
+    }
+    showToast(`${resultados.creados} mayoristas creados`, resultados.errores > 0 ? "warning" : "success");
+    if (resultados.errores === 0) setPreview([]);
+    setUploading(false);
   };
 
-  const removeRow = (idx) => {
-    setPreview((prev) => prev.filter((_, i) => i !== idx));
-  };
+  const removeRow = (idx) => { setPreview((prev) => prev.filter((_, i) => i !== idx)); };
 
   return (
     <Section
-      title="Carga Masiva"
-      subtitle="Subí un archivo CSV con columnas: nombre, celular. Detecta headers automáticamente."
+      title="Carga Masiva — Mayoristas"
+      subtitle="Subí un archivo CSV con columnas: nombre, teléfono, RUC, zona de cobertura."
     >
       <div className="p-6 space-y-5">
         {/* Drop zone */}
@@ -356,7 +400,7 @@ function TabMasivo({ recientes, setRecientes }) {
           className={cn(
             "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all",
             dragOver
-              ? "border-emerald-400 bg-emerald-50/50"
+              ? "border-purple-400 bg-purple-50/50"
               : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
           )}
         >
@@ -367,13 +411,7 @@ function TabMasivo({ recientes, setRecientes }) {
           <Text variant="mutedXs" className="mt-1 text-slate-400">
             Formatos: .csv, .txt, .tsv — Separadores: coma, punto y coma, tab
           </Text>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,.txt,.tsv"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
+          <input ref={fileInputRef} type="file" accept=".csv,.txt,.tsv" onChange={handleFileSelect} className="hidden" />
         </div>
 
         {/* Preview */}
@@ -381,21 +419,15 @@ function TabMasivo({ recientes, setRecientes }) {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Text variant="bodySmBold" className="text-slate-700">
-                Vista previa ({preview.length} contactos)
+                Vista previa ({preview.length} mayoristas)
               </Text>
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setPreview([])}>
-                  Cancelar
-                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setPreview([])}>Cancelar</Button>
                 <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleUpload}
-                  disabled={uploading}
-                  icon={uploading ? Loader2 : Upload}
-                  className={uploading ? "[&_svg]:animate-spin" : ""}
+                  variant="primary" size="sm" onClick={handleUpload} disabled={uploading}
+                  icon={uploading ? Loader2 : Upload} className={uploading ? "[&_svg]:animate-spin" : ""}
                 >
-                  {uploading ? "Subiendo..." : `Crear ${preview.length} prospectos`}
+                  {uploading ? "Subiendo..." : `Crear ${preview.length} mayoristas`}
                 </Button>
               </div>
             </div>
@@ -405,15 +437,12 @@ function TabMasivo({ recientes, setRecientes }) {
                   <tr className="border-b border-slate-200">
                     <th className="text-left py-2 px-3 text-[11px] font-bold uppercase text-slate-400 w-8">#</th>
                     <th className="text-left py-2 px-3 text-[11px] font-bold uppercase text-slate-400">Nombre</th>
-                    <th className="text-left py-2 px-3 text-[11px] font-bold uppercase text-slate-400">Celular</th>
+                    <th className="text-left py-2 px-3 text-[11px] font-bold uppercase text-slate-400">Teléfono</th>
                     {preview.some((r) => r.ruc) && (
                       <th className="text-left py-2 px-3 text-[11px] font-bold uppercase text-slate-400">RUC</th>
                     )}
-                    {preview.some((r) => r.ciudad || r.departamento) && (
-                      <th className="text-left py-2 px-3 text-[11px] font-bold uppercase text-slate-400">Ubicación</th>
-                    )}
-                    {preview.some((r) => r.registro_profesional || r.cedula) && (
-                      <th className="text-left py-2 px-3 text-[11px] font-bold uppercase text-slate-400">Docs</th>
+                    {preview.some((r) => r.zona_cobertura) && (
+                      <th className="text-left py-2 px-3 text-[11px] font-bold uppercase text-slate-400">Zona</th>
                     )}
                     <th className="w-8"></th>
                   </tr>
@@ -429,19 +458,10 @@ function TabMasivo({ recientes, setRecientes }) {
                         {row.telefono || "— vacío"}
                       </td>
                       {preview.some((r) => r.ruc) && (
-                        <td className="py-1.5 px-3 text-xs text-slate-500 font-mono">
-                          {row.ruc || "—"}
-                        </td>
+                        <td className="py-1.5 px-3 text-xs text-slate-500 font-mono">{row.ruc || "—"}</td>
                       )}
-                      {preview.some((r) => r.ciudad || r.departamento) && (
-                        <td className="py-1.5 px-3 text-xs text-slate-500">
-                          {[row.ciudad, row.departamento].filter(Boolean).join(", ")}
-                        </td>
-                      )}
-                      {preview.some((r) => r.registro_profesional || r.cedula) && (
-                        <td className="py-1.5 px-3 text-xs text-slate-500">
-                          {[row.cedula && `CI: ${row.cedula}`, row.registro_profesional && `Reg: ${row.registro_profesional}`].filter(Boolean).join(" · ")}
-                        </td>
+                      {preview.some((r) => r.zona_cobertura) && (
+                        <td className="py-1.5 px-3 text-xs text-slate-500">{row.zona_cobertura || "—"}</td>
                       )}
                       <td className="py-1.5 px-1">
                         <button onClick={() => removeRow(idx)} className="text-slate-300 hover:text-red-500 p-1">
@@ -470,7 +490,7 @@ function TabMasivo({ recientes, setRecientes }) {
               )}
               <div>
                 <Text variant="bodySmBold" className={result.errores > 0 ? "text-amber-700" : "text-emerald-700"}>
-                  {result.creados} prospectos creados{result.errores > 0 ? `, ${result.errores} con errores` : ""}
+                  {result.creados} mayoristas creados{result.errores > 0 ? `, ${result.errores} con errores` : ""}
                 </Text>
                 {result.detalle_errores?.length > 0 && (
                   <ul className="mt-2 space-y-1">
@@ -494,28 +514,17 @@ function TabMasivo({ recientes, setRecientes }) {
           <div className="bg-slate-50 rounded-xl p-4 space-y-2">
             <div className="flex items-center justify-between">
               <Text variant="bodySmBold" className="text-slate-600">Formato esperado:</Text>
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={Download}
-                onClick={handleDownloadTemplate}
-              >
+              <Button variant="ghost" size="sm" icon={Download} onClick={handleDownloadTemplate}>
                 Descargar plantilla
               </Button>
             </div>
             <pre className="text-xs text-slate-500 font-mono bg-white rounded-lg p-3 border border-slate-100">
-{`nombre,celular,ruc,departamento,ciudad
-Juan Pérez,0981123456,80012345-6,Central,Asunción
-Dental Plus SRL,021555444,80098765-2,Central,San Lorenzo`}
+{`nombre;telefono;ruc;zona_cobertura;departamento;ciudad
+Distribuidora Dental SRL;021555444;80012345-6;CDE, Encarnación;Alto Paraná;Ciudad del Este
+MedSupply SA;061222333;80098765-2;Asunción;Central;Asunción`}
             </pre>
             <Text variant="mutedXs" className="text-slate-400">
-              Columnas mínimas: nombre + celular.
-            </Text>
-             <Text variant="mutedXs" className="text-slate-400">
-              Opcionales: ruc, departamento, ciudad, cedula, registro_profesional, correo, categoria.
-            </Text>
-            <Text variant="mutedXs" className="text-slate-400">
-              Headers opcionales. Detecta separadores: coma, punto y coma, tab. Máx. 200 filas.
+              Columnas mínimas: nombre + teléfono. Opcionales: ruc, zona_cobertura, departamento, ciudad.
             </Text>
           </div>
         )}
@@ -533,23 +542,28 @@ function ListaRecientes({ recientes }) {
   return (
     <Section
       title={`Cargados (${recientes.length})`}
-      subtitle="Prospectos registrados en esta sesión."
+      subtitle="Mayoristas registrados en esta sesión."
     >
       <div className="p-4">
         <div className="space-y-2 max-h-80 overflow-y-auto">
           {recientes.map((r) => (
             <div
               key={r.id}
-              className="flex items-center gap-3 py-2 px-3 bg-emerald-50/60 rounded-lg border border-emerald-100"
+              className="flex items-center gap-3 py-2 px-3 bg-purple-50/60 rounded-lg border border-purple-100"
             >
-              <Check size={14} className="text-emerald-500 shrink-0" />
+              <Check size={14} className="text-purple-500 shrink-0" />
               <div className="flex-1 min-w-0">
                 <Text variant="bodySmBold" className="truncate">{r.nombre}</Text>
-                <Text variant="mutedXs">{r.telefono}</Text>
+                <div className="flex items-center gap-2">
+                  <Text variant="mutedXs">{r.telefono}</Text>
+                  {r.zona && (
+                    <Text variant="mutedXs" className="text-purple-500">{r.zona}</Text>
+                  )}
+                </div>
               </div>
               <button
-                onClick={() => router.push(`/ventas-crm/clientes/${r.id}`)}
-                className="text-xs text-emerald-600 hover:text-emerald-800 font-semibold shrink-0"
+                onClick={() => router.push(`/ventas-crm/contactos/mayoristas/${r.id}`)}
+                className="text-xs text-purple-600 hover:text-purple-800 font-semibold shrink-0"
               >
                 Ver
               </button>
@@ -563,7 +577,7 @@ function ListaRecientes({ recientes }) {
 
 // ─── Página Principal ───────────────────────────────────────────
 
-export default function NuevoProspectoPage() {
+export default function NuevoProspectoMayoristaPage() {
   const [tab, setTab] = useState("unitario");
   const [recientes, setRecientes] = useState([]);
 
@@ -571,11 +585,13 @@ export default function NuevoProspectoPage() {
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       <PageHeader
         breadcrumbs={[
-          { label: "Clientes", href: "/ventas-crm/clientes" },
+          { label: "Ventas y CRM", href: "/ventas-crm" },
+          { label: "Contactos", href: "/ventas-crm/contactos" },
+          { label: "Mayoristas", href: "/ventas-crm/contactos/mayoristas" },
           { label: "Nuevo Prospecto" },
         ]}
-        subtitle="CRM · Carga de contactos potenciales"
-        subtitleClassName="text-emerald-600"
+        subtitle="Mayoristas · Carga de prospectos B2B"
+        subtitleClassName="text-purple-600"
       >
         <TabSelector active={tab} onChange={setTab} />
       </PageHeader>

@@ -91,7 +91,7 @@ export default function NuevaInteraccionClientePage() {
 
       await guardarInteraccion(payload);
       showToast("Interacción registrada correctamente", "success");
-      router.push(`/ventas-crm/clientes/${id}`);
+      router.push(`/ventas-crm/contactos/${id}`);
     } catch (err) {
       const detail = err?.data?.detail || err?.data?.resumen?.[0] || err?.message || "Error al registrar la interacción.";
       showToast(detail, "error");
@@ -102,14 +102,14 @@ export default function NuevaInteraccionClientePage() {
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       <PageHeader
         breadcrumbs={[
-          { label: "Clientes", href: "/ventas-crm/clientes" },
-          { label: "Perfil", href: `/ventas-crm/clientes/${id}` },
+          { label: "Contactos", href: "/ventas-crm/contactos" },
+          { label: "Perfil", href: `/ventas-crm/contactos/${id}` },
           { label: "Nueva Interacción" },
         ]}
         subtitle="CRM · Registrar contacto con el cliente"
         subtitleClassName="text-emerald-600"
       >
-        <Link href={`/ventas-crm/clientes/${id}`}>
+        <Link href={`/ventas-crm/contactos/${id}`}>
           <Button variant="secondary" size="md" icon={ArrowLeft} className="rounded-xl font-bold text-xs cursor-pointer">
             VOLVER
           </Button>

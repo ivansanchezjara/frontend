@@ -413,7 +413,7 @@ export default function NuevoIngresoPage() {
                                             // Validaciones específicas de esta fila
                                             const qtyError = parseFloat(item.cantidad) <= 0;
                                             const fobError = parseFloat(item.costo_fob_unitario) > parseFloat(item.costo_landed_unitario);
-                                            const pBreak = !(item.nuevo_precio_0_publico >= item.nuevo_precio_1_estudiante && item.nuevo_precio_1_estudiante >= item.nuevo_precio_2_reventa && item.nuevo_precio_2_reventa >= item.nuevo_precio_3_mayorista && item.nuevo_precio_3_mayorista >= item.nuevo_precio_4_intercompany);
+                                            const pBreak = !(parseFloat(item.nuevo_precio_0_publico || 0) >= parseFloat(item.nuevo_precio_1_estudiante || 0) && parseFloat(item.nuevo_precio_1_estudiante || 0) >= parseFloat(item.nuevo_precio_2_reventa || 0) && parseFloat(item.nuevo_precio_2_reventa || 0) >= parseFloat(item.nuevo_precio_3_mayorista || 0) && parseFloat(item.nuevo_precio_3_mayorista || 0) >= parseFloat(item.nuevo_precio_4_intercompany || 0));
 
                                             let rowError = null;
                                             if (qtyError) rowError = "Cantidad debe ser mayor a 0";

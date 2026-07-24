@@ -25,7 +25,9 @@ export default function Section({ title, subtitle, action, children }) {
           </div>
         )}
       </div>
-      {children}
+      <div className="p-6">
+        {children}
+      </div>
     </section>
   );
 }
