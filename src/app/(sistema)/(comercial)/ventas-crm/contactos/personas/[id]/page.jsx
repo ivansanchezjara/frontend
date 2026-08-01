@@ -9,6 +9,7 @@ import {
   RelacionesSection, CuentaOnlineSection,
   DatosPersonaForm, TierPrecioSection, HistorialCompras,
 } from "@/components/comercial/personas";
+import { VerificacionEstudianteSection } from "@/components/comercial/personas/VerificacionEstudianteSection";
 import {
   Button, Badge, LoadingScreen, PageHeader, Section,
 } from "@/components/ui";
@@ -64,7 +65,7 @@ export default function PerfilPersonaPage() {
       <main className="flex flex-1 items-center justify-center p-8">
         <div className="max-w-sm text-center">
           <div className="mx-auto mb-6 inline-flex rounded-3xl bg-slate-900 p-4 text-white shadow-2xl shadow-blue-500/20">
-            <SearchX size={44} strokeWidth={2.5} />
+            <SearchX size={44} strokeWidth={2.5} aria-hidden="true" />
           </div>
           <Heading level={3}>Persona no encontrada</Heading>
           <Text className="mt-2">La persona solicitada no existe o fue desactivada.</Text>
@@ -137,7 +138,7 @@ export default function PerfilPersonaPage() {
             subtitle="Define qué lista de precios se aplica por defecto."
             action={
               <div className="flex items-center gap-1.5 text-slate-400">
-                <Tag size={14} />
+                <Tag size={14} aria-hidden="true" />
                 <Text variant="bodyXs">{TIER_LABELS[persona.tier_precio] || persona.tier_precio}</Text>
               </div>
             }
@@ -145,12 +146,52 @@ export default function PerfilPersonaPage() {
             <TierPrecioSection
               personaId={id}
               tierActual={persona.tier_precio}
-              onUpdated={setPersona}
+              esEstudianteActivo={persona.es_estudiante_activo}
+              onUpdated={refetchPersona}
             />
           </Section>
 
+          {/* Sección: Verificación de Estudiante */}
+          <VerificacionEstudianteSection persona={persona} onUpdated={refetchPersona} />
+
           {/* Sección: Relaciones y Vínculos */}
           <RelacionesSection persona={persona} onRelacionesChanged={refetchPersona} />
+
+          {/* Sección: Historial de Compras */}
+          <Section
+            title="Historial de Compras"
+            subtitle="Ventas confirmadas asociadas a esta persona."
+            action={
+              <div className="flex items-center gap-1.5 text-slate-400">
+                <ShoppingBag size={14} aria-hidden="true" />
+                <Text variant="bodyXs">Confirmadas</Text>
+              </div>
+            }
+          >
+            <HistorialCompras personaId={id} />
+          </Section>
+
+          {/* Sección: Interacciones */}
+          <Section
+            title="Interacciones"
+            subtitle="Historial de contacto, más recientes primero."
+            action={
+              <Button
+                as={Link}
+                href={`/ventas-crm/contactos/${id}/nueva-interaccion`}
+                variant="ghost"
+                size="sm"
+                icon={Plus}
+              >
+                Nueva
+              </Button>
+            }
+          >
+            <InteraccionTimeline
+              interacciones={interacciones}
+              loading={interaccionesLoading}
+            />
+          </Section>
 
           {/* Sección: Cuenta E-commerce */}
           <CuentaOnlineSection
@@ -164,36 +205,6 @@ export default function PerfilPersonaPage() {
               setPersona(updated);
             }}
           />
-
-          {/* Sección: Historial de Compras */}
-          <Section
-            title="Historial de Compras"
-            subtitle="Ventas confirmadas asociadas a esta persona."
-            action={
-              <div className="flex items-center gap-1.5 text-slate-400">
-                <ShoppingBag size={14} />
-                <Text variant="bodyXs">Confirmadas</Text>
-              </div>
-            }
-          >
-            <HistorialCompras personaId={id} />
-          </Section>
-
-          {/* Sección: Interacciones */}
-          <Section
-            title="Interacciones"
-            subtitle="Historial de contacto, más recientes primero."
-            action={
-              <Link href={`/ventas-crm/contactos/${id}/nueva-interaccion`}>
-                <Button variant="ghost" size="sm" icon={Plus}>Nueva</Button>
-              </Link>
-            }
-          >
-            <InteraccionTimeline
-              interacciones={interacciones}
-              loading={interaccionesLoading}
-            />
-          </Section>
 
         </div>
       </main>

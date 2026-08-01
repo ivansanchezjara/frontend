@@ -80,7 +80,7 @@ export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
                                 Disponible
                             </Text>
                             <Text className="text-xl font-black text-emerald-700">
-                                {selectedSKU.stock || 0}{" "}
+                                {selectedSKU.stock_disponible ?? selectedSKU.stock ?? 0}{" "}
                                 <span className="text-xs font-normal">u.</span>
                             </Text>
                         </div>
@@ -140,15 +140,19 @@ export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
                                             vencimiento: lote.vencimiento,
                                             esta_vencido: lote.esta_vencido,
                                             total_cantidad: 0,
+                                            total_reservado: 0,
                                             ubicaciones: [],
                                         };
                                     }
                                     acc[code].total_cantidad += lote.cantidad;
+                                    acc[code].total_reservado += (lote.reservado || 0);
                                     if (lote.esta_vencido) acc[code].esta_vencido = true;
                                     acc[code].ubicaciones.push({
                                         id: lote.id,
                                         deposito_nombre: lote.deposito_nombre,
                                         cantidad: lote.cantidad,
+                                        reservado: lote.reservado || 0,
+                                        disponible: lote.disponible ?? lote.cantidad,
                                         esta_vencido: lote.esta_vencido,
                                     });
                                     return acc;
@@ -170,8 +174,13 @@ export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
                                             </div>
                                             <div className="text-right">
                                                 <Text className="text-xl font-black text-slate-900">
-                                                    {grupo.total_cantidad} <span className="text-xs font-normal">u.</span>
+                                                    {grupo.total_cantidad - grupo.total_reservado} <span className="text-xs font-normal">disp.</span>
                                                 </Text>
+                                                {grupo.total_reservado > 0 && (
+                                                    <Text className="text-xs font-bold text-blue-600 mt-0.5">
+                                                        {grupo.total_reservado} reservadas · {grupo.total_cantidad} total
+                                                    </Text>
+                                                )}
                                                 {grupo.esta_vencido && (
                                                     <div className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full mt-1 inline-block">
                                                         VENCIDO
@@ -210,10 +219,13 @@ export default function AuditoriaModal({ selectedSKU, lotes, onClose }) {
                                                             {ubi.deposito_nombre || "Depósito"}
                                                         </Text>
                                                         <div className="flex items-center gap-2">
-                                                            {ubi.cantidad > 0 && (
-                                                                <Text variant="bodyXs" className="font-black text-slate-800">
-                                                                    {ubi.cantidad} u.
-                                                                </Text>
+                                                            <Text variant="bodyXs" className="font-black text-slate-800">
+                                                                {ubi.cantidad - ubi.reservado} u.
+                                                            </Text>
+                                                            {ubi.reservado > 0 && (
+                                                                <span className="font-bold text-blue-500 text-[10px]">
+                                                                    + {ubi.reservado} u. resv.
+                                                                </span>
                                                             )}
                                                             {ubi.esta_vencido && (
                                                                 <span className="font-bold text-red-500 bg-white px-1.5 rounded-md border border-red-100 text-[10px]">

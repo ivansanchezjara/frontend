@@ -135,6 +135,52 @@ export async function getColaEntrega(params = {}) {
   );
 }
 
+export async function getEntregaDetalle(id) {
+  return request(
+    `${API_URL}/caja/cola-entrega/${id}/`,
+    {
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver detalle de pedido para entrega",
+  );
+}
+
+export async function getVerificacionesEntrega(id) {
+  return request(
+    `${API_URL}/caja/cola-entrega/${id}/verificaciones/`,
+    {
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver verificaciones de entrega",
+  );
+}
+
+export async function registrarVerificacion(id, data = {}) {
+  return request(
+    `${API_URL}/caja/cola-entrega/${id}/verificaciones/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "registrar verificación de entrega",
+  );
+}
+
+export async function verificarCodigo(id, codigo) {
+  return request(
+    `${API_URL}/caja/cola-entrega/${id}/verificar-codigo/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify({ codigo }),
+    },
+    "verificar código escaneado",
+  );
+}
+
 export async function entregarPedido(id) {
   return request(
     `${API_URL}/caja/cola-entrega/${id}/entregar/`,
@@ -250,6 +296,30 @@ export async function getPuntosExpedicion(params = {}) {
       cache: "no-store",
     },
     "ver puntos de expedición",
+  );
+}
+
+export async function crearPuntoExpedicion(data) {
+  return request(
+    `${API_URL}/caja/puntos-expedicion/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear punto de expedición",
+  );
+}
+
+export async function actualizarPuntoExpedicion(id, data) {
+  return request(
+    `${API_URL}/caja/puntos-expedicion/${id}/`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar punto de expedición",
   );
 }
 

@@ -23,6 +23,32 @@ function formatMonto(valor, moneda) {
   return String(valor);
 }
 
+// Formatea un string numérico con separadores de miles (punto) y decimal (coma)
+function formatInputMonto(valor, decimales = 0) {
+  if (!valor) return "";
+  // Permitir solo dígitos y coma como decimal
+  let limpio = valor.replace(/[^0-9,]/g, "");
+  // Solo una coma
+  const partes = limpio.split(",");
+  if (partes.length > 2) limpio = partes[0] + "," + partes.slice(1).join("");
+  const [entero, decimal] = limpio.split(",");
+  // Formatear parte entera con puntos de miles
+  const enteroFormateado = entero.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  if (decimales === 0) return enteroFormateado;
+  if (decimal !== undefined) {
+    return `${enteroFormateado},${decimal.slice(0, decimales)}`;
+  }
+  return enteroFormateado;
+}
+
+// Convierte el valor formateado (con puntos y coma) a número
+function parseInputMonto(valor) {
+  if (!valor) return 0;
+  // Remover puntos de miles, reemplazar coma decimal por punto
+  const limpio = valor.replace(/\./g, "").replace(",", ".");
+  return Number(limpio) || 0;
+}
+
 function formatFecha(fecha) {
   if (!fecha) return "—";
   const d = new Date(fecha);
@@ -47,9 +73,9 @@ export default function SesionDetallePage() {
     e.preventDefault();
     try {
       await ejecutarCierre(id, {
-        fisico_pyg: Number(fisico.pyg) || 0,
-        fisico_usd: Number(fisico.usd) || 0,
-        fisico_brl: Number(fisico.brl) || 0,
+        fisico_pyg: parseInputMonto(fisico.pyg),
+        fisico_usd: parseInputMonto(fisico.usd),
+        fisico_brl: parseInputMonto(fisico.brl),
       });
       showToast("Caja cerrada correctamente", "success");
       refetch();
@@ -290,30 +316,27 @@ export default function SesionDetallePage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Input
                       label="Monto Físico PYG (₲)"
-                      type="number"
-                      min="0"
-                      step="1"
+                      type="text"
+                      inputMode="numeric"
                       placeholder="0"
                       value={fisico.pyg}
-                      onChange={(e) => setFisico({ ...fisico, pyg: e.target.value })}
+                      onChange={(e) => setFisico({ ...fisico, pyg: formatInputMonto(e.target.value, 0) })}
                     />
                     <Input
                       label="Monto Físico USD (US$)"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="0,00"
                       value={fisico.usd}
-                      onChange={(e) => setFisico({ ...fisico, usd: e.target.value })}
+                      onChange={(e) => setFisico({ ...fisico, usd: formatInputMonto(e.target.value, 2) })}
                     />
                     <Input
                       label="Monto Físico BRL (R$)"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="0,00"
                       value={fisico.brl}
-                      onChange={(e) => setFisico({ ...fisico, brl: e.target.value })}
+                      onChange={(e) => setFisico({ ...fisico, brl: formatInputMonto(e.target.value, 2) })}
                     />
                   </div>
                   <div className="flex items-center gap-3">

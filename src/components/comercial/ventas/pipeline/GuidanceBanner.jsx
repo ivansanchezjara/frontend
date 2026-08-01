@@ -1,5 +1,5 @@
 "use client";
-import { Lightbulb, Trophy, AlertTriangle, PlayCircle } from "lucide-react";
+import { Lightbulb, Trophy, AlertTriangle, PlayCircle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ETAPA_CONFIG = {
@@ -19,13 +19,19 @@ const ETAPA_CONFIG = {
     icon: Lightbulb,
     colors: "bg-purple-50 border-purple-100 text-purple-700",
     iconColor: "text-purple-500",
-    hint: "Armá un presupuesto y envialo al cliente. Aceptalo para cerrar como ganada.",
+    hint: "Armá un presupuesto y envialo al cliente. Al aceptarlo, pasará a pendiente de cobro.",
+  },
+  pendiente_cobro: {
+    icon: Clock,
+    colors: "bg-orange-50 border-orange-100 text-orange-700",
+    iconColor: "text-orange-500",
+    hint: "El presupuesto fue aceptado. Se marcará como ganada automáticamente al cobrar la venta.",
   },
   ganada: {
     icon: Trophy,
     colors: "bg-emerald-50 border-emerald-100 text-emerald-700",
     iconColor: "text-emerald-500",
-    hint: "Oportunidad cerrada con éxito.",
+    hint: "Oportunidad cerrada con éxito — el cliente pagó.",
   },
   perdida: {
     icon: AlertTriangle,

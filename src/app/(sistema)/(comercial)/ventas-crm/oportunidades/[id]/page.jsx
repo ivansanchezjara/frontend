@@ -78,6 +78,7 @@ export default function OportunidadDetallePage() {
   const interacciones = interaccionesData?.results || [];
   const etapa = oportunidad.etapa;
   const cerrada = etapa === "ganada" || etapa === "perdida";
+  const edicionBloqueada = cerrada || etapa === "pendiente_cobro";
 
   return (
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
@@ -173,7 +174,7 @@ export default function OportunidadDetallePage() {
                 <ProductosInteresSection
                   oportunidadId={id}
                   productos={oportunidad.productos || []}
-                  editable={!cerrada}
+                  editable={!edicionBloqueada}
                   tierPrecio={oportunidad.cliente_tier_precio || "publico"}
                   onUpdated={() => fetchOportunidad(id)}
                 />

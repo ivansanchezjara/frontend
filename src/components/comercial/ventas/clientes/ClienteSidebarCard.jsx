@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { useApi } from "@/hooks/useApi";
-import { getCliente } from "@/services/apis/ventas";
+import { getCuenta } from "@/services/apis/ventas";
 import { Phone, Mail, FileText, ExternalLink, Loader2, User } from "lucide-react";
 import Link from "next/link";
 import { Badge, Text } from "@/components/ui";
@@ -21,7 +21,7 @@ const ETAPA_BADGES = {
 };
 
 export default function ClienteSidebarCard({ clienteId }) {
-  const { data: cliente, loading, execute: fetchCliente } = useApi(getCliente);
+  const { data: cliente, loading, execute: fetchCliente } = useApi(getCuenta);
 
   useEffect(() => {
     if (clienteId) {
@@ -124,7 +124,12 @@ export default function ClienteSidebarCard({ clienteId }) {
       {/* Botón Ver Más */}
       <div className="pt-2 border-t border-slate-100">
         <Link
-          href={`/ventas-crm/contactos/${clienteId}`}
+          href={
+            cliente.tipo === "clinica" ? `/ventas-crm/contactos/clinicas/${clienteId}` :
+            cliente.tipo === "mayorista" ? `/ventas-crm/contactos/mayoristas/${clienteId}` :
+            cliente.tipo === "institucion" ? `/ventas-crm/instituciones/${clienteId}` :
+            `/ventas-crm/contactos/personas/${clienteId}`
+          }
           className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-600 transition-all active:scale-[0.98]"
         >
           <ExternalLink className="w-3 h-3" />

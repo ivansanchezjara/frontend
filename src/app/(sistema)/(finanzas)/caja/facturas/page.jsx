@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Badge,
   Button,
@@ -19,14 +19,14 @@ import {
   getNotasCredito,
 } from "@/services/apis/caja";
 import EmitirNotaCreditoModal from "@/components/caja/EmitirNotaCreditoModal";
-import { FileText, Ban, CreditCard, Receipt } from "lucide-react";
+import { FileText, Ban, CreditCard, Receipt, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 24;
 
 const TABS = [
-  { id: "comprobantes", label: "Comprobantes Internos", icon: Receipt },
-  { id: "facturas", label: "Facturas Legales", icon: FileText },
+  { id: "comprobantes", label: "Comprobantes", icon: Receipt },
+  { id: "facturas", label: "Facturas", icon: FileText },
   { id: "notas", label: "Notas de Crédito", icon: CreditCard },
 ];
 
@@ -35,6 +35,13 @@ const ESTADO_OPTIONS = [
   { value: "vigente", label: "Vigente" },
   { value: "anulado", label: "Anulado" },
 ];
+
+// Símbolos de moneda
+const MONEDA_SIMBOLO = {
+  PYG: "₲",
+  USD: "$",
+  BRL: "R$",
+};
 
 export default function FacturasPage() {
   const [activeTab, setActiveTab] = useState("comprobantes");
@@ -53,9 +60,8 @@ export default function FacturasPage() {
     loading: loadingComprobantes,
     execute: fetchComprobantes,
   } = useApi(getComprobantes, {
-    auto: true,
+    auto: false,
     initialData: { results: [], count: 0 },
-    args: [{ page: 1 }],
   });
 
   const {
@@ -75,6 +81,13 @@ export default function FacturasPage() {
     auto: false,
     initialData: { results: [], count: 0 },
   });
+
+  // Carga inicial de todos los tabs para obtener los counts
+  useEffect(() => {
+    fetchComprobantes({ page: 1 });
+    fetchFacturas({ page: 1 });
+    fetchNotas({ page: 1 });
+  }, [fetchComprobantes, fetchFacturas, fetchNotas]);
 
   // ─── Fetch helpers ────────────────────────────────────────────
   const buildParams = (overrides = {}) => {
@@ -99,7 +112,7 @@ export default function FacturasPage() {
     fetchTab(activeTab, overrides);
   };
 
-  // ─── Event handlers that reset page and refetch ───────────────
+  // ─── Event handlers ───────────────────────────────────────────
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setPage(1);
@@ -128,6 +141,16 @@ export default function FacturasPage() {
     setPage(newPage);
     fetchCurrentTab({ page: newPage });
   };
+
+  const handleResetFiltros = () => {
+    setFiltroEstado("");
+    setFiltroFechaDesde("");
+    setFiltroFechaHasta("");
+    setPage(1);
+    fetchTab(activeTab, { page: 1, estado: "", fecha_desde: "", fecha_hasta: "" });
+  };
+
+  const hayFiltrosActivos = filtroEstado || filtroFechaDesde || filtroFechaHasta;
 
   // ─── Acciones ─────────────────────────────────────────────────
   const handleAnularComprobante = async (comprobante) => {
@@ -171,6 +194,8 @@ export default function FacturasPage() {
   const handleNCSuccess = () => {
     setNcModalFactura(null);
     fetchCurrentTab();
+    // Refrescar notas también
+    fetchNotas({ page: 1 });
   };
 
   // ─── Helpers ──────────────────────────────────────────────────
@@ -184,16 +209,26 @@ export default function FacturasPage() {
     });
   };
 
-  const formatMonto = (monto) => {
-    return new Intl.NumberFormat("es-PY").format(monto || 0);
+  const formatMonto = (monto, moneda) => {
+    const simbolo = MONEDA_SIMBOLO[moneda] || MONEDA_SIMBOLO.PYG;
+    if (moneda === "PYG") {
+      return `${simbolo} ${new Intl.NumberFormat("es-PY").format(monto || 0)}`;
+    }
+    return `${simbolo} ${new Intl.NumberFormat("es-PY", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(monto || 0)}`;
   };
 
-  // ─── Render helpers ───────────────────────────────────────────
   const renderEstadoBadge = (estado) => {
     if (estado === "vigente") return <Badge variant="success">Vigente</Badge>;
     if (estado === "anulado" || estado === "anulada")
       return <Badge variant="danger">Anulado</Badge>;
     return <Badge>{estado}</Badge>;
+  };
+
+  // Counts por tab
+  const tabCounts = {
+    comprobantes: comprobantesData?.count || 0,
+    facturas: facturasData?.count || 0,
+    notas: notasData?.count || 0,
   };
 
   const currentLoading =
@@ -216,21 +251,24 @@ export default function FacturasPage() {
   return (
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       <PageHeader
-        title="Facturas y Comprobantes"
+        breadcrumbs={[
+          { label: "Caja y Facturación", href: "/caja" },
+          { label: "Facturas y Comprobantes" },
+        ]}
         subtitle={
           <>
-            <FileText size={12} /> Gestión de documentos fiscales y comprobantes
-            internos
+            <FileText size={12} /> Gestión de documentos fiscales y comprobantes internos
           </>
         }
       />
 
       <div className="flex-1 overflow-y-auto p-4 md:p-8 min-w-0">
         <div className="max-w-[1600px] mx-auto space-y-6">
-          {/* Tabs */}
+          {/* Tabs con contadores */}
           <div className="flex gap-1 bg-white rounded-2xl p-1.5 border border-slate-200 shadow-sm">
             {TABS.map((tab) => {
               const Icon = tab.icon;
+              const tabCount = tabCounts[tab.id];
               return (
                 <button
                   key={tab.id}
@@ -238,12 +276,24 @@ export default function FacturasPage() {
                   className={cn(
                     "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex-1 justify-center",
                     activeTab === tab.id
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-200"
+                      ? "bg-purple-600 text-white shadow-md shadow-purple-200"
                       : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                   )}
                 >
                   <Icon size={16} />
-                  {tab.label}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  {tabCount > 0 && (
+                    <span
+                      className={cn(
+                        "text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center",
+                        activeTab === tab.id
+                          ? "bg-white/20 text-white"
+                          : "bg-slate-100 text-slate-500"
+                      )}
+                    >
+                      {tabCount}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -258,7 +308,7 @@ export default function FacturasPage() {
               <select
                 value={filtroEstado}
                 onChange={(e) => handleEstadoChange(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all"
               >
                 {ESTADO_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -276,7 +326,7 @@ export default function FacturasPage() {
                 type="date"
                 value={filtroFechaDesde}
                 onChange={(e) => handleFechaDesdeChange(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all"
               />
             </div>
 
@@ -288,9 +338,20 @@ export default function FacturasPage() {
                 type="date"
                 value={filtroFechaHasta}
                 onChange={(e) => handleFechaHastaChange(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all"
               />
             </div>
+
+            {/* Botón reset */}
+            {hayFiltrosActivos && (
+              <button
+                onClick={handleResetFiltros}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-purple-600 hover:bg-purple-50 transition-all"
+              >
+                <RotateCcw size={13} />
+                Limpiar
+              </button>
+            )}
           </div>
 
           {/* Contenido */}
@@ -328,15 +389,18 @@ export default function FacturasPage() {
                   items={items}
                   formatFecha={formatFecha}
                   formatMonto={formatMonto}
+                  renderEstadoBadge={renderEstadoBadge}
                 />
               )}
 
-              <Pagination
-                count={count}
-                pageSize={PAGE_SIZE}
-                currentPage={page}
-                onPageChange={handlePageChange}
-              />
+              {count > PAGE_SIZE && (
+                <Pagination
+                  count={count}
+                  pageSize={PAGE_SIZE}
+                  currentPage={page}
+                  onPageChange={handlePageChange}
+                />
+              )}
             </>
           )}
         </div>
@@ -392,7 +456,10 @@ function TablaComprobantes({
             {items.map((item) => (
               <tr
                 key={item.id}
-                className="hover:bg-slate-50/60 transition-colors"
+                className={cn(
+                  "hover:bg-slate-50/60 transition-colors",
+                  item.estado === "anulado" && "opacity-50"
+                )}
               >
                 <td className="px-4 py-3 font-bold text-slate-800">
                   {item.numero}
@@ -404,7 +471,7 @@ function TablaComprobantes({
                   {item.cliente_nombre || item.venta_cliente || "—"}
                 </td>
                 <td className="px-4 py-3 text-right font-bold text-slate-800">
-                  ₲ {formatMonto(item.total)}
+                  {formatMonto(item.total, item.moneda || "PYG")}
                 </td>
                 <td className="px-4 py-3 text-center">
                   {renderEstadoBadge(item.estado)}
@@ -473,7 +540,10 @@ function TablaFacturas({
             {items.map((item) => (
               <tr
                 key={item.id}
-                className="hover:bg-slate-50/60 transition-colors"
+                className={cn(
+                  "hover:bg-slate-50/60 transition-colors",
+                  (item.estado === "anulado" || item.estado === "anulada") && "opacity-50"
+                )}
               >
                 <td className="px-4 py-3 font-bold text-slate-800 font-mono">
                   {item.numero_completo}
@@ -488,7 +558,7 @@ function TablaFacturas({
                   {item.razon_social}
                 </td>
                 <td className="px-4 py-3 text-right font-bold text-slate-800">
-                  ₲ {formatMonto(item.total)}
+                  {formatMonto(item.total, item.moneda || "PYG")}
                 </td>
                 <td className="px-4 py-3 text-center">
                   {renderEstadoBadge(item.estado)}
@@ -512,7 +582,7 @@ function TablaFacturas({
                         className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
                       >
                         <CreditCard size={14} className="mr-1" />
-                        Emitir NC
+                        NC
                       </Button>
                     </div>
                   )}
@@ -527,7 +597,7 @@ function TablaFacturas({
 }
 
 // ─── Tabla Notas de Crédito ─────────────────────────────────────
-function TablaNotasCredito({ items, formatFecha, formatMonto }) {
+function TablaNotasCredito({ items, formatFecha, formatMonto, renderEstadoBadge }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
@@ -549,13 +619,19 @@ function TablaNotasCredito({ items, formatFecha, formatMonto }) {
               <th className="text-left px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide">
                 Fecha
               </th>
+              <th className="text-center px-4 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wide">
+                Estado
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {items.map((item) => (
               <tr
                 key={item.id}
-                className="hover:bg-slate-50/60 transition-colors"
+                className={cn(
+                  "hover:bg-slate-50/60 transition-colors",
+                  (item.estado === "anulado" || item.estado === "anulada") && "opacity-50"
+                )}
               >
                 <td className="px-4 py-3 font-bold text-slate-800 font-mono">
                   {item.numero_completo || item.numero}
@@ -567,10 +643,13 @@ function TablaNotasCredito({ items, formatFecha, formatMonto }) {
                   {item.motivo}
                 </td>
                 <td className="px-4 py-3 text-right font-bold text-slate-800">
-                  ₲ {formatMonto(item.total)}
+                  {formatMonto(item.total, item.moneda || "PYG")}
                 </td>
                 <td className="px-4 py-3 text-slate-600">
                   {formatFecha(item.fecha_emision)}
+                </td>
+                <td className="px-4 py-3 text-center">
+                  {renderEstadoBadge(item.estado)}
                 </td>
               </tr>
             ))}

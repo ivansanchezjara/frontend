@@ -213,7 +213,7 @@ export default function VentaBuilder({
     onVentaChange({ ...ventaData, cliente: null });
   };
 
-  // ─── Recalcular precios cuando cambia moneda o TC ────────────
+  // ─── Recalcular precios cuando cambia moneda o tipo de cambio ────────────
   useEffect(() => {
     if (lineas.length === 0) return;
 

@@ -2,23 +2,27 @@
 import { useCallback, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
-  SearchX, ShoppingBag, Plus, Save, Loader2, Truck,
+  SearchX, ShoppingBag, Plus, Save, Loader2,
 } from "lucide-react";
 
 import InteraccionTimeline from "@/components/comercial/ventas/clientes/InteraccionTimeline";
 import {
   Button, Badge, LoadingScreen, PageHeader, Pagination, Section, EmptyState,
-  Input, Field, useConfirm,
+  Input, Field, AddressInput, PhoneInput, validatePhone, buildPhoneValue, useConfirm,
 } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { Heading, Text } from "@/components/ui/basics/Typography";
 import { useApi } from "@/hooks/useApi";
-import { cn } from "@/lib/utils";
+import { cn, formatFecha } from "@/lib/utils";
 import { DEPARTAMENTOS, CIUDADES_POR_DEPARTAMENTO } from "@/config/paraguay";
 import {
   getMayorista, updateMayorista, getInteracciones, getVentas,
 } from "@/services/apis/ventas";
+
+// Leaflet no soporta SSR
+const MapaPicker = dynamic(() => import("@/components/ui/basics/MapaPicker"), { ssr: false });
 
 // ─── Constantes ─────────────────────────────────────────────────
 
@@ -27,25 +31,10 @@ const TIER_LABELS = {
   mayorista: "Mayorista", intercompany: "Intercompany",
 };
 
-const TIER_OPTIONS = [
-  { value: "publico", label: "Público" },
-  { value: "estudiante", label: "Estudiante" },
-  { value: "reventa", label: "Reventa" },
-  { value: "mayorista", label: "Mayorista" },
-  { value: "intercompany", label: "Intercompany" },
-];
-
 const selectClass =
   "block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500";
 
 // ─── Helpers ────────────────────────────────────────────────────
-
-function formatFecha(fechaStr) {
-  if (!fechaStr) return "—";
-  return new Date(fechaStr).toLocaleDateString("es-PY", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-  });
-}
 
 function formatMonto(monto, moneda = "USD") {
   if (monto == null) return "—";
@@ -53,7 +42,19 @@ function formatMonto(monto, moneda = "USD") {
   return `$ ${Number(monto).toFixed(2)}`;
 }
 
-
+/**
+ * Parsea un valor de teléfono guardado ("+595 981000000") en prefix + number.
+ */
+function parsePhoneValue(value) {
+  if (!value) return { prefix: "+595", number: "" };
+  const prefixes = ["+595", "+55", "+54"];
+  for (const p of prefixes) {
+    if (value.startsWith(p)) {
+      return { prefix: p, number: value.slice(p.length).trim() };
+    }
+  }
+  return { prefix: "+other", number: value };
+}
 
 // ─── Componente: Historial de Compras ───────────────────────────
 
@@ -129,47 +130,102 @@ function DatosMayoristaForm({ mayorista, onSaved }) {
   const { showToast } = useToast();
   const { alert: showAlert } = useConfirm();
 
+  const parsedPhone = parsePhoneValue(mayorista.telefono);
+
   const [form, setForm] = useState({
     razon_social: mayorista.razon_social || "",
     ruc: mayorista.ruc || "",
-    telefono: mayorista.telefono || "",
+    telefonoPrefijo: parsedPhone.prefix,
+    telefono: parsedPhone.number,
     correo_electronico: mayorista.correo_electronico || "",
-    zona_cobertura: mayorista.zona_cobertura || "",
+    contacto_nombre: mayorista.contacto_nombre || "",
     transportadora_preferida: mayorista.transportadora_preferida || "",
+    tier_precio: mayorista.tier_precio || "mayorista",
     departamento: mayorista.departamento || "",
     ciudad: mayorista.ciudad || "",
     direccion: mayorista.direccion || "",
+    latitud: mayorista.latitud || null,
+    longitud: mayorista.longitud || null,
     notas: mayorista.notas || "",
   });
 
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
+  const [touched, setTouched] = useState({});
 
   const ciudades = form.departamento
     ? (CIUDADES_POR_DEPARTAMENTO[form.departamento] || [])
     : [];
 
-  const handleChange = (field) => (e) => {
+  const handleChange = useCallback((field) => (e) => {
     const value = e?.target ? e.target.value : e;
     setForm((prev) => ({ ...prev, [field]: value }));
     setIsDirty(true);
     if (errors[field]) setErrors((prev) => { const n = { ...prev }; delete n[field]; return n; });
-  };
+  }, [errors]);
+
+  const handleDepartamentoChange = useCallback((e) => {
+    const value = e.target.value;
+    setForm((prev) => ({ ...prev, departamento: value, ciudad: "" }));
+    setIsDirty(true);
+  }, []);
+
+  const validateField = useCallback((field) => {
+    const validators = {
+      razon_social: (v) => !v.trim() ? "La razón social es obligatoria." : null,
+      ruc: (v) => !v.trim() ? "El RUC es obligatorio." : null,
+      telefono: () => {
+        if (!form.telefono.trim()) return "El teléfono es obligatorio.";
+        return validatePhone(form.telefonoPrefijo, form.telefono);
+      },
+    };
+    const validate = validators[field];
+    if (!validate) return;
+    const error = validate(form[field]);
+    setErrors((prev) => {
+      if (error) return { ...prev, [field]: error };
+      const n = { ...prev };
+      delete n[field];
+      return n;
+    });
+  }, [form]);
+
+  const handleBlur = useCallback((field) => () => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    validateField(field);
+  }, [validateField]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
+
     const newErrors = {};
     if (!form.razon_social.trim()) newErrors.razon_social = "La razón social es obligatoria.";
     if (!form.ruc.trim()) newErrors.ruc = "El RUC es obligatorio.";
-    if (!form.telefono.trim()) newErrors.telefono = "El teléfono es obligatorio.";
-    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+    if (!form.telefono.trim()) {
+      newErrors.telefono = "El teléfono es obligatorio.";
+    } else {
+      const phoneErr = validatePhone(form.telefonoPrefijo, form.telefono);
+      if (phoneErr) newErrors.telefono = phoneErr;
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setTouched({ razon_social: true, ruc: true, telefono: true });
+      return;
+    }
 
     setSaving(true);
     setErrors({});
     try {
-      const updated = await updateMayorista(mayorista.id, form);
+      const { telefonoPrefijo, telefono, ...rest } = form;
+      const payload = {
+        ...rest,
+        telefono: buildPhoneValue(telefonoPrefijo, telefono),
+      };
+      const updated = await updateMayorista(mayorista.id, payload);
       setIsDirty(false);
+      setTouched({});
       showToast("Datos actualizados correctamente", "success");
       if (onSaved) onSaved(updated);
     } catch (err) {
@@ -179,6 +235,7 @@ function DatosMayoristaForm({ mayorista, onSaved }) {
           fieldErrors[key] = Array.isArray(val) ? val.join(" ") : val;
         }
         setErrors(fieldErrors);
+        setTouched(Object.fromEntries(Object.keys(fieldErrors).map((k) => [k, true])));
       } else {
         showAlert(err?.data?.detail || err?.message || "Error al guardar.", "Error");
       }
@@ -188,7 +245,7 @@ function DatosMayoristaForm({ mayorista, onSaved }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-6 space-y-6">
+    <form onSubmit={handleSubmit} className="p-6 space-y-6" noValidate>
 
       {/* ─── Identificación ────────────────────────────── */}
       <div>
@@ -200,17 +257,19 @@ function DatosMayoristaForm({ mayorista, onSaved }) {
             label="Razón Social *"
             value={form.razon_social}
             onChange={handleChange("razon_social")}
+            onBlur={handleBlur("razon_social")}
             placeholder="Nombre legal de la empresa"
             maxLength={200}
-            error={errors.razon_social}
+            error={touched.razon_social ? errors.razon_social : undefined}
           />
           <Input
             label="RUC *"
             value={form.ruc}
             onChange={handleChange("ruc")}
+            onBlur={handleBlur("ruc")}
             placeholder="80000000-0"
             maxLength={20}
-            error={errors.ruc}
+            error={touched.ruc ? errors.ruc : undefined}
           />
         </div>
       </div>
@@ -221,13 +280,14 @@ function DatosMayoristaForm({ mayorista, onSaved }) {
           Contacto
         </Text>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label="Teléfono *"
+          <PhoneInput
+            label="Teléfono"
+            required
+            prefix={form.telefonoPrefijo}
+            onPrefixChange={(p) => { setForm((prev) => ({ ...prev, telefonoPrefijo: p })); setIsDirty(true); }}
             value={form.telefono}
             onChange={handleChange("telefono")}
-            placeholder="021 555444"
-            maxLength={30}
-            error={errors.telefono}
+            error={touched.telefono ? errors.telefono : undefined}
           />
           <Input
             label="Correo Electrónico"
@@ -238,6 +298,13 @@ function DatosMayoristaForm({ mayorista, onSaved }) {
             maxLength={254}
             error={errors.correo_electronico}
           />
+          <Input
+            label="Persona de Contacto"
+            value={form.contacto_nombre}
+            onChange={handleChange("contacto_nombre")}
+            placeholder="Nombre de quien gestiona pedidos"
+            maxLength={100}
+          />
         </div>
       </div>
 
@@ -246,14 +313,7 @@ function DatosMayoristaForm({ mayorista, onSaved }) {
         <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
           Datos de Distribución
         </Text>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label="Zona de Cobertura"
-            value={form.zona_cobertura}
-            onChange={handleChange("zona_cobertura")}
-            placeholder="Ciudad del Este, Encarnación..."
-            maxLength={200}
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
             label="Transportadora Preferida"
             value={form.transportadora_preferida}
@@ -261,6 +321,22 @@ function DatosMayoristaForm({ mayorista, onSaved }) {
             placeholder="Nombre de la transportadora"
             maxLength={100}
           />
+          <Field label="Tier de Precio">
+            {(fieldProps) => (
+              <select
+                {...fieldProps}
+                className={selectClass}
+                value={form.tier_precio || "mayorista"}
+                onChange={(e) => { setForm((p) => ({ ...p, tier_precio: e.target.value })); setIsDirty(true); }}
+              >
+                <option value="publico">Público</option>
+                <option value="estudiante">Estudiante</option>
+                <option value="reventa">Reventa</option>
+                <option value="mayorista">Mayorista</option>
+                <option value="intercompany">Intercompany</option>
+              </select>
+            )}
+          </Field>
         </div>
       </div>
 
@@ -269,44 +345,100 @@ function DatosMayoristaForm({ mayorista, onSaved }) {
         <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
           Ubicación
         </Text>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Departamento">
-            <select
-              className={selectClass}
-              value={form.departamento}
-              onChange={(e) => setForm((p) => ({ ...p, departamento: e.target.value, ciudad: "" }))}
-            >
-              <option value="">— Seleccionar —</option>
-              {DEPARTAMENTOS.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
+            {(fieldProps) => (
+              <select
+                {...fieldProps}
+                className={selectClass}
+                value={form.departamento}
+                onChange={handleDepartamentoChange}
+              >
+                <option value="">— Seleccionar —</option>
+                {DEPARTAMENTOS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            )}
           </Field>
           <Field label="Ciudad">
-            <select className={selectClass} value={form.ciudad} onChange={handleChange("ciudad")}>
-              <option value="">— Seleccionar —</option>
-              {ciudades.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            {(fieldProps) => (
+              <select
+                {...fieldProps}
+                className={selectClass}
+                value={form.ciudad}
+                onChange={handleChange("ciudad")}
+                disabled={!form.departamento}
+              >
+                <option value="">— Seleccionar —</option>
+                {ciudades.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
           </Field>
-          <Input
-            label="Dirección"
-            value={form.direccion}
-            onChange={handleChange("direccion")}
-            placeholder="Calle, número, barrio"
-            maxLength={500}
-          />
+          <div className="md:col-span-2">
+            <AddressInput
+              label="Dirección"
+              value={form.direccion}
+              onChange={handleChange("direccion")}
+              placeholder="Calle, número, barrio"
+              maxLength={500}
+              context={[form.ciudad, form.departamento].filter(Boolean).join(", ")}
+              onSelect={({ lat, lng }) => {
+                setForm((p) => ({ ...p, latitud: lat, longitud: lng }));
+                setIsDirty(true);
+              }}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Field label="Ubicación en mapa">
+              <MapaPicker
+                latitud={form.latitud}
+                longitud={form.longitud}
+                centerOn={[form.ciudad, form.departamento].filter(Boolean).join(", ")}
+                onChange={({ lat, lng, departamentoRaw, ciudad, direccion }) => {
+                  setForm((p) => {
+                    const update = { ...p, latitud: lat, longitud: lng };
+                    if (departamentoRaw) {
+                      const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                      const deptoNorm = norm(departamentoRaw);
+                      const match = DEPARTAMENTOS.find((d) => norm(d) === deptoNorm)
+                        || DEPARTAMENTOS.find((d) => deptoNorm.includes(norm(d)) || norm(d).includes(deptoNorm));
+                      if (match) {
+                        update.departamento = match;
+                        update.ciudad = "";
+                        if (ciudad) {
+                          const ciudadesDepto = CIUDADES_POR_DEPARTAMENTO[match] || [];
+                          const ciudadNorm = norm(ciudad);
+                          const ciudadMatch = ciudadesDepto.find((c) => norm(c) === ciudadNorm)
+                            || ciudadesDepto.find((c) => ciudadNorm.includes(norm(c)) || norm(c).includes(ciudadNorm));
+                          if (ciudadMatch) update.ciudad = ciudadMatch;
+                        }
+                      }
+                    }
+                    if (direccion) update.direccion = direccion;
+                    return update;
+                  });
+                  setIsDirty(true);
+                }}
+                height="350px"
+              />
+            </Field>
+          </div>
         </div>
       </div>
 
       {/* ─── Notas ─────────────────────────────────────── */}
       <div>
         <Field label="Notas internas">
-          <textarea
-            className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-none placeholder:text-slate-400"
-            rows={3}
-            value={form.notas}
-            onChange={handleChange("notas")}
-            placeholder="Notas internas sobre este mayorista..."
-            maxLength={1000}
-          />
+          {(fieldProps) => (
+            <textarea
+              {...fieldProps}
+              className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-none placeholder:text-slate-400"
+              rows={3}
+              value={form.notas}
+              onChange={handleChange("notas")}
+              placeholder="Notas internas sobre este mayorista..."
+              maxLength={1000}
+            />
+          )}
         </Field>
       </div>
 
@@ -406,11 +538,6 @@ export default function PerfilMayoristaPage() {
             <Badge variant="info">{TIER_LABELS[mayorista.tier_precio] || mayorista.tier_precio}</Badge>
             {mayorista.etapa === "prospecto" && <Badge variant="warning">Prospecto</Badge>}
             {mayorista.etapa === "inactivo" && <Badge variant="danger">Inactivo</Badge>}
-            {mayorista.zona_cobertura && (
-              <span className="flex items-center gap-1 text-xs text-slate-500">
-                <Truck size={12} /> {mayorista.zona_cobertura}
-              </span>
-            )}
           </span>
         }
         subtitleClassName="text-purple-600"
@@ -434,15 +561,13 @@ export default function PerfilMayoristaPage() {
             <DatosMayoristaForm mayorista={mayorista} onSaved={(updated) => setMayorista(updated)} />
           </Section>
 
-
-
           {/* Historial de Compras */}
           <Section
             title="Historial de Compras"
             subtitle="Ventas confirmadas asociadas a este mayorista."
             action={
               <div className="flex items-center gap-1.5 text-slate-400">
-                <ShoppingBag size={14} />
+                <ShoppingBag size={14} aria-hidden="true" />
                 <Text variant="bodyXs">Confirmadas</Text>
               </div>
             }
@@ -455,9 +580,15 @@ export default function PerfilMayoristaPage() {
             title="Interacciones"
             subtitle="Historial de contacto, más recientes primero."
             action={
-              <Link href={`/ventas-crm/contactos/${id}/nueva-interaccion`}>
-                <Button variant="ghost" size="sm" icon={Plus}>Nueva</Button>
-              </Link>
+              <Button
+                as={Link}
+                href={`/ventas-crm/contactos/${id}/nueva-interaccion`}
+                variant="ghost"
+                size="sm"
+                icon={Plus}
+              >
+                Nueva
+              </Button>
             }
           >
             <InteraccionTimeline interacciones={interacciones} loading={interaccionesLoading} />

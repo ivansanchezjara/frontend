@@ -113,7 +113,10 @@ export default function StockPage() {
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       {/* HEADER */}
       <PageHeader
-        title="Stock y Disponibilidad"
+        breadcrumbs={[
+          { label: "Inventario", href: "/inventario" },
+          { label: "Stock y Disponibilidad" },
+        ]}
         subtitle={
           <>
             <Package size={12} /> Auditoría de Almacén Real y Lotes

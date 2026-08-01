@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Save } from "lucide-react";
 
-import { useConfirm } from "@/components/ui";
+import { Button, useConfirm } from "@/components/ui";
 import { Text } from "@/components/ui/basics/Typography";
 import { cn } from "@/lib/utils";
 import { TIER_OPTIONS, TIER_LABELS } from "@/config/personas";
@@ -9,23 +10,40 @@ import { updatePersona } from "@/services/apis/ventas";
 
 /**
  * Selector visual de tier de precio para una persona.
- * Persiste el cambio inmediatamente al seleccionar.
+ * Muestra un botón de guardar cuando hay cambios pendientes.
  */
-export function TierPrecioSection({ personaId, tierActual, onUpdated }) {
+export function TierPrecioSection({ personaId, tierActual, esEstudianteActivo, onUpdated }) {
   const [tier, setTier] = useState(tierActual || "publico");
   const [saving, setSaving] = useState(false);
   const { alert: showAlert } = useConfirm();
 
-  const handleSelect = async (nuevoTier) => {
+  // Sincronizar si tierActual cambia externamente (ej. después de refetch)
+  useEffect(() => {
+    if (tierActual && !saving) setTier(tierActual);
+  }, [tierActual]);
+
+  const hasChanges = tier !== tierActual;
+
+  const handleSelect = (nuevoTier) => {
     if (nuevoTier === tier || saving) return;
-    setSaving(true);
-    const prevTier = tier;
+    if (nuevoTier === "estudiante" && !esEstudianteActivo) {
+      showAlert(
+        "Para asignar el tier \"Estudiante\" se requiere una formación de grado vigente (dentro del período de la carrera).",
+        "No permitido"
+      );
+      return;
+    }
     setTier(nuevoTier);
+  };
+
+  const handleSave = async () => {
+    if (!hasChanges || saving) return;
+    setSaving(true);
     try {
-      const updated = await updatePersona(personaId, { tier_precio: nuevoTier });
+      const updated = await updatePersona(personaId, { tier_precio: tier });
       if (onUpdated) onUpdated(updated);
     } catch {
-      setTier(prevTier);
+      setTier(tierActual);
       showAlert("No se pudo actualizar el tier de precio.", "Error");
     } finally {
       setSaving(false);
@@ -55,14 +73,34 @@ export function TierPrecioSection({ personaId, tierActual, onUpdated }) {
           );
         })}
       </div>
-      <div className="flex items-center gap-2">
-        <span className={cn(
-          "w-1.5 h-1.5 rounded-full transition-all",
-          saving ? "bg-amber-400 animate-pulse" : "bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.5)]"
-        )} />
-        <Text variant="label" className="text-slate-400 text-[11px]">
-          {saving ? "Guardando..." : `Tier activo: ${TIER_LABELS[tier] || tier}`}
-        </Text>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            "w-1.5 h-1.5 rounded-full transition-all",
+            saving
+              ? "bg-amber-400 animate-pulse"
+              : hasChanges
+                ? "bg-amber-500"
+                : "bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.5)]"
+          )} />
+          <Text variant="label" className="text-slate-400 text-[11px]">
+            {saving
+              ? "Guardando..."
+              : hasChanges
+                ? `Cambio pendiente: ${TIER_LABELS[tierActual] || tierActual} → ${TIER_LABELS[tier] || tier}`
+                : `Tier activo: ${TIER_LABELS[tier] || tier}`}
+          </Text>
+        </div>
+        {hasChanges && (
+          <Button
+            size="sm"
+            icon={Save}
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? "Guardando..." : "Guardar"}
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Target, MapPin } from "lucide-react";
@@ -7,14 +7,13 @@ import {
   EmptyState, LoadingScreen, PageHeader, Pagination, SearchBar, Button,
   FilterDropdown, SortableHeader,
 } from "@/components/ui";
-import { useToast } from "@/components/ui";
 import { Text } from "@/components/ui/basics/Typography";
 import { useApi } from "@/hooks/useApi";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useUrlFilters } from "@/hooks/useUrlFilters";
 import { getMayoristas } from "@/services/apis/ventas";
 import { DEPARTAMENTOS } from "@/config/paraguay";
-import { cn } from "@/lib/utils";
+import { cn, formatFechaCorta } from "@/lib/utils";
 
 // ─── Configuración ──────────────────────────────────────────────
 
@@ -44,30 +43,38 @@ const FILTER_SCHEMA = {
   page: 1,
 };
 
+const PAGE_SIZE = 24;
+
+// ─── Helpers ────────────────────────────────────────────────────
+
+function pluralizar(count) {
+  return count === 1 ? "mayorista" : "mayoristas";
+}
+
 // ─── Página ─────────────────────────────────────────────────────
 
 export default function MayoristasListPage() {
   const router = useRouter();
-  const { showToast } = useToast();
   const { filters, setFilter, resetFilters } = useUrlFilters(FILTER_SCHEMA);
 
   const {
     data: mayoristasData,
     loading: loadingMayoristas,
-    execute: fetchMayoristas_,
+    execute: fetchMayoristas,
   } = useApi(getMayoristas);
 
   const mayoristas = mayoristasData?.results || (Array.isArray(mayoristasData) ? mayoristasData : []);
   const count = mayoristasData?.count ?? mayoristas.length;
-  const pageSize = 24;
 
   const [busquedaLocal, setBusquedaLocal] = useState(filters.search);
   const busquedaDebounced = useDebounce(busquedaLocal, 400);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   useEffect(() => {
-    if (busquedaDebounced !== filters.search) setFilter("search", busquedaDebounced);
-  }, [busquedaDebounced]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (busquedaDebounced !== filters.search) {
+      setFilter("search", busquedaDebounced);
+    }
+  }, [busquedaDebounced, filters.search, setFilter]);
 
   useEffect(() => {
     setBusquedaLocal(filters.search);
@@ -79,17 +86,28 @@ export default function MayoristasListPage() {
     if (filters.etapa) params.etapa = filters.etapa;
     if (filters.departamento) params.departamento = filters.departamento;
 
-    fetchMayoristas_(params).then(() => setHasLoadedOnce(true));
-  }, [fetchMayoristas_, filters.search, filters.etapa, filters.departamento, filters.ordering, filters.page]);
-
-  if (loadingMayoristas && !hasLoadedOnce) return <LoadingScreen texto="Cargando mayoristas..." />;
+    fetchMayoristas(params).then(() => setHasLoadedOnce(true));
+  }, [fetchMayoristas, filters.search, filters.etapa, filters.departamento, filters.ordering, filters.page]);
 
   const hayFiltrosActivos = filters.search !== "" || filters.etapa !== "" || filters.departamento !== "";
 
-  const limpiarFiltros = () => {
+  const limpiarFiltros = useCallback(() => {
     setBusquedaLocal("");
     resetFilters();
-  };
+  }, [resetFilters]);
+
+  const navegarAMayorista = useCallback((id) => {
+    router.push(`/ventas-crm/contactos/mayoristas/${id}`);
+  }, [router]);
+
+  const handleRowKeyDown = useCallback((e, id) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      navegarAMayorista(id);
+    }
+  }, [navegarAMayorista]);
+
+  if (loadingMayoristas && !hasLoadedOnce) return <LoadingScreen texto="Cargando mayoristas..." />;
 
   return (
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
@@ -99,19 +117,19 @@ export default function MayoristasListPage() {
           { label: "Contactos", href: "/ventas-crm/contactos" },
           { label: "Mayoristas" },
         ]}
-        subtitle={`${count} mayoristas registrados`}
+        subtitle={`${count} ${pluralizar(count)} registrados`}
         subtitleClassName="text-purple-600"
       >
-        <Link href="/ventas-crm/contactos/mayoristas/nuevo">
-          <Button
-            variant="primary"
-            size="md"
-            icon={Plus}
-            className="rounded-xl font-bold text-xs shadow-lg shadow-purple-100 cursor-pointer"
-          >
-            NUEVO MAYORISTA
-          </Button>
-        </Link>
+        <Button
+          as={Link}
+          href="/ventas-crm/contactos/mayoristas/nuevo"
+          variant="primary"
+          size="md"
+          icon={Plus}
+          className="rounded-xl font-bold text-xs shadow-lg shadow-purple-100"
+        >
+          NUEVO MAYORISTA
+        </Button>
       </PageHeader>
 
       <main className="flex-1 overflow-y-auto p-8 min-w-0">
@@ -124,7 +142,7 @@ export default function MayoristasListPage() {
                 <SearchBar
                   value={busquedaLocal}
                   onChange={setBusquedaLocal}
-                  placeholder="Buscar por razón social, RUC, teléfono o zona de cobertura..."
+                  placeholder="Buscar por razón social, RUC o teléfono..."
                 />
               </div>
             </div>
@@ -147,32 +165,40 @@ export default function MayoristasListPage() {
                   color="purple"
                 />
                 {hayFiltrosActivos && (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={limpiarFiltros}
-                    className="text-[10px] font-bold text-slate-400 hover:text-red-500 transition-colors uppercase"
+                    className="text-[10px] font-bold text-slate-400 hover:text-red-500 uppercase px-2 py-1"
                   >
                     Limpiar
-                  </button>
+                  </Button>
                 )}
               </div>
               <Text
                 variant="label"
                 className="flex items-center gap-2 text-slate-400 whitespace-nowrap"
               >
-                <span className={cn(
-                  "w-1.5 h-1.5 rounded-full",
-                  count > 0 ? "bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.6)]" : "bg-slate-300"
-                )} />
-                {count} {count === 1 ? "mayorista" : "mayoristas"}
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full",
+                    count > 0 ? "bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.6)]" : "bg-slate-300"
+                  )}
+                />
+                {count} {pluralizar(count)}
               </Text>
             </div>
           </div>
 
           {/* Tabla */}
-          <div className={cn(
-            "transition-opacity duration-300",
-            loadingMayoristas ? "opacity-50 pointer-events-none" : "opacity-100"
-          )}>
+          <div
+            className={cn(
+              "transition-opacity duration-300",
+              loadingMayoristas ? "opacity-50 pointer-events-none" : "opacity-100"
+            )}
+            aria-busy={loadingMayoristas}
+          >
             {mayoristas.length === 0 ? (
               <EmptyState
                 titulo={hayFiltrosActivos ? "Sin resultados" : "Sin mayoristas"}
@@ -189,7 +215,6 @@ export default function MayoristasListPage() {
                         <SortableHeader field="razon_social" label="Razón Social" currentOrdering={filters.ordering} onChange={(o) => setFilter("ordering", o)} color="purple" />
                       </th>
                       <th className="py-3 px-4 hidden md:table-cell text-[11px] font-black uppercase tracking-widest">Contacto</th>
-                      <th className="py-3 px-4 hidden lg:table-cell text-[11px] font-black uppercase tracking-widest">Zona</th>
                       <th className="py-3 px-4 hidden lg:table-cell text-[11px] font-black uppercase tracking-widest">Transportadora</th>
                       <th className="py-3 px-4 hidden sm:table-cell text-[11px] font-black uppercase tracking-widest">Etapa</th>
                       <th className="py-3 pr-6 pl-4">
@@ -203,8 +228,12 @@ export default function MayoristasListPage() {
                       return (
                         <tr
                           key={mayorista.id}
-                          className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors cursor-pointer"
-                          onClick={() => router.push(`/ventas-crm/contactos/mayoristas/${mayorista.id}`)}
+                          role="link"
+                          tabIndex={0}
+                          aria-label={`Ver mayorista ${mayorista.razon_social}`}
+                          className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-inset"
+                          onClick={() => navegarAMayorista(mayorista.id)}
+                          onKeyDown={(e) => handleRowKeyDown(e, mayorista.id)}
                         >
                           <td className="py-3 pl-6 pr-4">
                             <div>
@@ -234,18 +263,6 @@ export default function MayoristasListPage() {
                             </div>
                           </td>
                           <td className="py-3 px-4 hidden lg:table-cell">
-                            {mayorista.zona_cobertura ? (
-                              <div className="flex items-center gap-1.5">
-                                <MapPin className="w-3 h-3 text-purple-400" />
-                                <Text variant="bodySm" className="text-slate-600">
-                                  {mayorista.zona_cobertura}
-                                </Text>
-                              </div>
-                            ) : (
-                              <Text variant="mutedXs" className="text-slate-300">—</Text>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 hidden lg:table-cell">
                             <Text variant="bodySm" className="text-slate-500">
                               {mayorista.transportadora_preferida || "—"}
                             </Text>
@@ -260,7 +277,7 @@ export default function MayoristasListPage() {
                           </td>
                           <td className="py-3 pr-6 pl-4">
                             <Text variant="mutedXs" className="text-slate-400">
-                              {mayorista.created_at ? new Date(mayorista.created_at).toLocaleDateString("es-PY", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "—"}
+                              {formatFechaCorta(mayorista.created_at)}
                             </Text>
                           </td>
                         </tr>
@@ -269,11 +286,11 @@ export default function MayoristasListPage() {
                   </tbody>
                 </table>
 
-                {count > pageSize && (
+                {count > PAGE_SIZE && (
                   <div className="border-t border-slate-100 px-6 py-3">
                     <Pagination
                       count={count}
-                      pageSize={pageSize}
+                      pageSize={PAGE_SIZE}
                       currentPage={filters.page}
                       onPageChange={(p) => setFilter("page", p)}
                     />

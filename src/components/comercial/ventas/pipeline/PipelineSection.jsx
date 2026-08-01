@@ -9,6 +9,7 @@ const ETAPA_BADGE_MAP = {
   nueva: { variant: "info", label: "Nueva" },
   contactada: { variant: "warning", label: "Contactada" },
   negociacion: { variant: "purple", label: "Negociación" },
+  pendiente_cobro: { variant: "warning", label: "Pend. Cobro" },
   ganada: { variant: "success", label: "Ganada" },
   perdida: { variant: "danger", label: "Perdida" },
 };
@@ -17,6 +18,7 @@ const TRANSICIONES = {
   nueva: { avance: "contactada", perdida: true },
   contactada: { avance: "negociacion", perdida: true },
   negociacion: { avance: null, perdida: true },
+  pendiente_cobro: { avance: null, perdida: true },
   ganada: { avance: null, perdida: false },
   perdida: { avance: null, perdida: false },
 };

@@ -41,6 +41,7 @@ const ETAPAS = [
   { value: "nueva", label: "Nueva" },
   { value: "contactada", label: "Contactada" },
   { value: "negociacion", label: "Negociación" },
+  { value: "pendiente_cobro", label: "Pendiente de Cobro" },
   { value: "ganada", label: "Ganada" },
   { value: "perdida", label: "Perdida" },
 ];
@@ -49,6 +50,7 @@ const ETAPA_BADGE_MAP = {
   nueva: { variant: "info", label: "Nueva" },
   contactada: { variant: "warning", label: "Contactada" },
   negociacion: { variant: "purple", label: "Negociación" },
+  pendiente_cobro: { variant: "warning", label: "Pend. Cobro" },
   ganada: { variant: "success", label: "Ganada" },
   perdida: { variant: "danger", label: "Perdida" },
 };
@@ -277,10 +279,10 @@ function OportunidadesContent() {
   // Mover oportunidad en kanban (optimistic update + API)
   const handleMoveOportunidad = useCallback(
     async (id, nuevaEtapa) => {
-      // 1. Bloquear arrastre directo a "ganada"
-      if (nuevaEtapa === "ganada") {
+      // 1. Bloquear arrastre directo a "ganada" o "pendiente_cobro"
+      if (nuevaEtapa === "ganada" || nuevaEtapa === "pendiente_cobro") {
         showToast(
-          "Para marcar la oportunidad como Ganada, debés hacerlo desde el detalle gestionando sus presupuestos.",
+          "Esta etapa se alcanza automáticamente al gestionar presupuestos y cobros.",
           "info"
         );
         return;

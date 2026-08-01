@@ -51,6 +51,16 @@ const KANBAN_COLUMNS = [
     headerBg: "bg-purple-50/80",
   },
   {
+    id: "pendiente_cobro",
+    label: "Pendiente de Cobro",
+    color: "bg-orange-500",
+    lightBg: "bg-orange-50",
+    textColor: "text-orange-700",
+    borderColor: "border-orange-300",
+    ringColor: "ring-orange-300",
+    headerBg: "bg-orange-50/80",
+  },
+  {
     id: "ganada",
     label: "Ganada",
     color: "bg-green-500",

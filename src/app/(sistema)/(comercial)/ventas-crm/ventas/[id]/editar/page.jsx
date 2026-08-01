@@ -67,6 +67,7 @@ export default function EditarVentaPage() {
           lote: a.lote,
           lote_codigo: a.lote_codigo || "",
           vencimiento: a.vencimiento || null,
+          deposito_nombre: a.deposito_nombre || "",
           cantidad: a.cantidad,
         }));
         return {
@@ -139,6 +140,7 @@ export default function EditarVentaPage() {
         origen: ventaData.origen,
         moneda_negociacion: ventaData.moneda_negociacion,
         cliente: ventaData.cliente?.id || null,
+        deposito_sucursal: ventaData.deposito_sucursal || null,
         requiere_factura_legal: ventaData.requiere_factura_legal ?? true,
         lineas: lineas.map((l) => ({
           variante: l.variante_id,

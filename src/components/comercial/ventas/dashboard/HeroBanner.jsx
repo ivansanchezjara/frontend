@@ -1,12 +1,12 @@
 "use client";
 import Link from "next/link";
-import { Plus, AlertCircle, Target } from "lucide-react";
+import { Plus, AlertCircle, Target, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Text } from "@/components/ui";
 
 /**
  * Banner hero del dashboard de ventas con saludo, métricas del día,
- * alertas urgentes, CTA principal y barra de progreso mensual.
+ * tipo de cambio vigente, alertas urgentes, CTA principal y barra de progreso mensual.
  */
 export default function HeroBanner({
   nombre,
@@ -14,6 +14,8 @@ export default function HeroBanner({
   montoTotalUsd = 0,
   montoMesUsd = 0,
   alertas = [],
+  tipoCambioPyg,
+  tipoCambioBrl,
 }) {
   const saludo = getSaludo();
 
@@ -34,6 +36,25 @@ export default function HeroBanner({
               "Aún no registraste ventas hoy"
             )}
           </Text>
+          {(tipoCambioPyg || tipoCambioBrl) && (
+            <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
+              <ArrowLeftRight className="h-3 w-3 text-slate-500" />
+              <span>
+                Tipo de cambio hoy:
+                {tipoCambioPyg && (
+                  <span className="text-indigo-300 font-semibold ml-1">
+                    ₲ {Number(tipoCambioPyg).toLocaleString("es-PY")}
+                  </span>
+                )}
+                {tipoCambioPyg && tipoCambioBrl && <span className="text-slate-500 mx-1">·</span>}
+                {tipoCambioBrl && (
+                  <span className="text-indigo-300 font-semibold">
+                    R$ {Number(tipoCambioBrl).toLocaleString("es-PY", { minimumFractionDigits: 2 })}
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
           {alertas.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-1">
               {alertas.map((a, i) => (

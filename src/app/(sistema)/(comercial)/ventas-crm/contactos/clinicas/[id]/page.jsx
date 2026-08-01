@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
-  SearchX, ShoppingBag, Plus, Tag, Save, Loader2, MapPin, X, Search, UserPlus,
+  SearchX, ShoppingBag, Plus, Save, Loader2, MapPin, X, Search, UserPlus,
 } from "lucide-react";
 
 import InteraccionTimeline from "@/components/comercial/ventas/clientes/InteraccionTimeline";
@@ -19,7 +19,7 @@ import { useKeySave } from "@/hooks/useKeySave";
 import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
 import { DEPARTAMENTOS, CIUDADES_POR_DEPARTAMENTO } from "@/config/paraguay";
-import { TIER_LABELS, TIER_OPTIONS } from "@/config/personas";
+import { TIER_LABELS } from "@/config/personas";
 import {
   getClinica, updateClinica, getInteracciones, getVentas,
   createVinculoLaboral, deleteVinculoLaboral, updateVinculoLaboral, getPersonas,
@@ -44,65 +44,6 @@ function formatMonto(monto, moneda = "USD") {
   if (monto == null) return "—";
   if (moneda === "PYG") return `₲ ${Number(monto).toLocaleString("es-PY")}`;
   return `$ ${Number(monto).toFixed(2)}`;
-}
-
-// ─── Componente: Tier de Precio ─────────────────────────────────
-
-function TierPrecioSection({ clinicaId, tierActual, onUpdated }) {
-  const [tier, setTier] = useState(tierActual || "publico");
-  const [saving, setSaving] = useState(false);
-  const { alert: showAlert } = useConfirm();
-
-  const handleSelect = async (nuevoTier) => {
-    if (nuevoTier === tier || saving) return;
-    setSaving(true);
-    const prevTier = tier;
-    setTier(nuevoTier);
-    try {
-      const updated = await updateClinica(clinicaId, { tier_precio: nuevoTier });
-      if (onUpdated) onUpdated(updated);
-    } catch {
-      setTier(prevTier);
-      showAlert("No se pudo actualizar el tier de precio.", "Error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="p-6 space-y-3">
-      <div className="inline-flex items-center bg-slate-100 rounded-xl p-1 gap-0.5 flex-wrap">
-        {TIER_OPTIONS.map((opt) => {
-          const isActive = tier === opt.value;
-          return (
-            <button
-              key={opt.value}
-              onClick={() => handleSelect(opt.value)}
-              disabled={saving}
-              className={cn(
-                "px-4 py-2 rounded-lg text-xs font-bold transition-all duration-150 focus:outline-none whitespace-nowrap",
-                "disabled:opacity-60 disabled:cursor-not-allowed",
-                isActive
-                  ? "bg-white text-slate-800 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
-              )}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
-      <div className="flex items-center gap-2">
-        <span className={cn(
-          "w-1.5 h-1.5 rounded-full transition-all",
-          saving ? "bg-amber-400 animate-pulse" : "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"
-        )} />
-        <Text variant="label" className="text-slate-400 text-[11px]">
-          {saving ? "Guardando..." : `Tier activo: ${TIER_LABELS[tier] || tier}`}
-        </Text>
-      </div>
-    </div>
-  );
 }
 
 // ─── Componente: Historial de Compras ───────────────────────────
@@ -767,19 +708,6 @@ export default function PerfilClinicaPage() {
           </Section>
 
           {/* Tier de Precio */}
-          <Section
-            title="Tier de Precio"
-            subtitle="Define qué lista de precios se aplica por defecto."
-            action={
-              <div className="flex items-center gap-1.5 text-slate-400">
-                <Tag size={14} />
-                <Text variant="bodyXs">{TIER_LABELS[clinica.tier_precio] || clinica.tier_precio}</Text>
-              </div>
-            }
-          >
-            <TierPrecioSection clinicaId={id} tierActual={clinica.tier_precio} onUpdated={setClinica} />
-          </Section>
-
           {/* Historial de Compras */}
           <Section
             title="Historial de Compras"

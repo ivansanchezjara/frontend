@@ -8,7 +8,7 @@ import { Button, Badge, Text, Input, PhoneInput, validatePhone, buildPhoneValue,
 import { useApi } from "@/hooks/useApi";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBuscarProductos } from "@/hooks/useBuscarProductos";
-import { getClientes, createCliente } from "@/services/apis/ventas";
+import { getCuentas, createCliente } from "@/services/apis/ventas";
 import { getDepositos } from "@/services/apis/movimientos";
 import { getLotesPorVarianteId } from "@/services/apis/inventario";
 import { cn } from "@/lib/utils";
@@ -67,7 +67,7 @@ function formatStockLabel(stock) {
 
 // ─── Columnas de la tabla de resultados ─────────────────────────
 
-function buildProductColumns({ calcularPrecio, moneda, tipoCambio, carritoIds, agregarProducto, setFichaVarianteId }) {
+function buildProductColumns({ calcularPrecio, moneda, tipoCambio, carritoIds, agregarProducto, setFichaVarianteId, tier }) {
   return [
     {
       key: 'codigo',
@@ -141,10 +141,10 @@ function buildProductColumns({ calcularPrecio, moneda, tipoCambio, carritoIds, a
     },
     {
       key: 'precio',
-      label: 'Precio',
+      label: `Precio · ${TIER_LABELS[tier] || "Público"}`,
       resizable: true,
-      width: 100,
-      minWidth: 80,
+      width: 120,
+      minWidth: 90,
       render: (_, row) => {
         const { precioMoneda, tieneOferta, precioTierUsd } = calcularPrecio(row);
         return (
@@ -221,7 +221,7 @@ export default function VentaBuilderSplit({
   const [showClientes, setShowClientes] = useState(false);
   const [showNuevoClienteModal, setShowNuevoClienteModal] = useState(false);
   const clienteRef = useRef(null);
-  const { execute: fetchClientes, loading: buscandoClientes } = useApi(getClientes);
+  const { execute: fetchClientes, loading: buscandoClientes } = useApi(getCuentas);
   const { showToast } = useToast();
 
   // ─── Tipo de cambio ─────────────────────────────────────────
@@ -235,12 +235,15 @@ export default function VentaBuilderSplit({
     fetchDepositos().then((data) => {
       const items = Array.isArray(data) ? data : (data?.results || []);
       setDepositos(items);
-      // Auto-seleccionar si solo hay un depósito
-      if (items.length === 1 && !ventaData.deposito_sucursal) {
-        onVentaChange({ ...ventaData, deposito_sucursal: items[0].id });
-      }
     }).catch(() => { });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-seleccionar depósito si solo hay uno y no está seteado
+  useEffect(() => {
+    if (depositos.length === 1 && !ventaData.deposito_sucursal) {
+      onVentaChange({ ...ventaData, deposito_sucursal: depositos[0].id });
+    }
+  }, [depositos]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tier = ventaData.cliente?.tier_precio || "publico";
   const moneda = ventaData.moneda_negociacion || "USD";
@@ -453,7 +456,7 @@ export default function VentaBuilderSplit({
     onLineasChange(lineas.filter((_, i) => i !== index));
   };
 
-  // ─── Recalcular al cambiar moneda/TC ────────────────────────
+  // ─── Recalcular al cambiar moneda/tipo de cambio ────────────────────────
   useEffect(() => {
     if (lineas.length === 0) return;
     const nuevas = lineas.map((l) => {
@@ -604,19 +607,19 @@ export default function VentaBuilderSplit({
             <div className="flex items-center gap-1.5 shrink-0">
               <Warehouse size={14} className="text-slate-400" />
               <select
-                value={ventaData.deposito_sucursal || ""}
+                value={ventaData.deposito_sucursal ? String(ventaData.deposito_sucursal) : ""}
                 onChange={(e) => onVentaChange({ ...ventaData, deposito_sucursal: e.target.value ? Number(e.target.value) : null })}
                 className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-all"
               >
                 <option value="">Depósito...</option>
                 {depositos.map((dep) => (
-                  <option key={dep.id} value={dep.id}>{dep.nombre}</option>
+                  <option key={dep.id} value={String(dep.id)}>{dep.nombre}</option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* TC widget */}
+          {/* Tipo de cambio widget */}
           {moneda !== "USD" && (
             <div className="mt-2">
               <TipoCambioWidget moneda={moneda} onTipoCambio={setTipoCambio} />
@@ -648,7 +651,7 @@ export default function VentaBuilderSplit({
         <div className="flex-1 overflow-y-auto px-3 py-2">
           {resultados.length > 0 ? (
             <DataTable
-              columns={buildProductColumns({ calcularPrecio, moneda, tipoCambio, carritoIds, agregarProducto, setFichaVarianteId })}
+              columns={buildProductColumns({ calcularPrecio, moneda, tipoCambio, carritoIds, agregarProducto, setFichaVarianteId, tier })}
               data={resultados}
               rowKey="id"
               onRowClick={(row) => agregarProducto(row)}
@@ -778,11 +781,19 @@ export default function VentaBuilderSplit({
                               className="flex items-center gap-1 text-[10px] text-emerald-600 hover:text-emerald-700 font-semibold cursor-pointer"
                             >
                               <Layers size={10} />
-                              {linea.asignaciones.map((a) => (
-                                <span key={a.lote} className="bg-emerald-50 border border-emerald-200 rounded px-1 py-px">
-                                  {a.lote_codigo} ({a.cantidad})
-                                </span>
-                              ))}
+                              {/* Agrupar por depósito para mostrar de dónde sale */}
+                              {(() => {
+                                const porDeposito = {};
+                                linea.asignaciones.forEach((a) => {
+                                  const dep = a.deposito_nombre || "Sin depósito";
+                                  porDeposito[dep] = (porDeposito[dep] || 0) + a.cantidad;
+                                });
+                                return Object.entries(porDeposito).map(([dep, cant]) => (
+                                  <span key={dep} className="bg-emerald-50 border border-emerald-200 rounded px-1 py-px">
+                                    {dep} ({cant})
+                                  </span>
+                                ));
+                              })()}
                             </button>
                           ) : (
                             <button
@@ -830,13 +841,16 @@ export default function VentaBuilderSplit({
             </div>
           </div>
 
-          {/* Tier info */}
-          {tier !== "publico" && (
-            <div className="flex items-center gap-1.5 text-[10px] text-indigo-600 bg-indigo-50 px-2.5 py-1.5 rounded-lg">
-              <Tag size={10} />
-              <span className="font-semibold">Precio {TIER_LABELS[tier]}</span>
-            </div>
-          )}
+          {/* Tier info — siempre visible */}
+          <div className={cn(
+            "flex items-center gap-1.5 text-[10px] px-2.5 py-1.5 rounded-lg",
+            tier !== "publico"
+              ? "text-indigo-600 bg-indigo-50"
+              : "text-slate-500 bg-slate-100"
+          )}>
+            <Tag size={10} />
+            <span className="font-semibold">Precio {TIER_LABELS[tier]}</span>
+          </div>
         </div>
       </div>
 

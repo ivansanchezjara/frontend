@@ -6,9 +6,10 @@ const STAGES = [
   { key: "nueva",       label: "Nueva",       description: "Lead identificado" },
   { key: "contactada",  label: "Contactada",  description: "En comunicación"   },
   { key: "negociacion", label: "Negociación", description: "Propuesta enviada" },
+  { key: "pendiente_cobro", label: "Pend. Cobro", description: "Esperando pago" },
 ];
 
-const ORDER = ["nueva", "contactada", "negociacion"];
+const ORDER = ["nueva", "contactada", "negociacion", "pendiente_cobro"];
 
 function getStageState(stageKey, etapa) {
   if (etapa === "perdida") return "inactive";
@@ -100,7 +101,7 @@ function StepNode({ stage, index, state, isLast, onClick, disabled }) {
 export default function OportunidadChevronPath({ etapa, onTransicion, saving }) {
   const cerrada      = etapa === "ganada" || etapa === "perdida";
   const currentIndex = ORDER.indexOf(etapa);
-  const isLastStage  = etapa === "negociacion";
+  const isLastStage  = etapa === "pendiente_cobro";
 
   return (
     <div className="w-full bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -152,7 +153,11 @@ export default function OportunidadChevronPath({ etapa, onTransicion, saving }) 
         <div className="flex items-center justify-between gap-3 px-5 py-3 bg-slate-50/70 border-t border-slate-100">
           {isLastStage ? (
             <p className="text-[11px] text-slate-400 font-medium leading-tight">
-              Aceptá un presupuesto en la sección de abajo para marcar como Ganada.
+              La oportunidad se marcará como Ganada automáticamente cuando se cobre la venta.
+            </p>
+          ) : etapa === "negociacion" ? (
+            <p className="text-[11px] text-slate-400 font-medium leading-tight">
+              Aceptá un presupuesto para avanzar a Pendiente de Cobro.
             </p>
           ) : (
             <button

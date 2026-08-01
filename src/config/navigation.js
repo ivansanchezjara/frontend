@@ -101,10 +101,10 @@ export const erpModules = [
   // --- CATEGORÍA: LOGÍSTICA Y SERVICIOS ---
   {
     category: "Logística y Servicios",
-    href: "/inventario/stock",
+    href: "/inventario",
     icon: "📦",
     title: "Stock y Disponibilidad",
-    desc: "Consulta rápida de existencias, vencimientos y ubicaciones.",
+    desc: "Gestión de inventario, stock, entregas y control de lotes.",
     color: "blue",
     estado: "activo",
     roles: ["Admin", "gestorDeDeposito"],

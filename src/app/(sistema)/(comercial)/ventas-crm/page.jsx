@@ -12,7 +12,7 @@ import {
 import { useApi } from "@/hooks/useApi";
 import {
   getVentas, getOportunidades, getPresupuestos,
-  getInteracciones,
+  getInteracciones, getTipoCambioVigente,
 } from "@/services/apis/ventas";
 import { getUser } from "@/services/apis/auth";
 
@@ -78,6 +78,8 @@ export default function VentasCrmPage() {
   const { data: oportGanadas, execute: fetchOportGanadas } = useApi(getOportunidades);
   const { data: oportPerdidas, execute: fetchOportPerdidas } = useApi(getOportunidades);
   const { data: actividadesData, execute: fetchActividades } = useApi(getInteracciones);
+  const { data: tipoCambioPyg, execute: fetchTcPyg } = useApi(getTipoCambioVigente, { handleError: false });
+  const { data: tipoCambioBrl, execute: fetchTcBrl } = useApi(getTipoCambioVigente, { handleError: false });
 
   useEffect(() => {
     const hoy = getFechaHoy();
@@ -94,6 +96,8 @@ export default function VentasCrmPage() {
     fetchOportPerdidas({ etapa: "perdida", page_size: 1 });
     fetchActividades({ ordering: "proxima_accion_fecha", page_size: 6 })
       .finally(() => setHasLoadedOnce(true));
+    fetchTcPyg("USD/PYG").catch(() => {});
+    fetchTcBrl("USD/BRL").catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Datos calculados ───────────────────────────────────────
@@ -158,6 +162,8 @@ export default function VentasCrmPage() {
             montoTotalUsd={montoTotalUsd}
             montoMesUsd={montoMesUsd}
             alertas={alertas}
+            tipoCambioPyg={tipoCambioPyg?.valor}
+            tipoCambioBrl={tipoCambioBrl?.valor}
           />
 
           {/* Accesos rápidos (mobile) */}

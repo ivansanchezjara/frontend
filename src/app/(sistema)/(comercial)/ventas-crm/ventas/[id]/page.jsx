@@ -17,21 +17,25 @@ import {
 import { PageHeader, LoadingScreen, Badge, Button, Section } from '@/components/ui';
 import { Text } from '@/components/ui/basics/Typography';
 import { useApi } from '@/hooks/useApi';
-import { getVenta, confirmarVenta, eliminarVenta } from '@/services/apis/ventas';
+import { getVenta, confirmarVenta, eliminarVenta, updateVenta } from '@/services/apis/ventas';
 import { useToast } from '@/components/ui/feedback/ToastContext';
 import { useConfirm } from '@/components/ui/feedback/ConfirmContext';
+import ConfirmarVentaModal from '@/components/comercial/ventas/ConfirmarVentaModal';
 
 // ─── Configuración de estados ───────────────────────────────────
 
 const ESTADO_BADGE_MAP = {
     borrador: { variant: 'default', label: 'Borrador' },
-    confirmado: { variant: 'success', label: 'Confirmado' },
-    rechazado: { variant: 'danger', label: 'Rechazado' },
+    confirmado: { variant: 'warning', label: 'Pendiente de cobro' },
+    cobrado: { variant: 'success', label: 'Cobrado' },
+    entregado: { variant: 'info', label: 'Entregado' },
+    cancelado: { variant: 'danger', label: 'Cancelado' },
 };
 
 const ORIGEN_BADGE_MAP = {
     sucursal: { variant: 'primary', label: 'Sucursal' },
     campo: { variant: 'success', label: 'Campo' },
+    ecommerce: { variant: 'info', label: 'E-commerce' },
 };
 
 const MONEDA_LABELS = {
@@ -70,9 +74,12 @@ function formatMonto(monto, moneda) {
     if (monto == null) return '—';
     const num = Number(monto);
     if (moneda === 'PYG') {
-        return num.toLocaleString('es-PY', { maximumFractionDigits: 0 });
+        return `₲ ${num.toLocaleString('es-PY', { maximumFractionDigits: 0 })}`;
     }
-    return num.toLocaleString('es-PY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (moneda === 'BRL') {
+        return `R$ ${num.toLocaleString('es-PY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    return `US$ ${num.toLocaleString('es-PY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // ─── Página de Detalle de Venta ─────────────────────────────────
@@ -96,6 +103,7 @@ export default function VentaDetallePage() {
 
     const [hasLoaded, setHasLoaded] = useState(false);
     const [errorConfirmar, setErrorConfirmar] = useState(null);
+    const [showConfirmarModal, setShowConfirmarModal] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -105,18 +113,21 @@ export default function VentaDetallePage() {
 
     // ─── Acción Confirmar ───────────────────────────────────────
 
-    const handleConfirmar = async () => {
-        const ok = await confirm(
-            '¿Estás seguro de confirmar esta venta? Se descontará stock y se generará el comprobante interno. Esta acción no se puede deshacer.',
-            'Confirmar Venta',
-            { confirmText: 'Confirmar', type: 'success' }
-        );
-        if (!ok) return;
-
+    const handleConfirmar = async (datosConfirmacion) => {
         setErrorConfirmar(null);
 
         try {
+            // 1. Actualizar la venta con metodo_entrega, metodo_cobro, etc.
+            await updateVenta(id, {
+                metodo_entrega: datosConfirmacion.metodo_entrega,
+                metodo_cobro: datosConfirmacion.metodo_cobro,
+                direccion_entrega: datosConfirmacion.direccion_entrega || "",
+                observaciones_entrega: datosConfirmacion.observaciones_entrega || "",
+            });
+
+            // 2. Confirmar la venta
             await ejecutarConfirmar(id);
+            setShowConfirmarModal(false);
             showToast('Venta confirmada correctamente', 'success');
             fetchVenta(id);
         } catch (err) {
@@ -146,6 +157,7 @@ export default function VentaDetallePage() {
                     mensaje: typeof mensaje === 'string' ? mensaje : 'Error al confirmar la venta.',
                 });
             }
+            setShowConfirmarModal(false);
         }
     };
 
@@ -193,9 +205,23 @@ export default function VentaDetallePage() {
     const estadoBadge = ESTADO_BADGE_MAP[estado] || { variant: 'default', label: estado };
     const esBorrador = estado === 'borrador';
     const lineas = venta.lineas || [];
-    const pagos = venta.pagos || [];
     const comprobante = venta.comprobante || null;
     const factura = venta.factura_legal || null;
+
+    // Pagos: usar PagoVenta si existen, sino fallback a detalle_pagos_cobro del comprobante
+    const pagos = (venta.pagos && venta.pagos.length > 0)
+        ? venta.pagos
+        : (venta.detalle_pagos_cobro || []).map((p, idx) => ({
+            id: idx,
+            metodo: p.metodo,
+            monto: p.monto,
+            moneda: p.moneda,
+            referencia: p.referencia || '',
+        }));
+
+    // Determinar si la venta tiene cuotas pendientes
+    const tieneCuotas = pagos.some((p) => p.metodo === 'cuotas');
+    const estaCobrada = ['cobrado', 'entregado'].includes(estado);
 
     return (
         <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
@@ -234,7 +260,7 @@ export default function VentaDetallePage() {
                                 variant="success"
                                 size="md"
                                 icon={CheckCircle2}
-                                onClick={handleConfirmar}
+                                onClick={() => setShowConfirmarModal(true)}
                                 disabled={confirmando}
                                 className="rounded-xl font-bold text-xs shadow-lg shadow-emerald-100"
                             >
@@ -276,7 +302,7 @@ export default function VentaDetallePage() {
                                         </div>
                                     )}
 
-                                    {/* Detalle de TC no disponible */}
+                                    {/* Detalle de tipo de cambio no disponible */}
                                     {errorConfirmar.tipo === 'tipo_cambio_no_disponible' && errorConfirmar.par && (
                                         <p className="text-xs text-red-600">
                                             Par de monedas sin cotización: <span className="font-mono font-bold">{errorConfirmar.par}</span>
@@ -333,7 +359,7 @@ export default function VentaDetallePage() {
                                 <InfoItem
                                     icon={ShoppingCart}
                                     label="Total USD"
-                                    value={`$${formatMonto(venta.total_usd, 'USD')}`}
+                                    value={formatMonto(venta.total_usd, 'USD')}
                                 />
                                 {venta.moneda_negociacion !== 'USD' && (
                                     <InfoItem
@@ -345,7 +371,7 @@ export default function VentaDetallePage() {
                                 {venta.tipo_cambio_usado && (
                                     <InfoItem
                                         icon={FileText}
-                                        label={`TC Usado (${venta.tipo_cambio_par || ''})`}
+                                        label={`Tipo de Cambio (${venta.tipo_cambio_par || ''})`}
                                         value={formatMonto(venta.tipo_cambio_usado, 'USD')}
                                     />
                                 )}
@@ -386,78 +412,119 @@ export default function VentaDetallePage() {
                                             <th className="py-3 pl-6 pr-4 text-[11px] font-black uppercase tracking-widest">#</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Variante</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Cantidad</th>
-                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-right">Precio Unit. USD</th>
-                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-right">Subtotal USD</th>
+                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-right">
+                                                Precio Unit. {venta.moneda_negociacion}
+                                            </th>
+                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-right">
+                                                Subtotal {venta.moneda_negociacion}
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {lineas.map((linea, idx) => (
-                                            <tr
-                                                key={linea.id || idx}
-                                                className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors"
-                                            >
-                                                <td className="py-3 pl-6 pr-4 text-xs text-slate-400 font-mono">
-                                                    {idx + 1}
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    <div>
-                                                        <span className="text-sm font-semibold text-slate-700">
-                                                            {linea.producto_nombre || linea.variante_nombre || `Variante #${linea.variante}`}
-                                                        </span>
-                                                        {linea.producto_nombre && linea.variante_nombre && (
-                                                            <div className="text-xs text-slate-400">{linea.variante_nombre}</div>
-                                                        )}
-                                                        {linea.variante_codigo && (
-                                                            <div className="text-xs text-slate-400 font-mono">{linea.variante_codigo}</div>
-                                                        )}
-                                                        {linea.asignaciones && linea.asignaciones.length > 0 && (
-                                                            <div className="flex flex-wrap gap-1 mt-1">
-                                                                {linea.asignaciones.map((a) => (
-                                                                    <span key={a.id || a.lote} className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-700 rounded px-1.5 py-0.5">
-                                                                        <span className="font-mono font-semibold">{a.lote_codigo}</span>
-                                                                        <span>×{a.cantidad}</span>
-                                                                        {a.vencimiento && (
-                                                                            <span className="text-emerald-500">
-                                                                                · {new Date(a.vencimiento + 'T00:00:00').toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                                        {lineas.map((linea, idx) => {
+                                            // Mostrar en moneda de negociación si está disponible
+                                            const precioUnit = venta.moneda_negociacion !== 'USD' && linea.precio_unitario_moneda
+                                                ? linea.precio_unitario_moneda
+                                                : linea.precio_unitario_usd;
+                                            const subtotal = venta.moneda_negociacion !== 'USD' && linea.precio_unitario_moneda
+                                                ? Number(linea.precio_unitario_moneda) * linea.cantidad
+                                                : linea.subtotal_usd;
+                                            const monedaLinea = venta.moneda_negociacion !== 'USD' && linea.precio_unitario_moneda
+                                                ? venta.moneda_negociacion
+                                                : 'USD';
+
+                                            return (
+                                                <tr
+                                                    key={linea.id || idx}
+                                                    className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors"
+                                                >
+                                                    <td className="py-3 pl-6 pr-4 text-xs text-slate-400 font-mono">
+                                                        {idx + 1}
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <div>
+                                                            <span className="text-sm font-semibold text-slate-700">
+                                                                {linea.producto_nombre || linea.variante_nombre || `Variante #${linea.variante}`}
+                                                            </span>
+                                                            {linea.producto_nombre && linea.variante_nombre && (
+                                                                <div className="text-xs text-slate-400">{linea.variante_nombre}</div>
+                                                            )}
+                                                            {linea.variante_codigo && (
+                                                                <div className="text-xs text-slate-400 font-mono">{linea.variante_codigo}</div>
+                                                            )}
+                                                            {linea.asignaciones && linea.asignaciones.length > 0 && (
+                                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                                    {(() => {
+                                                                        const porDeposito = {};
+                                                                        linea.asignaciones.forEach((a) => {
+                                                                            const dep = a.deposito_nombre || 'Sin depósito';
+                                                                            porDeposito[dep] = (porDeposito[dep] || 0) + a.cantidad;
+                                                                        });
+                                                                        return Object.entries(porDeposito).map(([dep, cant]) => (
+                                                                            <span key={dep} className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-700 rounded px-1.5 py-0.5">
+                                                                                <span className="font-semibold">{dep}</span>
+                                                                                <span>×{cant}</span>
                                                                             </span>
-                                                                        )}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-4 text-center">
-                                                    <span className="text-sm font-semibold text-slate-700">
-                                                        {linea.cantidad}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-4 text-right">
-                                                    <span className="text-sm text-slate-600">
-                                                        ${formatMonto(linea.precio_unitario_usd, 'USD')}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-4 text-right">
-                                                    <span className="text-sm font-semibold text-slate-800">
-                                                        ${formatMonto(linea.subtotal_usd, 'USD')}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                                        ));
+                                                                    })()}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-center">
+                                                        <span className="text-sm font-semibold text-slate-700">
+                                                            {linea.cantidad}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right">
+                                                        <span className="text-sm text-slate-600">
+                                                            {formatMonto(precioUnit, monedaLinea)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right">
+                                                        <span className="text-sm font-semibold text-slate-800">
+                                                            {formatMonto(subtotal, monedaLinea)}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                     <tfoot>
                                         <tr className="border-t-2 border-slate-200 bg-slate-50">
                                             <td colSpan={4} className="py-3 pl-6 pr-4 text-right">
                                                 <span className="text-xs font-black uppercase text-slate-500">
-                                                    Total USD
+                                                    Total {venta.moneda_negociacion}
                                                 </span>
                                             </td>
                                             <td className="py-3 px-4 text-right">
                                                 <span className="text-sm font-bold text-slate-900">
-                                                    ${formatMonto(venta.total_usd, 'USD')}
+                                                    {formatMonto(
+                                                        venta.moneda_negociacion !== 'USD' && Number(venta.total_moneda_negociacion)
+                                                            ? venta.total_moneda_negociacion
+                                                            : venta.total_usd,
+                                                        venta.moneda_negociacion !== 'USD' && Number(venta.total_moneda_negociacion)
+                                                            ? venta.moneda_negociacion
+                                                            : 'USD'
+                                                    )}
                                                 </span>
                                             </td>
                                         </tr>
+                                        {/* Mostrar equivalente USD si la moneda es otra */}
+                                        {venta.moneda_negociacion !== 'USD' && (
+                                            <tr className="bg-slate-50/50">
+                                                <td colSpan={4} className="py-2 pl-6 pr-4 text-right">
+                                                    <span className="text-[10px] font-bold uppercase text-slate-400">
+                                                        Equivalente USD
+                                                    </span>
+                                                </td>
+                                                <td className="py-2 px-4 text-right">
+                                                    <span className="text-xs text-slate-500">
+                                                        {formatMonto(venta.total_usd, 'USD')}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        )}
                                     </tfoot>
                                 </table>
                             </div>
@@ -467,12 +534,34 @@ export default function VentaDetallePage() {
                     {/* Pagos */}
                     <Section
                         title="Pagos"
-                        subtitle={`${pagos.length} ${pagos.length === 1 ? 'pago registrado' : 'pagos registrados'}.`}
+                        subtitle={
+                            pagos.length === 0
+                                ? estado === 'borrador'
+                                    ? 'Los pagos se registran al cobrar la venta.'
+                                    : estado === 'confirmado'
+                                        ? 'Pendiente de cobro — aún no se registraron pagos.'
+                                        : 'No hay pagos registrados.'
+                                : `${pagos.length} ${pagos.length === 1 ? 'pago registrado' : 'pagos registrados'}.`
+                        }
+                        action={
+                            tieneCuotas ? (
+                                <Badge variant="warning">Pago a Cuotas</Badge>
+                            ) : estaCobrada && pagos.length > 0 ? (
+                                <Badge variant="success">Pagado</Badge>
+                            ) : estado === 'confirmado' ? (
+                                <Badge variant="warning">Pendiente de cobro</Badge>
+                            ) : null
+                        }
                     >
                         {pagos.length === 0 ? (
                             <div className="p-6 text-center">
+                                <CreditCard className="w-8 h-8 text-slate-200 mx-auto mb-2" />
                                 <Text variant="bodySm" className="text-slate-400">
-                                    No hay pagos registrados.
+                                    {estado === 'borrador'
+                                        ? 'Los pagos se registran cuando la venta pasa a cobro.'
+                                        : estado === 'confirmado'
+                                            ? 'Esta venta está en cola de cobro. El cajero registrará los pagos.'
+                                            : 'No hay pagos registrados para esta venta.'}
                                 </Text>
                             </div>
                         ) : (
@@ -484,7 +573,7 @@ export default function VentaDetallePage() {
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Método</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Moneda</th>
                                             <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-right">Monto</th>
-                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Referencia</th>
+                                            <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest">Nro. Referencia</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -497,13 +586,18 @@ export default function VentaDetallePage() {
                                                     {idx + 1}
                                                 </td>
                                                 <td className="py-3 px-4">
-                                                    <span className="text-sm font-semibold text-slate-700">
-                                                        {METODO_PAGO_LABELS[pago.metodo] || pago.metodo}
-                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-semibold text-slate-700">
+                                                            {pago.metodo_display || METODO_PAGO_LABELS[pago.metodo] || pago.metodo}
+                                                        </span>
+                                                        {pago.metodo === 'cuotas' && (
+                                                            <Badge variant="warning" className="text-[9px]">Cuotas</Badge>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
                                                     <span className="text-xs font-mono text-slate-500">
-                                                        {pago.moneda}
+                                                        {pago.moneda_display || pago.moneda}
                                                     </span>
                                                 </td>
                                                 <td className="py-3 px-4 text-right">
@@ -519,6 +613,48 @@ export default function VentaDetallePage() {
                                             </tr>
                                         ))}
                                     </tbody>
+                                    <tfoot>
+                                        <tr className="border-t-2 border-slate-200 bg-slate-50">
+                                            <td colSpan={3} className="py-3 pl-6 pr-4 text-right">
+                                                <span className="text-xs font-black uppercase text-slate-500">
+                                                    Total pagado
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-right">
+                                                <span className="text-sm font-bold text-emerald-700">
+                                                    {formatMonto(
+                                                        pagos.reduce((sum, p) => sum + Number(p.monto), 0),
+                                                        pagos[0]?.moneda || venta.moneda_negociacion
+                                                    )}
+                                                </span>
+                                            </td>
+                                            <td></td>
+                                        </tr>
+                                        {(() => {
+                                            const totalPagado = pagos.reduce((sum, p) => sum + Number(p.monto), 0);
+                                            const totalVenta = Number(venta.total_moneda_negociacion) || Number(venta.total_usd);
+                                            const monedaRef = pagos[0]?.moneda || venta.moneda_negociacion;
+                                            const faltante = totalVenta - totalPagado;
+                                            if (faltante > 0) {
+                                                return (
+                                                    <tr className="bg-amber-50/50">
+                                                        <td colSpan={3} className="py-3 pl-6 pr-4 text-right">
+                                                            <span className="text-xs font-black uppercase text-amber-600">
+                                                                Faltante
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-3 px-4 text-right">
+                                                            <span className="text-sm font-bold text-amber-600">
+                                                                {formatMonto(faltante, monedaRef)}
+                                                            </span>
+                                                        </td>
+                                                        <td></td>
+                                                    </tr>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
+                                    </tfoot>
                                 </table>
                             </div>
                         )}
@@ -551,13 +687,13 @@ export default function VentaDetallePage() {
                                     <InfoItem
                                         icon={CreditCard}
                                         label="Total USD"
-                                        value={`$${formatMonto(comprobante.total_usd, 'USD')}`}
+                                        value={formatMonto(comprobante.total_usd, 'USD')}
                                     />
                                     {Number(comprobante.vuelto) > 0 && (
                                         <InfoItem
                                             icon={CreditCard}
                                             label="Vuelto"
-                                            value={`$${formatMonto(comprobante.vuelto, 'USD')}`}
+                                            value={formatMonto(comprobante.vuelto, 'USD')}
                                         />
                                     )}
                                 </div>
@@ -606,6 +742,15 @@ export default function VentaDetallePage() {
 
                 </div>
             </main>
+
+            {/* Modal de confirmación */}
+            <ConfirmarVentaModal
+                open={showConfirmarModal}
+                onClose={() => setShowConfirmarModal(false)}
+                onConfirmar={handleConfirmar}
+                confirmando={confirmando}
+                cliente={venta.cliente_detalle}
+            />
         </div>
     );
 }

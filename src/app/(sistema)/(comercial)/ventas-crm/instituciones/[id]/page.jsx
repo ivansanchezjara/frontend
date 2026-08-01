@@ -24,7 +24,7 @@ import {
 
 import {
   OfertaForm, VinculoItem, HistorialSection, AgregarVinculoForm,
-  TIPO_INSTITUCION, TIPO_OFERTA, TIPO_DOCENTE, ETAPA_CUENTA, TIER_PRECIO,
+  TIPO_INSTITUCION, TIPO_OFERTA, TIPO_DOCENTE, ETAPA_CUENTA,
   selectClass,
 } from "@/components/comercial/instituciones";
 
@@ -279,17 +279,6 @@ export default function InstitucionDetailPage() {
                   onChange={(e) => setForm((p) => ({ ...p, etapa: e.target.value }))}
                 >
                   {ETAPA_CUENTA.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Tier de Precio">
-                <select
-                  className={selectClass}
-                  value={form.tier_precio}
-                  onChange={(e) => setForm((p) => ({ ...p, tier_precio: e.target.value }))}
-                >
-                  {TIER_PRECIO.map((t) => (
                     <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
                 </select>

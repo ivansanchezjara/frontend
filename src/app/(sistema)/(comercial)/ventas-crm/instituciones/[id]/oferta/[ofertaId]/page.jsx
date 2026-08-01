@@ -27,9 +27,8 @@ import { TIPO_OFERTA, TIPO_DOCENTE, selectClass } from "@/components/comercial/i
 const PAGE_SIZE = 20;
 
 const ESTADO_BADGE = {
-  cursando: { label: "Cursando", className: "bg-blue-50 text-blue-700 border-blue-100" },
-  egresado: { label: "Egresado/a", className: "bg-emerald-50 text-emerald-700 border-emerald-100" },
-  abandonado: { label: "Abandonó", className: "bg-red-50 text-red-600 border-red-100" },
+  vigente: { label: "Vigente", className: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+  finalizada: { label: "Finalizada", className: "bg-slate-50 text-slate-500 border-slate-100" },
 };
 
 // ─── Página ─────────────────────────────────────────────────────
@@ -93,7 +92,7 @@ export default function OfertaDetallePage() {
       });
     }
     if (filtroEstado) {
-      r = r.filter((f) => f.estado === filtroEstado);
+      r = r.filter((f) => filtroEstado === "vigente" ? f.vigente : !f.vigente);
     }
     return r;
   }, [formaciones, busquedaDebounced, filtroEstado]);
@@ -106,9 +105,9 @@ export default function OfertaDetallePage() {
 
   // Stats
   const stats = useMemo(() => {
-    const cursando = formaciones.filter((f) => f.estado === "cursando").length;
-    const egresados = formaciones.filter((f) => f.estado === "egresado").length;
-    return { total: formaciones.length, cursando, egresados };
+    const vigentes = formaciones.filter((f) => f.vigente).length;
+    const finalizadas = formaciones.filter((f) => !f.vigente).length;
+    return { total: formaciones.length, vigentes, finalizadas };
   }, [formaciones]);
 
   // ─── Edición de oferta ──────────────────────────────────────────
@@ -287,16 +286,16 @@ export default function OfertaDetallePage() {
                     <Text variant="mutedXs">Total alumnos</Text>
                   </div>
                   <div className="text-center">
-                    <Text variant="bodySmBold" className="text-xl text-blue-600">
-                      {stats.cursando}
+                    <Text variant="bodySmBold" className="text-xl text-emerald-600">
+                      {stats.vigentes}
                     </Text>
-                    <Text variant="mutedXs">Cursando</Text>
+                    <Text variant="mutedXs">Vigentes</Text>
                   </div>
                   <div className="text-center">
-                    <Text variant="bodySmBold" className="text-xl text-emerald-600">
-                      {stats.egresados}
+                    <Text variant="bodySmBold" className="text-xl text-slate-500">
+                      {stats.finalizadas}
                     </Text>
-                    <Text variant="mutedXs">Egresados</Text>
+                    <Text variant="mutedXs">Finalizadas</Text>
                   </div>
                 </div>
               </>
@@ -376,10 +375,9 @@ export default function OfertaDetallePage() {
                 value={filtroEstado}
                 onChange={(e) => { setFiltroEstado(e.target.value); setPage(1); }}
               >
-                <option value="">Todos los estados</option>
-                <option value="cursando">Cursando</option>
-                <option value="egresado">Egresados</option>
-                <option value="abandonado">Abandonó</option>
+                <option value="">Todos</option>
+                <option value="vigente">Vigentes</option>
+                <option value="finalizada">Finalizadas</option>
               </select>
             </div>
 
@@ -405,7 +403,9 @@ export default function OfertaDetallePage() {
               <>
                 <div className="space-y-2">
                   {formacionesPaginadas.map((f) => {
-                    const estado = ESTADO_BADGE[f.estado] || { label: f.estado, className: "" };
+                    const vigencia = f.vigente
+                      ? ESTADO_BADGE.vigente
+                      : ESTADO_BADGE.finalizada;
                     return (
                       <div
                         key={f.id}
@@ -421,8 +421,8 @@ export default function OfertaDetallePage() {
                               {f.persona_nombre}
                             </Text>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <Badge variant="default" className={cn("text-[10px] py-0 px-1.5", estado.className)}>
-                                {estado.label}
+                              <Badge variant="default" className={cn("text-[10px] py-0 px-1.5", vigencia.className)}>
+                                {vigencia.label}
                               </Badge>
                               {f.anio_ingreso && (
                                 <span className="text-[11px] text-slate-400">

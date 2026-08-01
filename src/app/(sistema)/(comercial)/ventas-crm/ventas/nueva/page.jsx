@@ -37,6 +37,7 @@ export default function NuevaVentaPage() {
         origen: ventaData.origen,
         moneda_negociacion: ventaData.moneda_negociacion,
         cliente: ventaData.cliente?.id || null,
+        deposito_sucursal: ventaData.deposito_sucursal || null,
         lineas: lineas.map((l) => ({
           variante: l.variante_id,
           cantidad: l.cantidad,

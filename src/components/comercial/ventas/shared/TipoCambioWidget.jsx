@@ -16,7 +16,7 @@ const PAR_LABELS = {
  * Se refresca automáticamente cuando cambia la moneda seleccionada.
  *
  * @param {string} moneda - Moneda de negociación seleccionada (USD, PYG, BRL)
- * @param {Function} onTipoCambio - Callback con el TC vigente {par, valor, fecha_vigencia}
+ * @param {Function} onTipoCambio - Callback con el tipo de cambio vigente {par, valor, fecha_vigencia}
  * @param {string} className - Clases CSS adicionales
  */
 export default function TipoCambioWidget({ moneda, onTipoCambio, className }) {
@@ -43,7 +43,7 @@ export default function TipoCambioWidget({ moneda, onTipoCambio, className }) {
     }
   }, [par]);
 
-  // Si la moneda es USD, no se necesita TC
+  // Si la moneda es USD, no se necesita tipo de cambio
   if (!par) return null;
 
   const parInfo = PAR_LABELS[par];
@@ -63,13 +63,13 @@ export default function TipoCambioWidget({ moneda, onTipoCambio, className }) {
         className={cn("shrink-0", loading && "animate-spin")}
       />
       {loading ? (
-        <span className="font-medium">Cargando TC...</span>
+        <span className="font-medium">Cargando tipo de cambio...</span>
       ) : error ? (
-        <span className="font-medium">TC no disponible para {par}</span>
+        <span className="font-medium">Tipo de cambio no disponible para {par}</span>
       ) : tipoCambio ? (
         <span className="font-medium">
           1 {parInfo.from} = {parInfo.symbol}{" "}
-          {Number(tipoCambio.valor).toLocaleString("es-PY")} {parInfo.to}
+          {Number(tipoCambio.valor).toLocaleString("es-PY", { maximumFractionDigits: 2 })} {parInfo.to}
           <span className="text-emerald-500 ml-1.5">
             (vigente: {new Date(tipoCambio.fecha_vigencia).toLocaleDateString("es-PY")})
           </span>

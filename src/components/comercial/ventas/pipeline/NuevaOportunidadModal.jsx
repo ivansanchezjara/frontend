@@ -5,7 +5,7 @@ import { Input, Field, Button, Modal, PhoneInput, validatePhone, buildPhoneValue
 import { useToast } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import { useDebounce } from "@/hooks/useDebounce";
-import { createOportunidad, getClientes, createCliente } from "@/services/apis/ventas";
+import { createOportunidad, getCuentas, createCliente } from "@/services/apis/ventas";
 import { cn } from "@/lib/utils";
 
 const INITIAL_FORM = {
@@ -216,7 +216,7 @@ function ClienteInlinePicker({ onSelect, onCancel }) {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState("buscar"); // "buscar" | "crear"
   const queryDebounced = useDebounce(query, 300);
-  const { data: clientesData, loading, execute: buscarClientes } = useApi(getClientes, {
+  const { data: clientesData, loading, execute: buscarClientes } = useApi(getCuentas, {
     handleError: false,
   });
 
@@ -232,6 +232,9 @@ function ClienteInlinePicker({ onSelect, onCancel }) {
   }, [queryDebounced, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const clientes = clientesData?.results || [];
+
+  const TIPO_LABELS = { persona: "Persona", clinica: "Clínica", mayorista: "Mayorista", institucion: "Institución" };
+  const TIPO_COLORS = { persona: "text-blue-500", clinica: "text-emerald-500", mayorista: "text-purple-500", institucion: "text-amber-500" };
 
   if (mode === "crear") {
     return (
@@ -250,7 +253,7 @@ function ClienteInlinePicker({ onSelect, onCancel }) {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar cliente..."
+          placeholder="Buscar por nombre, RUC o teléfono..."
           icon={Search}
           autoFocus
         />
@@ -266,7 +269,7 @@ function ClienteInlinePicker({ onSelect, onCancel }) {
         {!loading && clientes.length === 0 && (
           <div className="py-5 text-center space-y-2">
             <p className="text-xs text-slate-400">
-              {query ? `Sin resultados para "${query}"` : "No hay clientes aún"}
+              {query ? `Sin resultados para "${query}"` : "No hay contactos aún"}
             </p>
             <button
               type="button"
@@ -274,7 +277,7 @@ function ClienteInlinePicker({ onSelect, onCancel }) {
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 cursor-pointer"
             >
               <UserPlus className="h-3.5 w-3.5" />
-              Crear nuevo cliente
+              Crear nuevo contacto
             </button>
           </div>
         )}
@@ -285,9 +288,16 @@ function ClienteInlinePicker({ onSelect, onCancel }) {
             onClick={() => onSelect(cliente)}
             className="w-full text-left px-3 py-2.5 hover:bg-emerald-50 transition-colors border-b border-slate-50 last:border-0 cursor-pointer"
           >
-            <p className="text-sm font-semibold text-slate-800 truncate">
-              {cliente.razon_social}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-slate-800 truncate flex-1">
+                {cliente.razon_social}
+              </p>
+              {cliente.tipo && (
+                <span className={cn("text-[10px] font-bold uppercase", TIPO_COLORS[cliente.tipo] || "text-slate-400")}>
+                  {TIPO_LABELS[cliente.tipo] || cliente.tipo}
+                </span>
+              )}
+            </div>
             <p className="text-[11px] text-slate-400 truncate">
               {[cliente.telefono, cliente.correo_electronico]
                 .filter(Boolean)
@@ -305,7 +315,7 @@ function ClienteInlinePicker({ onSelect, onCancel }) {
           icon={UserPlus}
           onClick={() => setMode("crear")}
         >
-          Nuevo cliente
+          Nuevo contacto
         </Button>
         <Button variant="ghost" size="sm" onClick={onCancel}>
           Cancelar

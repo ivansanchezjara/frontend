@@ -15,7 +15,7 @@ import {
 } from "@/services/apis/ventas";
 import PresupuestoSummaryCard from "./PresupuestoSummaryCard";
 
-const ETAPAS_CON_PRESUPUESTO = ["negociacion", "ganada", "perdida"];
+const ETAPAS_CON_PRESUPUESTO = ["negociacion", "pendiente_cobro", "ganada", "perdida"];
 
 /**
  * Sección de presupuestos en la vista de oportunidad.

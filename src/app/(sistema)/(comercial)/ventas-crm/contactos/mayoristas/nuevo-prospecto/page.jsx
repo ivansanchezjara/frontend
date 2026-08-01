@@ -62,7 +62,6 @@ function TabUnitario({ recientes, setRecientes }) {
     razon_social: "",
     telefono: "",
     ruc: "",
-    zona_cobertura: "",
     departamento: "",
     ciudad: "",
   });
@@ -98,16 +97,15 @@ function TabUnitario({ recientes, setRecientes }) {
         tier_precio: "mayorista",
       };
       if (formData.ruc.trim()) payload.ruc = formData.ruc.trim();
-      if (formData.zona_cobertura.trim()) payload.zona_cobertura = formData.zona_cobertura.trim();
       if (formData.departamento) payload.departamento = formData.departamento;
       if (formData.ciudad) payload.ciudad = formData.ciudad;
 
       const nuevo = await createMayorista(payload);
       setRecientes((prev) => [
-        { id: nuevo.id, nombre: nuevo.razon_social, telefono: nuevo.telefono, zona: nuevo.zona_cobertura },
+        { id: nuevo.id, nombre: nuevo.razon_social, telefono: nuevo.telefono },
         ...prev,
       ]);
-      setFormData({ razon_social: "", telefono: "", ruc: "", zona_cobertura: "", departamento: "", ciudad: "" });
+      setFormData({ razon_social: "", telefono: "", ruc: "", departamento: "", ciudad: "" });
       showToast(`Mayorista "${nuevo.razon_social}" creado como prospecto`, "success");
       setTimeout(() => nombreRef.current?.focus(), 50);
     } catch (err) {
@@ -162,13 +160,6 @@ function TabUnitario({ recientes, setRecientes }) {
             placeholder="80000000-0"
             maxLength={20}
             error={errors.ruc}
-          />
-          <Input
-            label="Zona de Cobertura"
-            value={formData.zona_cobertura}
-            onChange={handleChange("zona_cobertura")}
-            placeholder="Ciudad del Este, Encarnación..."
-            maxLength={200}
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -235,20 +226,18 @@ function parseCSV(text) {
     "nombre", "razon_social", "empresa",
     "telefono", "celular", "phone",
     "ruc",
-    "zona", "zona_cobertura", "cobertura",
     "departamento", "ciudad",
   ];
   const hasHeader = header.some((h) => KNOWN_HEADERS.includes(h));
   const dataRows = hasHeader ? rows.slice(1) : rows;
 
-  let nameCol = 0, phoneCol = 1, rucCol = -1, zonaCol = -1, depCol = -1, cityCol = -1;
+  let nameCol = 0, phoneCol = 1, rucCol = -1, depCol = -1, cityCol = -1;
 
   if (hasHeader) {
     const find = (keywords) => header.findIndex((h) => keywords.includes(h));
     const nameIdx = find(["nombre", "razon_social", "empresa"]);
     const phoneIdx = find(["telefono", "celular", "phone"]);
     rucCol = find(["ruc"]);
-    zonaCol = find(["zona", "zona_cobertura", "cobertura"]);
     depCol = find(["departamento"]);
     cityCol = find(["ciudad"]);
     if (nameIdx >= 0) nameCol = nameIdx;
@@ -259,7 +248,6 @@ function parseCSV(text) {
     .map((row, idx) => {
       const item = { razon_social: row[nameCol] || "", telefono: row[phoneCol] || "", _fila: idx + 1, _errores: [] };
       if (rucCol >= 0 && row[rucCol]) item.ruc = row[rucCol];
-      if (zonaCol >= 0 && row[zonaCol]) item.zona_cobertura = row[zonaCol];
       if (depCol >= 0 && row[depCol]) item.departamento = row[depCol];
       if (cityCol >= 0 && row[cityCol]) item.ciudad = row[cityCol];
       // Normalizar departamento/ciudad
@@ -353,7 +341,6 @@ function TabMasivo({ recientes, setRecientes }) {
           tier_precio: "mayorista",
         };
         if (item.ruc) payload.ruc = item.ruc;
-        if (item.zona_cobertura) payload.zona_cobertura = item.zona_cobertura;
         if (item.departamento) payload.departamento = item.departamento;
         if (item.ciudad) payload.ciudad = item.ciudad;
 
@@ -373,7 +360,7 @@ function TabMasivo({ recientes, setRecientes }) {
     if (resultados.detalle_creados.length > 0) {
       setRecientes((prev) => [
         ...resultados.detalle_creados.map((c) => ({
-          id: c.id, nombre: c.razon_social, telefono: c.telefono, zona: c.zona_cobertura,
+          id: c.id, nombre: c.razon_social, telefono: c.telefono,
         })),
         ...prev,
       ]);
@@ -388,7 +375,7 @@ function TabMasivo({ recientes, setRecientes }) {
   return (
     <Section
       title="Carga Masiva — Mayoristas"
-      subtitle="Subí un archivo CSV con columnas: nombre, teléfono, RUC, zona de cobertura."
+      subtitle="Subí un archivo CSV con columnas: nombre, teléfono, RUC, departamento, ciudad."
     >
       <div className="p-6 space-y-5">
         {/* Drop zone */}
@@ -441,9 +428,6 @@ function TabMasivo({ recientes, setRecientes }) {
                     {preview.some((r) => r.ruc) && (
                       <th className="text-left py-2 px-3 text-[11px] font-bold uppercase text-slate-400">RUC</th>
                     )}
-                    {preview.some((r) => r.zona_cobertura) && (
-                      <th className="text-left py-2 px-3 text-[11px] font-bold uppercase text-slate-400">Zona</th>
-                    )}
                     <th className="w-8"></th>
                   </tr>
                 </thead>
@@ -459,9 +443,6 @@ function TabMasivo({ recientes, setRecientes }) {
                       </td>
                       {preview.some((r) => r.ruc) && (
                         <td className="py-1.5 px-3 text-xs text-slate-500 font-mono">{row.ruc || "—"}</td>
-                      )}
-                      {preview.some((r) => r.zona_cobertura) && (
-                        <td className="py-1.5 px-3 text-xs text-slate-500">{row.zona_cobertura || "—"}</td>
                       )}
                       <td className="py-1.5 px-1">
                         <button onClick={() => removeRow(idx)} className="text-slate-300 hover:text-red-500 p-1">
@@ -519,9 +500,9 @@ function TabMasivo({ recientes, setRecientes }) {
               </Button>
             </div>
             <pre className="text-xs text-slate-500 font-mono bg-white rounded-lg p-3 border border-slate-100">
-{`nombre;telefono;ruc;zona_cobertura;departamento;ciudad
-Distribuidora Dental SRL;021555444;80012345-6;CDE, Encarnación;Alto Paraná;Ciudad del Este
-MedSupply SA;061222333;80098765-2;Asunción;Central;Asunción`}
+{`nombre;telefono;ruc;departamento;ciudad
+Distribuidora Dental SRL;021555444;80012345-6;Alto Paraná;Ciudad del Este
+MedSupply SA;061222333;80098765-2;Central;Asunción`}
             </pre>
             <Text variant="mutedXs" className="text-slate-400">
               Columnas mínimas: nombre + teléfono. Opcionales: ruc, zona_cobertura, departamento, ciudad.

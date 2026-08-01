@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Plus, Target, UserCheck, GraduationCap, Stethoscope,
+  Plus, Target, Stethoscope,
   ArrowUpDown, MoreVertical, Pencil, Trash2, RotateCcw, X, Upload,
 } from "lucide-react";
 import {
@@ -38,13 +38,6 @@ const ETAPA_BADGE_STYLES = {
   inactivo: "bg-red-50 text-red-600 border-red-100",
 };
 
-const FLAGS_OPTIONS = [
-  { value: "", label: "Todos" },
-  { value: "es_profesional", label: "Profesionales" },
-  { value: "es_estudiante_activo", label: "Estudiantes activos" },
-  { value: "es_docente_activo", label: "Docentes activos" },
-];
-
 const ORDEN_OPTIONS = [
   { value: "", label: "Más recientes" },
   { value: "razon_social", label: "Nombre A-Z" },
@@ -56,7 +49,6 @@ const FILTER_SCHEMA = {
   search: "",
   categoria: "",
   etapa: "",
-  flag: "",
   ordering: "",
   page: 1,
 };
@@ -87,7 +79,7 @@ function RowActions({ persona, onDesactivar, onReactivar }) {
         <MoreVertical size={15} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[140px]">
+        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[140px]">
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
             onClick={(e) => {
@@ -165,13 +157,8 @@ export default function PersonasListPage() {
     if (filters.etapa) params.etapa = filters.etapa;
     if (filters.ordering) params.ordering = filters.ordering;
 
-    // Flags
-    if (filters.flag === "es_profesional") params.es_profesional = "true";
-    if (filters.flag === "es_estudiante_activo") params.es_estudiante_activo = "true";
-    if (filters.flag === "es_docente_activo") params.es_docente_activo = "true";
-
     fetchPersonas_(params).then(() => setHasLoadedOnce(true));
-  }, [fetchPersonas_, filters.search, filters.categoria, filters.etapa, filters.flag, filters.ordering, filters.page]);
+  }, [fetchPersonas_, filters.search, filters.categoria, filters.etapa, filters.ordering, filters.page]);
 
   // Acciones
   const handleDesactivar = async (persona) => {
@@ -283,7 +270,7 @@ export default function PersonasListPage() {
   // Loading inicial
   if (loadingPersonas && !hasLoadedOnce) return <LoadingScreen texto="Cargando personas..." />;
 
-  const hayFiltrosActivos = filters.search !== "" || filters.categoria !== "" || filters.etapa !== "" || filters.flag !== "" || filters.ordering !== "";
+  const hayFiltrosActivos = filters.search !== "" || filters.categoria !== "" || filters.etapa !== "" || filters.ordering !== "";
 
   const limpiarFiltros = () => {
     setBusquedaLocal("");
@@ -348,13 +335,6 @@ export default function PersonasListPage() {
                   options={CATEGORIA_OPTIONS}
                 />
                 <FilterDropdown
-                  value={filters.flag}
-                  onChange={(val) => setFilter("flag", val)}
-                  icon={UserCheck}
-                  label="Perfil"
-                  options={FLAGS_OPTIONS}
-                />
-                <FilterDropdown
                   value={filters.ordering}
                   onChange={(val) => setFilter("ordering", val)}
                   icon={ArrowUpDown}
@@ -398,17 +378,17 @@ export default function PersonasListPage() {
                 onAction={hayFiltrosActivos ? limpiarFiltros : undefined}
               />
             ) : (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-visible">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="bg-slate-50 text-slate-500">
-                      <th className="py-3 pl-6 pr-4 text-[11px] font-black uppercase tracking-widest">Nombre</th>
+                      <th className="py-3 pl-6 pr-4 text-[11px] font-black uppercase tracking-widest rounded-tl-xl">Nombre</th>
                       <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest hidden md:table-cell">Contacto</th>
                       <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center">Categoría</th>
                       <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest text-center hidden sm:table-cell">Etapa</th>
                       <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest hidden lg:table-cell">Ubicación</th>
-                      <th className="py-3 px-4 text-[11px] font-black uppercase tracking-widest hidden lg:table-cell">Flags</th>
-                      <th className="py-3 pr-6 pl-4 text-[11px] font-black uppercase tracking-widest text-right w-12"></th>
+
+                      <th className="py-3 pr-6 pl-4 text-[11px] font-black uppercase tracking-widest text-right w-12 rounded-tr-xl"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -467,25 +447,7 @@ export default function PersonasListPage() {
                             {[persona.ciudad, persona.departamento].filter(Boolean).join(", ") || "—"}
                           </Text>
                         </td>
-                        <td className="py-3 px-4 hidden lg:table-cell">
-                          <div className="flex items-center gap-1.5">
-                            {persona.es_profesional && (
-                              <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center" title="Profesional">
-                                <Stethoscope className="w-3 h-3 text-blue-600" />
-                              </span>
-                            )}
-                            {persona.es_estudiante_activo && (
-                              <span className="w-5 h-5 rounded-full bg-sky-100 flex items-center justify-center" title="Estudiante activo">
-                                <GraduationCap className="w-3 h-3 text-sky-600" />
-                              </span>
-                            )}
-                            {persona.es_docente_activo && (
-                              <span className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center" title="Docente activo">
-                                <UserCheck className="w-3 h-3 text-amber-600" />
-                              </span>
-                            )}
-                          </div>
-                        </td>
+
                         <td className="py-3 pr-6 pl-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <RowActions
                             persona={persona}

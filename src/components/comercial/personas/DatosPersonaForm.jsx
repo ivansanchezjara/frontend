@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Save, Loader2, Stethoscope, GraduationCap, UserCheck } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
 
 import {
   Button, Input, Field, Toggle, PhoneInput, validatePhone, buildPhoneValue, useConfirm,
@@ -11,7 +11,7 @@ import { useKeySave } from "@/hooks/useKeySave";
 import { cn } from "@/lib/utils";
 import { DEPARTAMENTOS, CIUDADES_POR_DEPARTAMENTO } from "@/config/paraguay";
 import { CATEGORIA_OPTIONS_FORM, TRATAMIENTO_OPTIONS } from "@/config/personas";
-import { updatePersona } from "@/services/apis/ventas";
+import { updatePersona, createRegistroProfesional, updateRegistroProfesional } from "@/services/apis/ventas";
 
 const selectClass =
   "block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500";
@@ -68,10 +68,6 @@ export function DatosPersonaForm({ persona, onSaved }) {
     // Clasificación
     categoria: persona.categoria || "",
     es_extranjero: persona.es_extranjero || false,
-    // Estado actual (flags)
-    es_profesional: persona.es_profesional || false,
-    es_estudiante_activo: persona.es_estudiante_activo || false,
-    es_docente_activo: persona.es_docente_activo || false,
     // Datos personales
     tratamiento: persona.tratamiento || "",
     razon_social: persona.razon_social || "",
@@ -82,6 +78,7 @@ export function DatosPersonaForm({ persona, onSaved }) {
     ruc: persona.ruc || "",
     cedula: persona.cedula || "",
     documento_extranjero: persona.documento_extranjero || "",
+    registro_numero: persona.registro_profesional?.numero || "",
     // Ubicación
     departamento: persona.departamento || "",
     ciudad: persona.ciudad || "",
@@ -99,6 +96,34 @@ export function DatosPersonaForm({ persona, onSaved }) {
     : [];
 
   const isProspecto = persona.etapa === "prospecto";
+
+  // ─── Advertencia de consistencia categoría ↔ relaciones ────
+  const categoriaWarning = (() => {
+    const cat = form.categoria;
+    if (!cat || isProspecto) return null;
+
+    const formaciones = persona.formaciones || [];
+    const vinculosDocentes = persona.vinculos_docentes || [];
+    const registroProfesional = persona.registro_profesional;
+
+    if (cat === "estudiante") {
+      const tieneGradoVigente = formaciones.some((f) => f.tipo === "grado" && f.vigente);
+      if (!tieneGradoVigente) {
+        return "Categoría \"Estudiante\" requiere una formación de grado vigente (dentro del período de la carrera). Agregala en la sección Relaciones.";
+      }
+    }
+
+    if (cat === "odontologo") {
+      if (!registroProfesional) return "Categoría \"Odontólogo\" sin registro profesional. Completá el Nro. de Registro en Documentos.";
+    }
+
+    if (cat === "profesor") {
+      const tieneDocenteActivo = vinculosDocentes.some((d) => d.activo);
+      if (!tieneDocenteActivo) return "Categoría \"Profesor\" sin vínculo docente activo. Agregá un vínculo docente en la sección Relaciones.";
+    }
+
+    return null;
+  })();
 
   // ─── Protección de cambios sin guardar ─────────────────────
   useEffect(() => {
@@ -164,18 +189,33 @@ export function DatosPersonaForm({ persona, onSaved }) {
       }
     }
 
+    // Validación de consistencia categoría ↔ relaciones (bloquea el guardado)
+    if (categoriaWarning && !isProspecto) {
+      newErrors.categoria = categoriaWarning;
+    }
+
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
 
     setSaving(true);
     setErrors({});
     try {
-      const { telefonoPrefijo, telefono, ...rest } = form;
+      const { telefonoPrefijo, telefono, registro_numero, ...rest } = form;
       const payload = {
         ...rest,
         telefono: buildPhoneValue(telefonoPrefijo, telefono),
       };
       if (payload.es_extranjero) payload.ruc = "";
       const updated = await updatePersona(persona.id, payload);
+
+      // Gestionar registro profesional
+      if (registro_numero.trim() && ["odontologo", "protesista", "profesor"].includes(form.categoria)) {
+        if (persona.registro_profesional) {
+          await updateRegistroProfesional(persona.registro_profesional.id, { numero: registro_numero.trim() });
+        } else {
+          await createRegistroProfesional({ persona: persona.id, numero: registro_numero.trim() });
+        }
+      }
+
       setIsDirty(false);
       showToast("Datos actualizados correctamente", "success");
       if (onSaved) onSaved(updated);
@@ -199,66 +239,6 @@ export function DatosPersonaForm({ persona, onSaved }) {
 
   return (
     <form onSubmit={handleSubmit} className="p-6 space-y-6">
-
-      {/* ─── Clasificación + Estado actual ─────────────── */}
-      <div>
-        <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
-          Clasificación
-        </Text>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Field label={isProspecto ? "Categoría" : "Categoría *"}>
-            <select
-              className={cn(selectClass, errors.categoria && "border-red-300")}
-              value={form.categoria}
-              onChange={handleCategoriaChange}
-            >
-              {CATEGORIA_OPTIONS_FORM.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-            {errors.categoria && (
-              <Text variant="bodySm" className="mt-1 text-xs text-red-500">{errors.categoria}</Text>
-            )}
-          </Field>
-          <div className="flex items-end pb-1">
-            <Toggle checked={form.es_extranjero} onChange={handleToggle("es_extranjero")} label="Extranjero" />
-          </div>
-        </div>
-
-        {/* Estado actual — flags compactos */}
-        <div className="flex flex-wrap gap-3 mt-3">
-          <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={form.es_profesional}
-              onChange={(e) => handleToggle("es_profesional")(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500/30"
-            />
-            <Stethoscope className="w-3 h-3 text-blue-500" />
-            <span className="text-slate-600">Profesional</span>
-          </label>
-          <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={form.es_estudiante_activo}
-              onChange={(e) => handleToggle("es_estudiante_activo")(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500/30"
-            />
-            <GraduationCap className="w-3 h-3 text-sky-500" />
-            <span className="text-slate-600">Estudiante activo</span>
-          </label>
-          <label className="inline-flex items-center gap-1.5 text-xs cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={form.es_docente_activo}
-              onChange={(e) => handleToggle("es_docente_activo")(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500/30"
-            />
-            <UserCheck className="w-3 h-3 text-amber-500" />
-            <span className="text-slate-600">Docente activo</span>
-          </label>
-        </div>
-      </div>
 
       {/* ─── Datos Personales ──────────────────────────── */}
       <div>
@@ -306,6 +286,40 @@ export function DatosPersonaForm({ persona, onSaved }) {
         </div>
       </div>
 
+      {/* ─── Clasificación + Estado actual ─────────────── */}
+      <div>
+        <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
+          Clasificación
+        </Text>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Field label={isProspecto ? "Categoría" : "Categoría *"}>
+            <select
+              className={cn(selectClass, errors.categoria && "border-red-300")}
+              value={form.categoria}
+              onChange={handleCategoriaChange}
+            >
+              {CATEGORIA_OPTIONS_FORM.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            {errors.categoria && (
+              <Text variant="bodySm" className="mt-1 text-xs text-red-500">{errors.categoria}</Text>
+            )}
+          </Field>
+          <div className="flex items-end pb-1">
+            <Toggle checked={form.es_extranjero} onChange={handleToggle("es_extranjero")} label="Extranjero" />
+          </div>
+        </div>
+
+        {/* Advertencias de consistencia categoría ↔ relaciones */}
+        {categoriaWarning && (
+          <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <span className="text-amber-500 text-sm mt-0.5">⚠️</span>
+            <Text variant="bodySm" className="text-amber-700 text-xs">{categoriaWarning}</Text>
+          </div>
+        )}
+      </div>
+
       {/* ─── Documentos ────────────────────────────────── */}
       <div>
         <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
@@ -340,6 +354,16 @@ export function DatosPersonaForm({ persona, onSaved }) {
               placeholder="Pasaporte, CI extranjera..."
               maxLength={50}
               error={errors.documento_extranjero}
+            />
+          )}
+          {["odontologo", "protesista", "profesor"].includes(form.categoria) && (
+            <Input
+              label="Nro. Registro Profesional"
+              value={form.registro_numero}
+              onChange={handleChange("registro_numero")}
+              placeholder="Nro. de matrícula o registro"
+              maxLength={50}
+              error={errors.registro_numero}
             />
           )}
         </div>

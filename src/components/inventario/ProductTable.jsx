@@ -102,7 +102,7 @@ const COLUMNS_CONFIG = [
         width: 60,
         minWidth: 50,
         render: (_, row) => {
-            const stock = row.stock || 0;
+            const stock = row.stock_disponible ?? row.stock ?? 0;
             return (
                 <Badge className={`px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap shadow-sm ${
                     stock === 0

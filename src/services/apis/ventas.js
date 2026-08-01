@@ -392,6 +392,14 @@ export async function deleteVinculoDocente(id) {
   );
 }
 
+export async function updateVinculoDocente(id, data) {
+  return request(
+    `${API_URL}/ventas/vinculos-docentes/${id}/`,
+    { method: "PATCH", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "actualizar vínculo docente",
+  );
+}
+
 export async function getCargosDirectivos(params = {}) {
   const query = toQueryString(params);
   return request(
@@ -417,6 +425,14 @@ export async function deleteCargoDirectivo(id) {
   );
 }
 
+export async function updateCargoDirectivo(id, data) {
+  return request(
+    `${API_URL}/ventas/cargos-directivos/${id}/`,
+    { method: "PATCH", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "actualizar cargo directivo",
+  );
+}
+
 export async function getRegistrosProfesionales(params = {}) {
   const query = toQueryString(params);
   return request(
@@ -439,6 +455,34 @@ export async function updateRegistroProfesional(id, data) {
     `${API_URL}/ventas/registros-profesionales/${id}/`,
     { method: "PATCH", headers: jsonHeaders(), body: JSON.stringify(data) },
     "actualizar registro profesional",
+  );
+}
+
+// ─── Verificaciones de Estudiante ───────────────────────────────
+
+export async function getVerificacionesEstudiante(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/ventas/verificaciones-estudiante/${query}`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver verificaciones de estudiante",
+  );
+}
+
+export async function createVerificacionEstudiante(formData) {
+  // Usa FormData para subir archivo
+  return request(
+    `${API_URL}/ventas/verificaciones-estudiante/`,
+    { method: "POST", headers: authHeaders(), body: formData },
+    "crear verificación de estudiante",
+  );
+}
+
+export async function revisarVerificacionEstudiante(id, data) {
+  return request(
+    `${API_URL}/ventas/verificaciones-estudiante/${id}/revisar/`,
+    { method: "PATCH", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "revisar verificación de estudiante",
   );
 }
 

@@ -15,7 +15,8 @@ import {
   getInstituciones, getClinicas, getOfertaAcademica,
   createFormacion, createVinculoLaboral, createVinculoDocente,
   createCargoDirectivo, deleteFormacion, deleteVinculoLaboral,
-  deleteVinculoDocente, deleteCargoDirectivo, updateVinculoLaboral,
+  deleteVinculoDocente, deleteCargoDirectivo,
+  updateFormacion, updateVinculoLaboral, updateVinculoDocente, updateCargoDirectivo,
 } from "@/services/apis/ventas";
 
 // ─── Constantes ─────────────────────────────────────────────────
@@ -31,18 +32,6 @@ const TIPO_DOCENTE_OPTIONS = [
   { value: "asistente", label: "Asistente" },
   { value: "instructor", label: "Instructor" },
   { value: "invitado", label: "Invitado" },
-];
-
-const ESTADO_FORMACION = {
-  cursando: { label: "Cursando", className: "bg-blue-50 text-blue-700" },
-  egresado: { label: "Egresado/a", className: "bg-emerald-50 text-emerald-700" },
-  abandonado: { label: "Abandonó", className: "bg-red-50 text-red-600" },
-};
-
-const ESTADO_FORMACION_OPTIONS = [
-  { value: "cursando", label: "Cursando" },
-  { value: "egresado", label: "Egresado/a" },
-  { value: "abandonado", label: "Abandonó" },
 ];
 
 const TIPO_FORMACION_OPTIONS = [
@@ -183,19 +172,23 @@ function OfertaAcademicaSearch({ institucionId, selected, onSelect, onClear }) {
   );
 }
 
-// ─── Form: Agregar Formación Académica ──────────────────────────
+// ─── Form: Agregar/Editar Formación Académica ───────────────────
 
-function AddFormacionForm({ personaId, onCreated, onCancel }) {
+function AddFormacionForm({ personaId, initial, onCreated, onCancel }) {
+  const isEditing = !!initial;
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [institucion, setInstitucion] = useState(null);
-  const [ofertaAcademica, setOfertaAcademica] = useState(null);
+  const [institucion, setInstitucion] = useState(
+    initial ? { id: initial.institucion, razon_social: initial.institucion_nombre, abreviatura: initial.institucion_abreviatura } : null
+  );
+  const [ofertaAcademica, setOfertaAcademica] = useState(
+    initial?.oferta_academica ? { id: initial.oferta_academica, nombre: initial.oferta_academica_nombre } : null
+  );
   const [form, setForm] = useState({
-    tipo: "grado",
-    estado: "cursando",
-    anio_ingreso: "",
-    anio_egreso: "",
-    titulo_obtenido: "",
+    tipo: initial?.tipo || "grado",
+    anio_ingreso: initial?.anio_ingreso || "",
+    anio_egreso: initial?.anio_egreso || "",
+    titulo_obtenido: initial?.titulo_obtenido || "",
   });
 
   const handleSubmit = async (e) => {
@@ -203,51 +196,65 @@ function AddFormacionForm({ personaId, onCreated, onCancel }) {
     if (!institucion) return;
     setSaving(true);
     try {
-      await createFormacion({
+      const payload = {
         persona: personaId,
         institucion: institucion.id,
         oferta_academica: ofertaAcademica?.id || null,
         tipo: form.tipo,
-        estado: form.estado,
         anio_ingreso: form.anio_ingreso ? Number(form.anio_ingreso) : null,
         anio_egreso: form.anio_egreso ? Number(form.anio_egreso) : null,
         titulo_obtenido: form.titulo_obtenido || "",
-      });
-      showToast("Formación agregada", "success");
+      };
+      if (isEditing) {
+        await updateFormacion(initial.id, payload);
+        showToast("Formación actualizada", "success");
+      } else {
+        await createFormacion(payload);
+        showToast("Formación agregada", "success");
+      }
       onCreated();
     } catch (err) {
-      showToast(err?.data?.detail || "Error al crear formación", "error");
+      showToast(err?.data?.detail || `Error al ${isEditing ? "actualizar" : "crear"} formación`, "error");
     } finally {
       setSaving(false);
     }
   };
 
+  // Cálculo automático del año de egreso
+  const anioEgresoCalculado = (form.anio_ingreso && ofertaAcademica?.duracion_anios)
+    ? Number(form.anio_ingreso) + ofertaAcademica.duracion_anios
+    : null;
+
   return (
     <form onSubmit={handleSubmit} className="bg-violet-50/50 border border-violet-100 rounded-lg p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <Text variant="bodySmBold" className="text-violet-700">Nueva Formación Académica</Text>
+        <Text variant="bodySmBold" className="text-violet-700">{isEditing ? "Editar Formación Académica" : "Nueva Formación Académica"}</Text>
         <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600">
           <X size={16} />
         </button>
       </div>
 
-      <EntitySearch
-        label="Institución *"
-        placeholder="Buscar institución..."
-        fetchFn={getInstituciones}
-        onSelect={(inst) => { setInstitucion(inst); setOfertaAcademica(null); }}
-      />
+      {!isEditing && (
+        <EntitySearch
+          label="Institución *"
+          placeholder="Buscar institución..."
+          fetchFn={getInstituciones}
+          onSelect={(inst) => { setInstitucion(inst); setOfertaAcademica(null); }}
+        />
+      )}
       {institucion && (
         <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 border border-violet-200">
           <GraduationCap size={12} className="text-violet-500" />
           <Text variant="bodySm" className="text-violet-700 font-medium">{institucion.abreviatura || institucion.razon_social}</Text>
-          <button type="button" onClick={() => { setInstitucion(null); setOfertaAcademica(null); }} className="ml-auto text-slate-400 hover:text-red-500">
-            <X size={12} />
-          </button>
+          {!isEditing && (
+            <button type="button" onClick={() => { setInstitucion(null); setOfertaAcademica(null); }} className="ml-auto text-slate-400 hover:text-red-500">
+              <X size={12} />
+            </button>
+          )}
         </div>
       )}
 
-      {institucion && (
+      {institucion && !isEditing && (
         <OfertaAcademicaSearch
           institucionId={institucion.id}
           selected={ofertaAcademica}
@@ -255,61 +262,87 @@ function AddFormacionForm({ personaId, onCreated, onCancel }) {
           onClear={() => setOfertaAcademica(null)}
         />
       )}
+      {isEditing && ofertaAcademica && (
+        <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 border border-violet-200">
+          <BookOpen size={12} className="text-violet-500" />
+          <Text variant="bodySm" className="text-violet-700 font-medium">{ofertaAcademica.nombre}</Text>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Tipo">
-          <select className={selectClass} value={form.tipo} onChange={(e) => setForm((p) => ({ ...p, tipo: e.target.value }))}>
+          <select className={selectClass} value={form.tipo} onChange={(e) => setForm((p) => ({ ...p, tipo: e.target.value }))} disabled={isEditing}>
             {TIPO_FORMACION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </Field>
-        <Field label="Estado">
-          <select className={selectClass} value={form.estado} onChange={(e) => setForm((p) => ({ ...p, estado: e.target.value }))}>
-            {ESTADO_FORMACION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Input label="Año ingreso" type="number" value={form.anio_ingreso} onChange={(e) => setForm((p) => ({ ...p, anio_ingreso: e.target.value }))} placeholder="2020" />
-        <Input label="Año egreso" type="number" value={form.anio_egreso} onChange={(e) => setForm((p) => ({ ...p, anio_egreso: e.target.value }))} placeholder="2025" />
+        <Input
+          label={form.tipo === "grado" ? "Año ingreso *" : "Año ingreso"}
+          type="number"
+          value={form.anio_ingreso}
+          onChange={isEditing ? undefined : (e) => setForm((p) => ({ ...p, anio_ingreso: e.target.value }))}
+          placeholder="2020"
+          disabled={isEditing}
+          helperText={isEditing ? "No editable después de creado" : undefined}
+        />
+        <Input
+          label="Año egreso esperado"
+          type="number"
+          value={anioEgresoCalculado || form.anio_egreso}
+          onChange={anioEgresoCalculado ? undefined : (e) => setForm((p) => ({ ...p, anio_egreso: e.target.value }))}
+          placeholder={anioEgresoCalculado ? "" : "2025"}
+          disabled={!!anioEgresoCalculado || isEditing}
+          helperText={anioEgresoCalculado ? `Calculado: ${form.anio_ingreso} + ${ofertaAcademica?.duracion_anios} años` : undefined}
+        />
       </div>
 
       <Input label="Título obtenido" value={form.titulo_obtenido} onChange={(e) => setForm((p) => ({ ...p, titulo_obtenido: e.target.value }))} placeholder="Ej: Doctor en Odontología" helperText="Opcional si ya seleccionaste una oferta académica" />
 
       <div className="flex justify-end">
         <Button type="submit" variant="primary" size="sm" disabled={saving || !institucion} icon={saving ? Loader2 : undefined}>
-          {saving ? "Guardando..." : "Agregar"}
+          {saving ? "Guardando..." : isEditing ? "Guardar" : "Agregar"}
         </Button>
       </div>
     </form>
   );
 }
 
-// ─── Form: Agregar Vínculo Laboral ──────────────────────────────
+// ─── Form: Agregar/Editar Vínculo Laboral ───────────────────────
 
-function AddVinculoLaboralForm({ personaId, onCreated, onCancel }) {
+function AddVinculoLaboralForm({ personaId, initial, onCreated, onCancel }) {
+  const isEditing = !!initial;
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [clinica, setClinica] = useState(null);
-  const [cargo, setCargo] = useState("");
-  const [especialidad, setEspecialidad] = useState("");
+  const [clinica, setClinica] = useState(
+    initial ? { id: initial.clinica, razon_social: initial.clinica_nombre, nombre_comercial: initial.clinica_nombre_comercial } : null
+  );
+  const [cargo, setCargo] = useState(initial?.cargo || "");
+  const [especialidad, setEspecialidad] = useState(initial?.especialidad || "");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!clinica) return;
     setSaving(true);
     try {
-      await createVinculoLaboral({
+      const payload = {
         persona: personaId,
         clinica: clinica.id,
         cargo,
         especialidad,
         activo: true,
-      });
-      showToast("Vínculo laboral agregado", "success");
+      };
+      if (isEditing) {
+        await updateVinculoLaboral(initial.id, { cargo, especialidad });
+        showToast("Vínculo laboral actualizado", "success");
+      } else {
+        await createVinculoLaboral(payload);
+        showToast("Vínculo laboral agregado", "success");
+      }
       onCreated();
     } catch (err) {
-      showToast(err?.data?.detail || err?.data?.non_field_errors?.[0] || "Error al crear vínculo", "error");
+      showToast(err?.data?.detail || err?.data?.non_field_errors?.[0] || `Error al ${isEditing ? "actualizar" : "crear"} vínculo`, "error");
     } finally {
       setSaving(false);
     }
@@ -318,26 +351,32 @@ function AddVinculoLaboralForm({ personaId, onCreated, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="bg-emerald-50/50 border border-emerald-100 rounded-lg p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <Text variant="bodySmBold" className="text-emerald-700">Nuevo Vínculo Laboral</Text>
+        <Text variant="bodySmBold" className="text-emerald-700">{isEditing ? "Editar Vínculo Laboral" : "Nuevo Vínculo Laboral"}</Text>
         <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600">
           <X size={16} />
         </button>
       </div>
 
-      <EntitySearch
-        label="Clínica *"
-        placeholder="Buscar clínica..."
-        fetchFn={getClinicas}
-        onSelect={setClinica}
-        displayField="razon_social"
-      />
+      {!isEditing && (
+        <>
+          <EntitySearch
+            label="Clínica *"
+            placeholder="Buscar clínica..."
+            fetchFn={getClinicas}
+            onSelect={setClinica}
+            displayField="razon_social"
+          />
+        </>
+      )}
       {clinica && (
         <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 border border-emerald-200">
           <Briefcase size={12} className="text-emerald-500" />
           <Text variant="bodySm" className="text-emerald-700 font-medium">{clinica.nombre_comercial || clinica.razon_social}</Text>
-          <button type="button" onClick={() => setClinica(null)} className="ml-auto text-slate-400 hover:text-red-500">
-            <X size={12} />
-          </button>
+          {!isEditing && (
+            <button type="button" onClick={() => setClinica(null)} className="ml-auto text-slate-400 hover:text-red-500">
+              <X size={12} />
+            </button>
+          )}
         </div>
       )}
 
@@ -348,39 +387,50 @@ function AddVinculoLaboralForm({ personaId, onCreated, onCancel }) {
 
       <div className="flex justify-end">
         <Button type="submit" variant="primary" size="sm" disabled={saving || !clinica} icon={saving ? Loader2 : undefined}>
-          {saving ? "Guardando..." : "Agregar"}
+          {saving ? "Guardando..." : isEditing ? "Guardar" : "Agregar"}
         </Button>
       </div>
     </form>
   );
 }
 
-// ─── Form: Agregar Vínculo Docente ──────────────────────────────
+// ─── Form: Agregar/Editar Vínculo Docente ───────────────────────
 
-function AddVinculoDocenteForm({ personaId, onCreated, onCancel }) {
+function AddVinculoDocenteForm({ personaId, initial, onCreated, onCancel }) {
+  const isEditing = !!initial;
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [institucion, setInstitucion] = useState(null);
-  const [ofertaAcademica, setOfertaAcademica] = useState(null);
-  const [form, setForm] = useState({ tipo: "titular", catedra: "" });
+  const [institucion, setInstitucion] = useState(
+    initial ? { id: initial.institucion, razon_social: initial.institucion_nombre, abreviatura: initial.institucion_abreviatura } : null
+  );
+  const [ofertaAcademica, setOfertaAcademica] = useState(
+    initial?.oferta_academica ? { id: initial.oferta_academica, nombre: initial.oferta_academica_nombre } : null
+  );
+  const [form, setForm] = useState({ tipo: initial?.tipo || "titular", catedra: initial?.catedra || "" });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!institucion) return;
     setSaving(true);
     try {
-      await createVinculoDocente({
+      const payload = {
         persona: personaId,
         institucion: institucion.id,
         oferta_academica: ofertaAcademica?.id || null,
         tipo: form.tipo,
         catedra: form.catedra,
         activo: true,
-      });
-      showToast("Vínculo docente agregado", "success");
+      };
+      if (isEditing) {
+        await updateVinculoDocente(initial.id, { tipo: form.tipo, catedra: form.catedra, oferta_academica: ofertaAcademica?.id || null });
+        showToast("Vínculo docente actualizado", "success");
+      } else {
+        await createVinculoDocente(payload);
+        showToast("Vínculo docente agregado", "success");
+      }
       onCreated();
     } catch (err) {
-      showToast(err?.data?.detail || err?.data?.non_field_errors?.[0] || "Error al crear vínculo docente", "error");
+      showToast(err?.data?.detail || err?.data?.non_field_errors?.[0] || `Error al ${isEditing ? "actualizar" : "crear"} vínculo docente`, "error");
     } finally {
       setSaving(false);
     }
@@ -389,25 +439,29 @@ function AddVinculoDocenteForm({ personaId, onCreated, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="bg-blue-50/50 border border-blue-100 rounded-lg p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <Text variant="bodySmBold" className="text-blue-700">Nuevo Vínculo Docente</Text>
+        <Text variant="bodySmBold" className="text-blue-700">{isEditing ? "Editar Vínculo Docente" : "Nuevo Vínculo Docente"}</Text>
         <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600">
           <X size={16} />
         </button>
       </div>
 
-      <EntitySearch
-        label="Institución *"
-        placeholder="Buscar institución..."
-        fetchFn={getInstituciones}
-        onSelect={(inst) => { setInstitucion(inst); setOfertaAcademica(null); }}
-      />
+      {!isEditing && (
+        <EntitySearch
+          label="Institución *"
+          placeholder="Buscar institución..."
+          fetchFn={getInstituciones}
+          onSelect={(inst) => { setInstitucion(inst); setOfertaAcademica(null); }}
+        />
+      )}
       {institucion && (
         <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 border border-blue-200">
           <BookOpen size={12} className="text-blue-500" />
           <Text variant="bodySm" className="text-blue-700 font-medium">{institucion.abreviatura || institucion.razon_social}</Text>
-          <button type="button" onClick={() => { setInstitucion(null); setOfertaAcademica(null); }} className="ml-auto text-slate-400 hover:text-red-500">
-            <X size={12} />
-          </button>
+          {!isEditing && (
+            <button type="button" onClick={() => { setInstitucion(null); setOfertaAcademica(null); }} className="ml-auto text-slate-400 hover:text-red-500">
+              <X size={12} />
+            </button>
+          )}
         </div>
       )}
 
@@ -431,36 +485,44 @@ function AddVinculoDocenteForm({ personaId, onCreated, onCancel }) {
 
       <div className="flex justify-end">
         <Button type="submit" variant="primary" size="sm" disabled={saving || !institucion} icon={saving ? Loader2 : undefined}>
-          {saving ? "Guardando..." : "Agregar"}
+          {saving ? "Guardando..." : isEditing ? "Guardar" : "Agregar"}
         </Button>
       </div>
     </form>
   );
 }
 
-// ─── Form: Agregar Cargo Directivo ──────────────────────────────
+// ─── Form: Agregar/Editar Cargo Directivo ───────────────────────
 
-function AddCargoDirectivoForm({ personaId, onCreated, onCancel }) {
+function AddCargoDirectivoForm({ personaId, initial, onCreated, onCancel }) {
+  const isEditing = !!initial;
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [institucion, setInstitucion] = useState(null);
-  const [cargo, setCargo] = useState("");
+  const [institucion, setInstitucion] = useState(
+    initial ? { id: initial.institucion, razon_social: initial.institucion_nombre, abreviatura: initial.institucion_abreviatura } : null
+  );
+  const [cargo, setCargo] = useState(initial?.cargo || "");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!institucion || !cargo.trim()) return;
     setSaving(true);
     try {
-      await createCargoDirectivo({
-        persona: personaId,
-        institucion: institucion.id,
-        cargo,
-        activo: true,
-      });
-      showToast("Cargo directivo agregado", "success");
+      if (isEditing) {
+        await updateCargoDirectivo(initial.id, { cargo });
+        showToast("Cargo directivo actualizado", "success");
+      } else {
+        await createCargoDirectivo({
+          persona: personaId,
+          institucion: institucion.id,
+          cargo,
+          activo: true,
+        });
+        showToast("Cargo directivo agregado", "success");
+      }
       onCreated();
     } catch (err) {
-      showToast(err?.data?.detail || err?.data?.non_field_errors?.[0] || "Error al crear cargo", "error");
+      showToast(err?.data?.detail || err?.data?.non_field_errors?.[0] || `Error al ${isEditing ? "actualizar" : "crear"} cargo`, "error");
     } finally {
       setSaving(false);
     }
@@ -469,25 +531,29 @@ function AddCargoDirectivoForm({ personaId, onCreated, onCancel }) {
   return (
     <form onSubmit={handleSubmit} className="bg-amber-50/50 border border-amber-100 rounded-lg p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <Text variant="bodySmBold" className="text-amber-700">Nuevo Cargo Directivo</Text>
+        <Text variant="bodySmBold" className="text-amber-700">{isEditing ? "Editar Cargo Directivo" : "Nuevo Cargo Directivo"}</Text>
         <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600">
           <X size={16} />
         </button>
       </div>
 
-      <EntitySearch
-        label="Institución *"
-        placeholder="Buscar institución..."
-        fetchFn={getInstituciones}
-        onSelect={setInstitucion}
-      />
+      {!isEditing && (
+        <EntitySearch
+          label="Institución *"
+          placeholder="Buscar institución..."
+          fetchFn={getInstituciones}
+          onSelect={setInstitucion}
+        />
+      )}
       {institucion && (
         <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 border border-amber-200">
           <Award size={12} className="text-amber-500" />
           <Text variant="bodySm" className="text-amber-700 font-medium">{institucion.abreviatura || institucion.razon_social}</Text>
-          <button type="button" onClick={() => setInstitucion(null)} className="ml-auto text-slate-400 hover:text-red-500">
-            <X size={12} />
-          </button>
+          {!isEditing && (
+            <button type="button" onClick={() => setInstitucion(null)} className="ml-auto text-slate-400 hover:text-red-500">
+              <X size={12} />
+            </button>
+          )}
         </div>
       )}
 
@@ -495,7 +561,7 @@ function AddCargoDirectivoForm({ personaId, onCreated, onCancel }) {
 
       <div className="flex justify-end">
         <Button type="submit" variant="primary" size="sm" disabled={saving || !institucion || !cargo.trim()} icon={saving ? Loader2 : undefined}>
-          {saving ? "Guardando..." : "Agregar"}
+          {saving ? "Guardando..." : isEditing ? "Guardar" : "Agregar"}
         </Button>
       </div>
     </form>
@@ -504,54 +570,18 @@ function AddCargoDirectivoForm({ personaId, onCreated, onCancel }) {
 
 // ─── Componente: Vínculo Laboral con edición inline ─────────────
 
-function VinculoLaboralItem({ vinculo, onDelete, onUpdated }) {
+function VinculoLaboralItem({ vinculo, personaId, onDelete, onUpdated }) {
   const router = useRouter();
-  const { showToast } = useToast();
   const [editing, setEditing] = useState(false);
-  const [cargo, setCargo] = useState(vinculo.cargo || "");
-  const [especialidad, setEspecialidad] = useState(vinculo.especialidad || "");
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await updateVinculoLaboral(vinculo.id, { cargo, especialidad });
-      showToast("Vínculo actualizado", "success");
-      setEditing(false);
-      if (onUpdated) onUpdated();
-    } catch {
-      showToast("Error al actualizar", "error");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   if (editing) {
     return (
-      <div className="bg-white border border-emerald-200 rounded-lg p-3 space-y-2">
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="text"
-            value={cargo}
-            onChange={(e) => setCargo(e.target.value)}
-            placeholder="Cargo"
-            className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:border-emerald-400"
-          />
-          <input
-            type="text"
-            value={especialidad}
-            onChange={(e) => setEspecialidad(e.target.value)}
-            placeholder="Especialidad"
-            className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:border-emerald-400"
-          />
-        </div>
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={() => setEditing(false)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600">Cancelar</button>
-          <button type="button" onClick={handleSave} disabled={saving} className="text-[10px] font-bold text-emerald-600 hover:text-emerald-800 disabled:opacity-50">
-            {saving ? "Guardando..." : "Guardar"}
-          </button>
-        </div>
-      </div>
+      <AddVinculoLaboralForm
+        personaId={personaId}
+        initial={vinculo}
+        onCreated={() => { setEditing(false); onUpdated(); }}
+        onCancel={() => setEditing(false)}
+      />
     );
   }
 
@@ -595,7 +625,7 @@ function VinculoLaboralItem({ vinculo, onDelete, onUpdated }) {
 
 // ─── Componente: Item de Relación ───────────────────────────────
 
-function RelacionItem({ icon: Icon, iconBg, nombre, subtitulo, badges, href, onDelete }) {
+function RelacionItem({ icon: Icon, iconBg, nombre, subtitulo, badges, href, onDelete, onEdit }) {
   const router = useRouter();
   return (
     <div
@@ -621,17 +651,131 @@ function RelacionItem({ icon: Icon, iconBg, nombre, subtitulo, badges, href, onD
           </div>
         )}
       </div>
-      {onDelete && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-red-500 shrink-0"
-          title="Eliminar"
-        >
-          <X size={14} />
-        </button>
-      )}
+      <div className="flex items-center gap-1 shrink-0">
+        {onEdit && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-blue-500 p-1"
+            title="Editar"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+        )}
+        {onDelete && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-red-500 p-1"
+            title="Eliminar"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
     </div>
+  );
+}
+
+// ─── Componente: Formación con edición inline ───────────────────
+
+function FormacionItem({ formacion, personaId, onDelete, onUpdated }) {
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <AddFormacionForm
+        personaId={personaId}
+        initial={formacion}
+        onCreated={() => { setEditing(false); onUpdated(); }}
+        onCancel={() => setEditing(false)}
+      />
+    );
+  }
+
+  const vigenciaBadge = formacion.vigente
+    ? { label: "Vigente", className: "bg-emerald-50 text-emerald-700" }
+    : { label: "Finalizada", className: "bg-slate-100 text-slate-500" };
+  return (
+    <RelacionItem
+      icon={GraduationCap}
+      iconBg="bg-violet-50 text-violet-500"
+      nombre={formacion.oferta_academica_nombre || formacion.titulo_obtenido || "Formación"}
+      subtitulo={`${formacion.institucion_nombre}${formacion.institucion_abreviatura ? ` (${formacion.institucion_abreviatura})` : ""}`}
+      badges={[
+        { label: vigenciaBadge.label, className: vigenciaBadge.className },
+        ...(formacion.anio_ingreso ? [{ label: `${formacion.anio_ingreso}${formacion.anio_egreso ? `–${formacion.anio_egreso}` : "–presente"}` }] : []),
+      ]}
+      href={formacion.institucion ? `/ventas-crm/instituciones/${formacion.institucion}` : undefined}
+      onEdit={() => setEditing(true)}
+      onDelete={formacion.tipo !== "grado" ? onDelete : undefined}
+    />
+  );
+}
+
+// ─── Componente: Vínculo Docente con edición inline ─────────────
+
+function VinculoDocenteItem({ vinculo, personaId, onDelete, onUpdated }) {
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <AddVinculoDocenteForm
+        personaId={personaId}
+        initial={vinculo}
+        onCreated={() => { setEditing(false); onUpdated(); }}
+        onCancel={() => setEditing(false)}
+      />
+    );
+  }
+
+  return (
+    <RelacionItem
+      icon={BookOpen}
+      iconBg="bg-blue-50 text-blue-500"
+      nombre={vinculo.institucion_nombre}
+      subtitulo={[vinculo.oferta_academica_nombre, vinculo.catedra].filter(Boolean).join(" · ") || undefined}
+      badges={[
+        { label: TIPO_DOCENTE_LABELS[vinculo.tipo] || vinculo.tipo, className: "bg-blue-50 text-blue-700" },
+        ...(!vinculo.activo ? [{ label: "Inactivo", className: "bg-red-50 text-red-600" }] : []),
+      ]}
+      href={vinculo.institucion ? `/ventas-crm/instituciones/${vinculo.institucion}` : undefined}
+      onEdit={() => setEditing(true)}
+      onDelete={onDelete}
+    />
+  );
+}
+
+// ─── Componente: Cargo Directivo con edición inline ─────────────
+
+function CargoDirectivoItem({ cargo: cargoData, personaId, onDelete, onUpdated }) {
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <AddCargoDirectivoForm
+        personaId={personaId}
+        initial={cargoData}
+        onCreated={() => { setEditing(false); onUpdated(); }}
+        onCancel={() => setEditing(false)}
+      />
+    );
+  }
+
+  return (
+    <RelacionItem
+      icon={Award}
+      iconBg="bg-amber-50 text-amber-500"
+      nombre={cargoData.institucion_nombre}
+      subtitulo={cargoData.cargo}
+      badges={[
+        ...(!cargoData.activo ? [{ label: "Inactivo", className: "bg-red-50 text-red-600" }] : []),
+        ...(cargoData.desde ? [{ label: `Desde ${cargoData.desde}` }] : []),
+      ]}
+      href={cargoData.institucion ? `/ventas-crm/instituciones/${cargoData.institucion}` : undefined}
+      onEdit={() => setEditing(true)}
+      onDelete={onDelete}
+    />
   );
 }
 
@@ -765,24 +909,15 @@ export function RelacionesSection({ persona, onRelacionesChanged }) {
                 Formaciones ({formaciones.length})
               </span>
             </div>
-            {formaciones.map((f) => {
-              const estado = ESTADO_FORMACION[f.estado] || { label: f.estado, className: "" };
-              return (
-                <RelacionItem
-                  key={`form-${f.id}`}
-                  icon={GraduationCap}
-                  iconBg="bg-violet-50 text-violet-500"
-                  nombre={f.oferta_academica_nombre || f.titulo_obtenido || "Formación"}
-                  subtitulo={`${f.institucion_nombre}${f.institucion_abreviatura ? ` (${f.institucion_abreviatura})` : ""}`}
-                  badges={[
-                    { label: estado.label, className: estado.className },
-                    ...(f.anio_ingreso ? [{ label: `${f.anio_ingreso}${f.anio_egreso ? `–${f.anio_egreso}` : "–presente"}` }] : []),
-                  ]}
-                  href={f.institucion ? `/ventas-crm/instituciones/${f.institucion}` : undefined}
-                  onDelete={() => handleDelete("formacion", f.id)}
-                />
-              );
-            })}
+            {formaciones.map((f) => (
+              <FormacionItem
+                key={`form-${f.id}`}
+                formacion={f}
+                personaId={persona.id}
+                onDelete={() => handleDelete("formacion", f.id)}
+                onUpdated={onRelacionesChanged}
+              />
+            ))}
           </div>
         )}
 
@@ -796,18 +931,12 @@ export function RelacionesSection({ persona, onRelacionesChanged }) {
               </span>
             </div>
             {vinculosDocentes.map((d) => (
-              <RelacionItem
+              <VinculoDocenteItem
                 key={`doc-${d.id}`}
-                icon={BookOpen}
-                iconBg="bg-blue-50 text-blue-500"
-                nombre={d.institucion_nombre}
-                subtitulo={[d.oferta_academica_nombre, d.catedra].filter(Boolean).join(" · ") || undefined}
-                badges={[
-                  { label: TIPO_DOCENTE_LABELS[d.tipo] || d.tipo, className: "bg-blue-50 text-blue-700" },
-                  ...(!d.activo ? [{ label: "Inactivo", className: "bg-red-50 text-red-600" }] : []),
-                ]}
-                href={d.institucion ? `/ventas-crm/instituciones/${d.institucion}` : undefined}
+                vinculo={d}
+                personaId={persona.id}
                 onDelete={() => handleDelete("docente", d.id)}
+                onUpdated={onRelacionesChanged}
               />
             ))}
           </div>
@@ -823,18 +952,12 @@ export function RelacionesSection({ persona, onRelacionesChanged }) {
               </span>
             </div>
             {cargosDirectivos.map((c) => (
-              <RelacionItem
+              <CargoDirectivoItem
                 key={`dir-${c.id}`}
-                icon={Award}
-                iconBg="bg-amber-50 text-amber-500"
-                nombre={c.institucion_nombre}
-                subtitulo={c.cargo}
-                badges={[
-                  ...(!c.activo ? [{ label: "Inactivo", className: "bg-red-50 text-red-600" }] : []),
-                  ...(c.desde ? [{ label: `Desde ${c.desde}` }] : []),
-                ]}
-                href={c.institucion ? `/ventas-crm/instituciones/${c.institucion}` : undefined}
+                cargo={c}
+                personaId={persona.id}
                 onDelete={() => handleDelete("directivo", c.id)}
+                onUpdated={onRelacionesChanged}
               />
             ))}
           </div>
@@ -853,6 +976,7 @@ export function RelacionesSection({ persona, onRelacionesChanged }) {
               <VinculoLaboralItem
                 key={`lab-${v.id}`}
                 vinculo={v}
+                personaId={persona.id}
                 onDelete={() => handleDelete("laboral", v.id)}
                 onUpdated={onRelacionesChanged}
               />
