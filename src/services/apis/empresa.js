@@ -25,3 +25,52 @@ export async function updateEmpresa(data) {
     "actualizar configuración de empresa",
   );
 }
+
+// ─── Sucursales ─────────────────────────────────────────────────
+
+export async function getSucursales() {
+  return request(
+    `${API_URL}/empresa/sucursales/`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver sucursales",
+  );
+}
+
+export async function createSucursal(data) {
+  return request(
+    `${API_URL}/empresa/sucursales/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear sucursal",
+  );
+}
+
+export async function updateSucursal(id, data) {
+  return request(
+    `${API_URL}/empresa/sucursales/${id}/`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar sucursal",
+  );
+}
+
+export async function deleteSucursal(id) {
+  return request(
+    `${API_URL}/empresa/sucursales/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "eliminar sucursal",
+  );
+}

@@ -31,6 +31,7 @@ import {
 import { useApi } from "@/hooks/useApi";
 import { getEmpresa, updateEmpresa } from "@/services/apis/empresa.js";
 import { getFullImageUrl } from "@/services/apis/catalogo.js";
+import SucursalesManager from "@/components/empresa/SucursalesManager";
 
 const MONEDA_OPTIONS = [
   { value: "PYG", label: "Guaraní (PYG)" },
@@ -452,6 +453,9 @@ export default function EmpresaPage() {
           setIsFilerOpen(false);
         }}
       />
+
+      {/* Sucursales */}
+      <SucursalesManager />
     </div>
     </main>
     </div>
