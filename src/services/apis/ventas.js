@@ -1161,3 +1161,64 @@ export async function deleteOfertaAcademica(id) {
     "eliminar oferta académica",
   );
 }
+
+// ─── Direcciones de Envío ───────────────────────────────────────
+
+export async function getDireccionesEnvio(cuentaId) {
+  const query = toQueryString({ cuenta: cuentaId });
+  return request(
+    `${API_URL}/ventas/direcciones-envio/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver direcciones de envío",
+  );
+}
+
+export async function createDireccionEnvio(data) {
+  return request(
+    `${API_URL}/ventas/direcciones-envio/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear dirección de envío",
+  );
+}
+
+export async function updateDireccionEnvio(id, data) {
+  return request(
+    `${API_URL}/ventas/direcciones-envio/${id}/`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar dirección de envío",
+  );
+}
+
+export async function deleteDireccionEnvio(id) {
+  return request(
+    `${API_URL}/ventas/direcciones-envio/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "eliminar dirección de envío",
+  );
+}
+
+export async function marcarDireccionPrincipal(id) {
+  return request(
+    `${API_URL}/ventas/direcciones-envio/${id}/principal/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "marcar dirección como principal",
+  );
+}

@@ -4,12 +4,12 @@ import { Save, Loader2 } from "lucide-react";
 
 import {
   Button, Input, Field, Toggle, PhoneInput, validatePhone, buildPhoneValue, useConfirm,
+  UbicacionPicker,
 } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { Text } from "@/components/ui/basics/Typography";
 import { useKeySave } from "@/hooks/useKeySave";
 import { cn } from "@/lib/utils";
-import { DEPARTAMENTOS, CIUDADES_POR_DEPARTAMENTO } from "@/config/paraguay";
 import { CATEGORIA_OPTIONS_FORM, TRATAMIENTO_OPTIONS } from "@/config/personas";
 import { updatePersona, createRegistroProfesional, updateRegistroProfesional } from "@/services/apis/ventas";
 
@@ -83,6 +83,8 @@ export function DatosPersonaForm({ persona, onSaved }) {
     departamento: persona.departamento || "",
     ciudad: persona.ciudad || "",
     direccion: persona.direccion || "",
+    latitud: persona.latitud || null,
+    longitud: persona.longitud || null,
     // Notas
     notas: persona.notas || "",
   });
@@ -90,10 +92,6 @@ export function DatosPersonaForm({ persona, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
-
-  const ciudades = form.departamento
-    ? (CIUDADES_POR_DEPARTAMENTO[form.departamento] || [])
-    : [];
 
   const isProspecto = persona.etapa === "prospecto";
 
@@ -203,6 +201,10 @@ export function DatosPersonaForm({ persona, onSaved }) {
       const payload = {
         ...rest,
         telefono: buildPhoneValue(telefonoPrefijo, telefono),
+        // Auto-generar Google Maps URL desde coordenadas
+        google_maps_url: rest.latitud && rest.longitud
+          ? `https://www.google.com/maps?q=${rest.latitud},${rest.longitud}`
+          : "",
       };
       if (payload.es_extranjero) payload.ruc = "";
       const updated = await updatePersona(persona.id, payload);
@@ -378,34 +380,18 @@ export function DatosPersonaForm({ persona, onSaved }) {
 
       {/* ─── Ubicación ─────────────────────────────────── */}
       <div>
-        <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
-          Ubicación
-        </Text>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Field label="Departamento">
-            <select
-              className={selectClass}
-              value={form.departamento}
-              onChange={(e) => { setForm((p) => ({ ...p, departamento: e.target.value, ciudad: "" })); setIsDirty(true); }}
-            >
-              <option value="">— Seleccionar —</option>
-              {DEPARTAMENTOS.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </Field>
-          <Field label="Ciudad">
-            <select className={selectClass} value={form.ciudad} onChange={handleChange("ciudad")} disabled={!form.departamento}>
-              <option value="">— Seleccionar —</option>
-              {ciudades.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </Field>
-          <Input
-            label="Dirección"
-            value={form.direccion}
-            onChange={handleChange("direccion")}
-            placeholder="Calle, número, barrio"
-            maxLength={500}
-          />
-        </div>
+        <UbicacionPicker
+          label="Dirección Fiscal"
+          departamento={form.departamento}
+          ciudad={form.ciudad}
+          direccion={form.direccion}
+          latitud={form.latitud}
+          longitud={form.longitud}
+          onChange={({ departamento, ciudad, direccion, latitud, longitud }) => {
+            setForm((p) => ({ ...p, departamento, ciudad, direccion, latitud, longitud }));
+            setIsDirty(true);
+          }}
+        />
       </div>
 
       {/* ─── Notas ─────────────────────────────────────── */}

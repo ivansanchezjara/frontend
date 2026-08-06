@@ -1,17 +1,12 @@
 "use client";
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import dynamic from "next/dynamic";
 
-import { Input, Button, Field, Toggle, PhoneInput, validatePhone, buildPhoneValue, AddressInput } from "@/components/ui";
+import { Input, Button, Field, Toggle, PhoneInput, validatePhone, buildPhoneValue, UbicacionPicker } from "@/components/ui";
 import { Text } from "@/components/ui/basics/Typography";
 import { cn } from "@/lib/utils";
-import { DEPARTAMENTOS, CIUDADES_POR_DEPARTAMENTO } from "@/config/paraguay";
 
 import { CATEGORIA_OPTIONS_FORM, TRATAMIENTO_OPTIONS } from "@/config/personas";
-
-// Leaflet no soporta SSR
-const MapaPicker = dynamic(() => import("@/components/ui/basics/MapaPicker"), { ssr: false });
 
 // ─── Constantes ─────────────────────────────────────────────────
 
@@ -58,10 +53,6 @@ export function PersonaForm({ persona, onSave, saving = false, errors = null, is
   const [showMore, setShowMore] = useState(!isNew || persona?.etapa === "activo"); // Expandido por default en edición o cliente activo
   const [localErrors, setLocalErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
-
-  const ciudades = form.departamento
-    ? (CIUDADES_POR_DEPARTAMENTO[form.departamento] || [])
-    : [];
 
   const isProspecto = form.etapa === "prospecto";
 
@@ -126,6 +117,10 @@ export function PersonaForm({ persona, onSave, saving = false, errors = null, is
     const payload = {
       ...rest,
       telefono: buildPhoneValue(telefonoPrefijo, telefono),
+      // Auto-generar Google Maps URL desde coordenadas
+      google_maps_url: rest.latitud && rest.longitud
+        ? `https://www.google.com/maps?q=${rest.latitud},${rest.longitud}`
+        : "",
     };
     if (payload.es_extranjero) payload.ruc = "";
     if (onSave) onSave(payload);
@@ -316,85 +311,18 @@ export function PersonaForm({ persona, onSave, saving = false, errors = null, is
 
             {/* Ubicación */}
             <div>
-              <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3 block">
-                Ubicación
-              </Text>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Departamento">
-                  <select
-                    className={selectClass}
-                    value={form.departamento}
-                    onChange={(e) => { setForm((p) => ({ ...p, departamento: e.target.value, ciudad: "" })); setIsDirty(true); }}
-                  >
-                    <option value="">— Seleccionar —</option>
-                    {DEPARTAMENTOS.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Ciudad">
-                  <select
-                    className={selectClass}
-                    value={form.ciudad}
-                    onChange={handleChange("ciudad")}
-                    disabled={!form.departamento}
-                  >
-                    <option value="">— Seleccionar —</option>
-                    {ciudades.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </Field>
-                <div className="md:col-span-2">
-                  <AddressInput
-                    label="Dirección"
-                    value={form.direccion}
-                    onChange={handleChange("direccion")}
-                    placeholder="Calle, número, barrio"
-                    maxLength={500}
-                    context={[form.ciudad, form.departamento].filter(Boolean).join(", ")}
-                    onSelect={({ lat, lng }) => {
-                      setForm((p) => ({ ...p, latitud: lat, longitud: lng }));
-                      setIsDirty(true);
-                    }}
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <Field label="Ubicación en mapa">
-                    <MapaPicker
-                      latitud={form.latitud}
-                      longitud={form.longitud}
-                      centerOn={[form.ciudad, form.departamento].filter(Boolean).join(", ")}
-                      onChange={({ lat, lng, departamentoRaw, ciudad, direccion }) => {
-                        setForm((p) => {
-                          const update = { ...p, latitud: lat, longitud: lng };
-                          if (departamentoRaw) {
-                            const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-                            const deptoNorm = norm(departamentoRaw);
-                            const match = DEPARTAMENTOS.find((d) => norm(d) === deptoNorm)
-                              || DEPARTAMENTOS.find((d) => deptoNorm.includes(norm(d)) || norm(d).includes(deptoNorm));
-                            if (match) {
-                              update.departamento = match;
-                              update.ciudad = "";
-                              if (ciudad) {
-                                const ciudadesDepto = CIUDADES_POR_DEPARTAMENTO[match] || [];
-                                const ciudadNorm = norm(ciudad);
-                                const ciudadMatch = ciudadesDepto.find((c) => norm(c) === ciudadNorm)
-                                  || ciudadesDepto.find((c) => ciudadNorm.includes(norm(c)) || norm(c).includes(ciudadNorm));
-                                if (ciudadMatch) update.ciudad = ciudadMatch;
-                              }
-                            }
-                          }
-                          if (direccion) update.direccion = direccion;
-                          return update;
-                        });
-                        setIsDirty(true);
-                      }}
-                      height="350px"
-                    />
-                  </Field>
-                </div>
-              </div>
+              <UbicacionPicker
+                label="Dirección Fiscal"
+                departamento={form.departamento}
+                ciudad={form.ciudad}
+                direccion={form.direccion}
+                latitud={form.latitud}
+                longitud={form.longitud}
+                onChange={({ departamento, ciudad, direccion, latitud, longitud }) => {
+                  setForm((p) => ({ ...p, departamento, ciudad, direccion, latitud, longitud }));
+                  setIsDirty(true);
+                }}
+              />
             </div>
 
             {/* Notas */}

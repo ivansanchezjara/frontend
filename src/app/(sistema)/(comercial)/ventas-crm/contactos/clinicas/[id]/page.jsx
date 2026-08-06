@@ -2,15 +2,15 @@
 import { useCallback, useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import {
   SearchX, ShoppingBag, Plus, Save, Loader2, MapPin, X, Search, UserPlus,
 } from "lucide-react";
 
 import InteraccionTimeline from "@/components/comercial/ventas/clientes/InteraccionTimeline";
+import DireccionesEnvio from "@/components/comercial/DireccionesEnvio";
 import {
   Button, Badge, LoadingScreen, PageHeader, Pagination, Section, EmptyState,
-  Input, Field, PhoneInput, validatePhone, buildPhoneValue, AddressInput, useConfirm,
+  Input, Field, PhoneInput, validatePhone, buildPhoneValue, UbicacionPicker, useConfirm,
 } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { Heading, Text } from "@/components/ui/basics/Typography";
@@ -18,18 +18,11 @@ import { useApi } from "@/hooks/useApi";
 import { useKeySave } from "@/hooks/useKeySave";
 import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
-import { DEPARTAMENTOS, CIUDADES_POR_DEPARTAMENTO } from "@/config/paraguay";
 import { TIER_LABELS } from "@/config/personas";
 import {
   getClinica, updateClinica, getInteracciones, getVentas,
   createVinculoLaboral, deleteVinculoLaboral, updateVinculoLaboral, getPersonas,
 } from "@/services/apis/ventas";
-
-// Leaflet no soporta SSR
-const MapaPicker = dynamic(() => import("@/components/ui/basics/MapaPicker"), { ssr: false });
-
-const selectClass =
-  "block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500";
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -145,7 +138,6 @@ function DatosClinicaForm({ clinica, onSaved }) {
     departamento: clinica.departamento || "",
     ciudad: clinica.ciudad || "",
     direccion: clinica.direccion || "",
-    direccion_entrega: clinica.direccion_entrega || "",
     latitud: clinica.latitud || null,
     longitud: clinica.longitud || null,
     notas: clinica.notas || "",
@@ -154,10 +146,6 @@ function DatosClinicaForm({ clinica, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
-
-  const ciudades = form.departamento
-    ? (CIUDADES_POR_DEPARTAMENTO[form.departamento] || [])
-    : [];
 
   // Protección de cambios sin guardar
   useEffect(() => {
@@ -202,6 +190,10 @@ function DatosClinicaForm({ clinica, onSaved }) {
         contacto_compras_telefono: buildPhoneValue(contacto_compras_prefijo, contacto_compras_telefono),
         latitud: form.latitud || null,
         longitud: form.longitud || null,
+        // Auto-generar Google Maps URL desde coordenadas
+        google_maps_url: form.latitud && form.longitud
+          ? `https://www.google.com/maps?q=${form.latitud},${form.longitud}`
+          : "",
       };
       const updated = await updateClinica(clinica.id, payload);
       setIsDirty(false);
@@ -266,75 +258,21 @@ function DatosClinicaForm({ clinica, onSaved }) {
         </div>
       </div>
 
-      {/* Ubicación */}
+      {/* Dirección Fiscal */}
       <div>
-        <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
-          Ubicación y Entrega
-        </Text>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Field label="Departamento">
-            <select className={selectClass} value={form.departamento} onChange={(e) => { setForm((p) => ({ ...p, departamento: e.target.value, ciudad: "" })); setIsDirty(true); }}>
-              <option value="">— Seleccionar —</option>
-              {DEPARTAMENTOS.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </Field>
-          <Field label="Ciudad">
-            <select className={selectClass} value={form.ciudad} onChange={handleChange("ciudad")} disabled={!form.departamento}>
-              <option value="">— Seleccionar —</option>
-              {ciudades.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </Field>
-          <AddressInput
-            label="Dirección"
-            value={form.direccion}
-            onChange={handleChange("direccion")}
-            placeholder="Calle, número, barrio"
-            maxLength={500}
-            context={[form.ciudad, form.departamento].filter(Boolean).join(", ")}
-            onSelect={({ lat, lng }) => {
-              setForm((p) => ({ ...p, latitud: lat, longitud: lng }));
-              setIsDirty(true);
-            }}
-          />
-        </div>
-        <div className="mt-4">
-          <Input label="Dirección de Entrega (si difiere)" value={form.direccion_entrega} onChange={handleChange("direccion_entrega")} placeholder="Dirección alternativa para entregas" maxLength={500} />
-        </div>
-        <div className="mt-4">
-          <Field label="Ubicación en mapa">
-            <MapaPicker
-              latitud={form.latitud}
-              longitud={form.longitud}
-              centerOn={[form.ciudad, form.departamento].filter(Boolean).join(", ")}
-              onChange={({ lat, lng, departamentoRaw, ciudad, direccion }) => {
-                setForm((p) => {
-                  const update = { ...p, latitud: lat, longitud: lng };
-                  if (departamentoRaw) {
-                    const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-                    const deptoNorm = norm(departamentoRaw);
-                    const match = DEPARTAMENTOS.find((d) => norm(d) === deptoNorm)
-                      || DEPARTAMENTOS.find((d) => deptoNorm.includes(norm(d)) || norm(d).includes(deptoNorm));
-                    if (match) {
-                      update.departamento = match;
-                      update.ciudad = "";
-                      if (ciudad) {
-                        const ciudadesDepto = CIUDADES_POR_DEPARTAMENTO[match] || [];
-                        const ciudadNorm = norm(ciudad);
-                        const ciudadMatch = ciudadesDepto.find((c) => norm(c) === ciudadNorm)
-                          || ciudadesDepto.find((c) => ciudadNorm.includes(norm(c)) || norm(c).includes(ciudadNorm));
-                        if (ciudadMatch) update.ciudad = ciudadMatch;
-                      }
-                    }
-                  }
-                  if (direccion) update.direccion = direccion;
-                  return update;
-                });
-                setIsDirty(true);
-              }}
-              height="350px"
-            />
-          </Field>
-        </div>
+        <UbicacionPicker
+          label="Dirección Fiscal"
+          departamento={form.departamento}
+          ciudad={form.ciudad}
+          direccion={form.direccion}
+          latitud={form.latitud}
+          longitud={form.longitud}
+          onChange={({ departamento, ciudad, direccion, latitud, longitud }) => {
+            setForm((p) => ({ ...p, departamento, ciudad, direccion, latitud, longitud }));
+            setIsDirty(true);
+          }}
+          mapHeight="350px"
+        />
       </div>
 
       {/* Notas */}
@@ -697,6 +635,16 @@ export default function PerfilClinicaPage() {
             }
           >
             <DatosClinicaForm clinica={clinica} onSaved={(updated) => setClinica(updated)} />
+          </Section>
+
+          {/* Direcciones de Envío */}
+          <Section
+            title="Direcciones de Envío"
+            subtitle="Direcciones para despacho y delivery. Se pueden seleccionar al crear una venta."
+          >
+            <div className="p-6">
+              <DireccionesEnvio cuentaId={id} />
+            </div>
           </Section>
 
           {/* Profesionales vinculados */}

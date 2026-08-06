@@ -1,22 +1,14 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 
 import {
   PageHeader, Section, Input, Button, Field, PhoneInput, validatePhone, buildPhoneValue,
-  AddressInput,
+  UbicacionPicker,
 } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { Text } from "@/components/ui/basics/Typography";
 import { createClinica } from "@/services/apis/ventas";
-import { DEPARTAMENTOS, CIUDADES_POR_DEPARTAMENTO } from "@/config/paraguay";
-
-// Leaflet no soporta SSR
-const MapaPicker = dynamic(() => import("@/components/ui/basics/MapaPicker"), { ssr: false });
-
-const selectClass =
-  "block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500";
 
 export default function NuevaClinicaPage() {
   const router = useRouter();
@@ -36,15 +28,10 @@ export default function NuevaClinicaPage() {
     departamento: "",
     ciudad: "",
     direccion: "",
-    direccion_entrega: "",
     latitud: null,
     longitud: null,
   });
   const [errors, setErrors] = useState({});
-
-  const ciudades = form.departamento
-    ? (CIUDADES_POR_DEPARTAMENTO[form.departamento] || [])
-    : [];
 
   const handleChange = (field) => (e) => {
     const value = e?.target ? e.target.value : e;
@@ -93,6 +80,9 @@ export default function NuevaClinicaPage() {
         tier_precio: "publico",
         latitud: form.latitud || null,
         longitud: form.longitud || null,
+        google_maps_url: form.latitud && form.longitud
+          ? `https://www.google.com/maps?q=${form.latitud},${form.longitud}`
+          : "",
       };
       const nueva = await createClinica(payload);
       showToast("Clínica creada exitosamente", "success");
@@ -208,92 +198,18 @@ export default function NuevaClinicaPage() {
 
               {/* Ubicación */}
               <div>
-                <Text variant="label" className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-4 block">
-                  Ubicación
-                </Text>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="Departamento">
-                    <select
-                      className={selectClass}
-                      value={form.departamento}
-                      onChange={(e) => setForm((p) => ({ ...p, departamento: e.target.value, ciudad: "" }))}
-                    >
-                      <option value="">— Seleccionar —</option>
-                      {DEPARTAMENTOS.map((d) => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Ciudad">
-                    <select
-                      className={selectClass}
-                      value={form.ciudad}
-                      onChange={handleChange("ciudad")}
-                      disabled={!form.departamento}
-                    >
-                      <option value="">— Seleccionar —</option>
-                      {ciudades.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <div className="md:col-span-2">
-                    <AddressInput
-                      label="Dirección"
-                      value={form.direccion}
-                      onChange={handleChange("direccion")}
-                      placeholder="Calle, número, barrio"
-                      maxLength={500}
-                      context={[form.ciudad, form.departamento].filter(Boolean).join(", ")}
-                      onSelect={({ lat, lng }) => {
-                        setForm((p) => ({ ...p, latitud: lat, longitud: lng }));
-                      }}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Input
-                      label="Dirección de Entrega (si difiere)"
-                      value={form.direccion_entrega}
-                      onChange={handleChange("direccion_entrega")}
-                      placeholder="Dirección alternativa para entregas"
-                      maxLength={500}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Field label="Ubicación en mapa">
-                      <MapaPicker
-                        latitud={form.latitud}
-                        longitud={form.longitud}
-                        centerOn={[form.ciudad, form.departamento].filter(Boolean).join(", ")}
-                        onChange={({ lat, lng, departamentoRaw, ciudad, direccion }) => {
-                          setForm((p) => {
-                            const update = { ...p, latitud: lat, longitud: lng };
-                            if (departamentoRaw) {
-                              const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-                              const deptoNorm = norm(departamentoRaw);
-                              const match = DEPARTAMENTOS.find((d) => norm(d) === deptoNorm)
-                                || DEPARTAMENTOS.find((d) => deptoNorm.includes(norm(d)) || norm(d).includes(deptoNorm));
-                              if (match) {
-                                update.departamento = match;
-                                update.ciudad = "";
-                                if (ciudad) {
-                                  const ciudadesDepto = CIUDADES_POR_DEPARTAMENTO[match] || [];
-                                  const ciudadNorm = norm(ciudad);
-                                  const ciudadMatch = ciudadesDepto.find((c) => norm(c) === ciudadNorm)
-                                    || ciudadesDepto.find((c) => ciudadNorm.includes(norm(c)) || norm(c).includes(ciudadNorm));
-                                  if (ciudadMatch) update.ciudad = ciudadMatch;
-                                }
-                              }
-                            }
-                            if (direccion) update.direccion = direccion;
-                            return update;
-                          });
-                        }}
-                        height="350px"
-                      />
-                    </Field>
-                  </div>
-                </div>
+                <UbicacionPicker
+                  label="Dirección Fiscal"
+                  departamento={form.departamento}
+                  ciudad={form.ciudad}
+                  direccion={form.direccion}
+                  latitud={form.latitud}
+                  longitud={form.longitud}
+                  onChange={({ departamento, ciudad, direccion, latitud, longitud }) => {
+                    setForm((p) => ({ ...p, departamento, ciudad, direccion, latitud, longitud }));
+                  }}
+                  mapHeight="350px"
+                />
               </div>
 
               {/* Submit */}

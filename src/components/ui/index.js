@@ -8,6 +8,7 @@ export { default as Toggle } from './basics/Toggle';
 export { default as TagsInput } from './basics/TagsInput';
 export { default as PhoneInput, validatePhone, buildPhoneValue, PHONE_PREFIXES } from './basics/PhoneInput';
 export { default as AddressInput } from './basics/AddressInput';
+export { default as UbicacionPicker } from './basics/UbicacionPicker';
 export * from './basics/Typography';
 
 // Feedback

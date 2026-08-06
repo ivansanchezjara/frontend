@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SearchX, ShoppingBag, Plus, Tag } from "lucide-react";
 
 import InteraccionTimeline from "@/components/comercial/ventas/clientes/InteraccionTimeline";
+import DireccionesEnvio from "@/components/comercial/DireccionesEnvio";
 import {
   RelacionesSection, CuentaOnlineSection,
   DatosPersonaForm, TierPrecioSection, HistorialCompras,
@@ -130,6 +131,16 @@ export default function PerfilPersonaPage() {
               persona={persona}
               onSaved={(updated) => setPersona(updated)}
             />
+          </Section>
+
+          {/* Sección: Direcciones de Envío */}
+          <Section
+            title="Direcciones de Envío"
+            subtitle="Direcciones para despacho y delivery."
+          >
+            <div className="p-6">
+              <DireccionesEnvio cuentaId={id} />
+            </div>
           </Section>
 
           {/* Sección: Tier de Precio */}
