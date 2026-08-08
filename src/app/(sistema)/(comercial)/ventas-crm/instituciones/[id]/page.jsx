@@ -7,14 +7,13 @@ import {
 } from "lucide-react";
 
 import {
-  PageHeader, Button, Input, Field, LoadingScreen, Badge, Section,
+  PageHeader, Button, Input, Field, LoadingScreen, Badge, Section, UbicacionPicker,
 } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { Text } from "@/components/ui/basics/Typography";
 import { useApi } from "@/hooks/useApi";
 import { useConfirm } from "@/components/ui/feedback/ConfirmContext";
 import { useKeySave } from "@/hooks/useKeySave";
-import { DEPARTAMENTOS, CIUDADES_POR_DEPARTAMENTO } from "@/config/paraguay";
 import { cn } from "@/lib/utils";
 import {
   getInstitucion, updateInstitucion, deleteInstitucion,
@@ -72,6 +71,7 @@ export default function InstitucionDetailPage() {
     razon_social: "", abreviatura: "", tipo_institucion: "universidad",
     ruc: "", correo_electronico: "", telefono: "",
     departamento: "", ciudad: "", direccion: "",
+    latitud: null, longitud: null,
     notas: "", etapa: "activo", tier_precio: "publico",
   };
 
@@ -107,6 +107,8 @@ export default function InstitucionDetailPage() {
         departamento: institucion.departamento || "",
         ciudad: institucion.ciudad || "",
         direccion: institucion.direccion || "",
+        latitud: institucion.latitud ?? null,
+        longitud: institucion.longitud ?? null,
         notas: institucion.notas || "",
         etapa: institucion.etapa || "activo",
         tier_precio: institucion.tier_precio || "publico",
@@ -130,7 +132,6 @@ export default function InstitucionDetailPage() {
   }, [isDirty]);
 
   const oferta = institucion?.oferta_academica || [];
-  const ciudades = form.departamento ? (CIUDADES_POR_DEPARTAMENTO[form.departamento] || []) : [];
 
   // Datos de vínculos
   const docentes = Array.isArray(docentesData) ? docentesData : (docentesData?.results || []);
@@ -308,39 +309,20 @@ export default function InstitucionDetailPage() {
                 placeholder="contacto@inst.edu.py"
                 error={fieldErrors.correo_electronico}
               />
-              <Field label="Departamento">
-                <select
-                  className={selectClass}
-                  value={form.departamento}
-                  onChange={(e) => setForm((p) => ({ ...p, departamento: e.target.value, ciudad: "" }))}
-                >
-                  <option value="">— Seleccionar —</option>
-                  {DEPARTAMENTOS.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Ciudad">
-                <select
-                  className={selectClass}
-                  value={form.ciudad}
-                  onChange={(e) => setForm((p) => ({ ...p, ciudad: e.target.value }))}
-                  disabled={!form.departamento}
-                >
-                  <option value="">— Seleccionar —</option>
-                  {ciudades.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </Field>
-              <div className="md:col-span-2">
-                <Input
-                  label="Dirección"
-                  value={form.direccion}
-                  onChange={(e) => setForm((p) => ({ ...p, direccion: e.target.value }))}
-                  placeholder="Av. España 1234"
-                />
-              </div>
+            </div>
+            <div className="mt-5">
+              <UbicacionPicker
+                label="Ubicación"
+                departamento={form.departamento}
+                ciudad={form.ciudad}
+                direccion={form.direccion}
+                latitud={form.latitud}
+                longitud={form.longitud}
+                onChange={({ departamento, ciudad, direccion, latitud, longitud }) => {
+                  setForm((p) => ({ ...p, departamento, ciudad, direccion, latitud, longitud }));
+                }}
+                mapHeight="350px"
+              />
             </div>
           </Section>
 

@@ -1,7 +1,7 @@
 import { PageHeader, Heading, Text } from '@/components/ui';
 import Link from 'next/link';
 import {
-  DollarSign, TrendingUp, BarChart3, ClipboardList, Target, ArrowRight, Briefcase
+  DollarSign, TrendingUp, BarChart3, ClipboardList, Target, ArrowRight, Briefcase, Ticket
 } from 'lucide-react';
 
 export default function GestionComercialHubPage() {
@@ -35,6 +35,13 @@ export default function GestionComercialHubPage() {
       color: 'emerald',
     },
     {
+      href: '/gestion-comercial/cupones',
+      icon: <Ticket size={32} />,
+      title: 'Cupones de Descuento',
+      desc: 'Crear, administrar y asignar cupones. Control de vigencia, restricciones por producto/marca y uso por cliente.',
+      color: 'emerald',
+    },
+    {
       href: '#',
       icon: <Target size={32} />,
       title: 'Metas y Objetivos',
@@ -54,6 +61,7 @@ export default function GestionComercialHubPage() {
             Precios, rendimiento, análisis y seguimiento comercial
           </>
         }
+        subtitleClassName="text-emerald-600"
       />
 
       <main className="flex-1 overflow-y-auto p-8 min-w-0">

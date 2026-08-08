@@ -33,12 +33,16 @@ export default function AnalisisPage() {
   return (
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       <PageHeader
-        title="Análisis de Ventas"
+        breadcrumbs={[
+          { label: "Gestión Comercial", href: "/gestion-comercial" },
+          { label: "Análisis de Ventas" },
+        ]}
         subtitle={
           <>
             <BarChart3 size={12} /> Productos más vendidos, tendencias y origen
           </>
         }
+        subtitleClassName="text-emerald-600"
       />
 
       <div className="flex-1 overflow-y-auto p-4 md:p-8 min-w-0">

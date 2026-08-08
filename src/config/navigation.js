@@ -97,6 +97,16 @@ export const erpModules = [
     estado: "activo",
     roles: ["Admin", "gestorComercial"],
   },
+  {
+    category: "Comercial",
+    href: "/ventas-crm/ecommerce",
+    icon: "🛒",
+    title: "E-commerce",
+    desc: "Administración de la tienda online: preguntas, reseñas y banners.",
+    color: "emerald",
+    estado: "activo",
+    roles: ["Admin", "vendedor", "gestorComercial"],
+  },
 
   // --- CATEGORÍA: LOGÍSTICA Y SERVICIOS ---
   {

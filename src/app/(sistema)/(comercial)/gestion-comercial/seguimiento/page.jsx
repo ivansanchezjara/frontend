@@ -77,12 +77,16 @@ export default function SeguimientoPage() {
   return (
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       <PageHeader
-        title="Seguimiento de Pedidos"
+        breadcrumbs={[
+          { label: "Gestión Comercial", href: "/gestion-comercial" },
+          { label: "Seguimiento de Pedidos" },
+        ]}
         subtitle={
           <>
             <ClipboardList size={12} /> Pipeline de ventas y actividad reciente
           </>
         }
+        subtitleClassName="text-emerald-600"
       />
 
       <div className="flex-1 overflow-y-auto p-4 md:p-8 min-w-0">

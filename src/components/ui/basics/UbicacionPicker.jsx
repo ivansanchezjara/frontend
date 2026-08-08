@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 
 import { Text } from "./Typography";
@@ -58,7 +58,7 @@ function matchCiudad(ciudadRaw, departamento) {
 /**
  * UbicacionPicker — Componente unificado de selección de ubicación.
  *
- * Combina: Departamento select → Ciudad select → AddressInput (autocomplete) → MapaPicker.
+ * Combina: Departamento select → Ciudad select → Dirección (autocomplete) → MapaPicker.
  * Todos se sincronizan: seleccionar en el mapa llena los selects y la dirección,
  * y seleccionar una sugerencia en el AddressInput mueve el pin.
  *
@@ -95,22 +95,21 @@ export default function UbicacionPicker({
     setCiudades(departamento ? CIUDADES_POR_DEPARTAMENTO[departamento] || [] : []);
   }, [departamento]);
 
+  // ─── Ref para evitar stale closures en callbacks del mapa ───
+
+  const stateRef = useRef({ departamento, ciudad, direccion, latitud, longitud, onChange });
+  stateRef.current = { departamento, ciudad, direccion, latitud, longitud, onChange };
+
   // ─── Handlers ───────────────────────────────────────────────
 
   const emit = useCallback(
     (patch) => {
-      if (onChange) {
-        onChange({
-          departamento,
-          ciudad,
-          direccion,
-          latitud,
-          longitud,
-          ...patch,
-        });
+      const { onChange: cb, departamento: d, ciudad: c, direccion: dir, latitud: lat, longitud: lng } = stateRef.current;
+      if (cb) {
+        cb({ departamento: d, ciudad: c, direccion: dir, latitud: lat, longitud: lng, ...patch });
       }
     },
-    [onChange, departamento, ciudad, direccion, latitud, longitud]
+    []
   );
 
   const handleDepartamentoChange = (e) => {
@@ -127,8 +126,19 @@ export default function UbicacionPicker({
     emit({ direccion: value });
   };
 
-  const handleAddressSelect = ({ lat, lng }) => {
-    emit({ latitud: lat, longitud: lng });
+  const handleAddressSelect = ({ lat, lng, departamentoRaw, ciudad: ciudadRaw }) => {
+    const patch = { latitud: lat, longitud: lng };
+
+    if (departamentoRaw) {
+      const deptoMatch = matchDepartamento(departamentoRaw);
+      if (deptoMatch) {
+        patch.departamento = deptoMatch;
+        const ciudadMatch = matchCiudad(ciudadRaw, deptoMatch);
+        patch.ciudad = ciudadMatch;
+      }
+    }
+
+    emit(patch);
   };
 
   const handleMapChange = useCallback(
@@ -145,7 +155,8 @@ export default function UbicacionPicker({
         }
       }
 
-      if (dirRaw) {
+      // Siempre actualizar dirección con lo que devuelve el geocoding
+      if (dirRaw != null) {
         patch.direccion = dirRaw;
       }
 
@@ -169,8 +180,8 @@ export default function UbicacionPicker({
         </Text>
       )}
 
-      {/* Departamento + Ciudad + Dirección */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Departamento + Ciudad */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Departamento">
           <select
             className={cn(selectClass, errors.departamento && "border-red-300")}
@@ -212,12 +223,15 @@ export default function UbicacionPicker({
             </Text>
           )}
         </Field>
+      </div>
 
+      {/* Dirección (con autocomplete) */}
+      <div>
         <AddressInput
           label="Dirección"
           value={direccion}
           onChange={handleDireccionChange}
-          placeholder="Calle, número, barrio"
+          placeholder="Calle, número, barrio..."
           maxLength={500}
           context={context}
           disabled={disabled}
@@ -226,18 +240,17 @@ export default function UbicacionPicker({
         />
       </div>
 
-      {/* Mapa interactivo */}
+      {/* Mapa interactivo (sin buscador propio, ya lo tiene el AddressInput) */}
       {showMap && (
-        <Field label="Ubicación en mapa">
-          <MapaPicker
-            latitud={latitud}
-            longitud={longitud}
-            centerOn={context}
-            onChange={handleMapChange}
-            height={mapHeight}
-            disabled={disabled}
-          />
-        </Field>
+        <MapaPicker
+          latitud={latitud}
+          longitud={longitud}
+          centerOn={context}
+          onChange={handleMapChange}
+          height={mapHeight}
+          disabled={disabled}
+          hideSearch
+        />
       )}
     </div>
   );

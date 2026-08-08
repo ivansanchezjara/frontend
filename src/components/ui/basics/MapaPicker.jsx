@@ -150,7 +150,7 @@ function AddressSearchBar({ onSelect, disabled }) {
  * - centerOn: string — cuando cambia, centra el mapa en esa ubicación (ej: "Lambaré, Central")
  */
 export default function MapaPicker({
-  latitud, longitud, onChange, height = "250px", disabled = false, centerOn = "",
+  latitud, longitud, onChange, height = "250px", disabled = false, centerOn = "", hideSearch = false,
 }) {
   const [position, setPosition] = useState(
     latitud && longitud ? { lat: latitud, lng: longitud } : null
@@ -164,18 +164,17 @@ export default function MapaPicker({
     if (latitud && longitud) setPosition({ lat: latitud, lng: longitud });
   }, [latitud, longitud]);
 
-  // Centrar mapa cuando cambia centerOn (sin poner pin)
+  // Centrar mapa cuando cambia centerOn
   useEffect(() => {
     if (!centerOn || centerOn === lastCenterOnRef.current) return;
     lastCenterOnRef.current = centerOn;
-    if (position) return; // no mover si ya hay pin
     (async () => {
       const results = await searchAddress(centerOn);
       if (results.length > 0) {
         setFlyTarget({ lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon), zoom: 13 });
       }
     })();
-  }, [centerOn, position]);
+  }, [centerOn]);
 
   const handleLocationSelect = useCallback(async (pos) => {
     if (disabled) return;
@@ -206,7 +205,7 @@ export default function MapaPicker({
 
   return (
     <div className="space-y-2">
-      {!disabled && (
+      {!disabled && !hideSearch && (
         <div className="relative z-40">
           <AddressSearchBar onSelect={handleSearchSelect} disabled={disabled} />
         </div>

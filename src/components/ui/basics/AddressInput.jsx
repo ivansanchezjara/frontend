@@ -67,6 +67,15 @@ export default function AddressInput({
     const barrio = addr.suburb || addr.neighbourhood || "";
     const direccion = [calle, barrio].filter(Boolean).join(", ");
 
+    // Extraer departamento y ciudad de Nominatim
+    let departamentoRaw = (addr.state || "")
+      .replace(/^Departamento\s+(de\s+)?/i, "")
+      .replace(/^Distrito\s+/i, "")
+      .replace(/^Dept\.\s*/i, "")
+      .trim();
+    const ciudad = addr.city || addr.town || addr.village || addr.municipality || "";
+    if (!departamentoRaw && ciudad.toLowerCase().includes("asunci")) departamentoRaw = "Asunción";
+
     // Actualizar el input con la dirección formateada
     if (onChange) {
       const syntheticEvent = { target: { value: direccion || item.display_name?.split(",")[0] || "" } };
@@ -82,6 +91,8 @@ export default function AddressInput({
         lng: parseFloat(item.lon),
         direccion: direccion || item.display_name?.split(",")[0] || "",
         displayName: item.display_name || "",
+        departamentoRaw,
+        ciudad,
       });
     }
   };

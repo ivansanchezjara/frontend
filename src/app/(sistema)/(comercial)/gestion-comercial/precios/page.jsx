@@ -286,12 +286,16 @@ export default function PreciosPage() {
   return (
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       <PageHeader
-        title="Gestión de Precios"
+        breadcrumbs={[
+          { label: "Gestión Comercial", href: "/gestion-comercial" },
+          { label: "Gestión de Precios" },
+        ]}
         subtitle={
           <>
             <DollarSign size={12} /> Precios, promociones por volumen y combos
           </>
         }
+        subtitleClassName="text-emerald-600"
       />
 
       <div className="flex-1 overflow-y-auto p-4 md:p-8 min-w-0">
