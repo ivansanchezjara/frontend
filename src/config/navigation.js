@@ -99,7 +99,7 @@ export const erpModules = [
   },
   {
     category: "Comercial",
-    href: "/ventas-crm/ecommerce",
+    href: "/ecommerce",
     icon: "🛒",
     title: "E-commerce",
     desc: "Administración de la tienda online: preguntas, reseñas y banners.",

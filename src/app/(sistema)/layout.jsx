@@ -223,7 +223,7 @@ export default function SistemaLayout({ children }) {
                                     }
 
                                     // Item simple (sin children)
-                                    const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.includes(item.href));
+                                    const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'));
                                     const activeClass = familyStyles[item.color]?.activeNav || familyStyles.blue.activeNav;
 
                                     return item.type === 'active' ? (

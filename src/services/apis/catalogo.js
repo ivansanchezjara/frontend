@@ -223,3 +223,64 @@ export async function getHistorialProducto(slug) {
     "ver historial del producto",
   );
 }
+
+// ─── Marcas ──────────────────────────────────────────────────────
+
+export async function getMarcas(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/catalogo/marcas/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver marcas",
+  );
+}
+
+export async function getMarca(id) {
+  return request(
+    `${API_URL}/catalogo/marcas/${id}/`,
+    {
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver detalle de marca",
+  );
+}
+
+export async function crearMarca(data) {
+  return request(
+    `${API_URL}/catalogo/marcas/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear marca",
+  );
+}
+
+export async function actualizarMarca(id, data) {
+  return request(
+    `${API_URL}/catalogo/marcas/${id}/`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar marca",
+  );
+}
+
+export async function eliminarMarca(id) {
+  return request(
+    `${API_URL}/catalogo/marcas/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "eliminar marca",
+  );
+}

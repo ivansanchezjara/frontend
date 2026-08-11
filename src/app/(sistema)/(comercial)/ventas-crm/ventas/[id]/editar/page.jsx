@@ -75,7 +75,7 @@ export default function EditarVentaPage() {
           product_code: l.variante_codigo || "",
           nombre: l.producto_nombre || l.variante_nombre || `Variante #${l.variante}`,
           nombre_variante: l.variante_nombre || "",
-          brand: "",
+          marca: "",
           cantidad,
           stock: null,
           precio_usd: precioUsd,

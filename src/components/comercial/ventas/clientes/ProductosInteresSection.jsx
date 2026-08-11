@@ -80,7 +80,7 @@ export default function ProductosInteresSection({
       product_code: v.product_code || "",
       nombre_variante: v.nombre_variante || "",
       producto_nombre: v.producto_nombre || "",
-      brand: v.brand || "",
+      marca: v.marca || "",
       precio_0_publico: v.precio_0_publico,
       precio_1_estudiante: v.precio_1_estudiante,
       precio_2_reventa: v.precio_2_reventa,
@@ -151,7 +151,7 @@ export default function ProductosInteresSection({
       product_code: p.variante_sku || "",
       nombre_variante: p.variante_nombre || "",
       producto_nombre: p.producto_nombre || "",
-      brand: p.brand || "",
+      marca: p.marca || "",
       precio_0_publico: p.precio_0_publico ?? p._precios?.publico ?? null,
       precio_1_estudiante: p.precio_1_estudiante ?? p._precios?.estudiante ?? null,
       precio_2_reventa: p.precio_2_reventa ?? p._precios?.reventa ?? null,
@@ -170,7 +170,7 @@ export default function ProductosInteresSection({
           s.producto_nombre.toLowerCase().includes(searchLower) ||
           s.nombre_variante.toLowerCase().includes(searchLower) ||
           s.product_code.toLowerCase().includes(searchLower) ||
-          s.brand.toLowerCase().includes(searchLower)
+          s.marca.toLowerCase().includes(searchLower)
       );
       return [...seleccionadosMatch, ...noSeleccionados];
     }
@@ -191,7 +191,7 @@ export default function ProductosInteresSection({
           variante_nombre: fila.nombre_variante || "",
           variante_sku: fila.product_code || "",
           producto_nombre: fila.producto_nombre || "",
-          brand: fila.brand || "",
+          marca: fila.marca || "",
           cantidad_estimada: 1,
           notas: "",
           _precios: {
@@ -394,9 +394,9 @@ export default function ProductosInteresSection({
                           )}
                         </td>
                         <td className="py-2.5 px-3 hidden lg:table-cell">
-                          {fila.brand && (
+                          {fila.marca && (
                             <Badge className="text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 uppercase">
-                              {fila.brand}
+                              {fila.marca}
                             </Badge>
                           )}
                         </td>

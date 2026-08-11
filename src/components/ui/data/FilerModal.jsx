@@ -107,6 +107,46 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
         }
     };
 
+    // ─── Paste handler: Ctrl+V para subir imágenes del clipboard ────
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handlePaste = async (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    e.preventDefault();
+                    const file = item.getAsFile();
+                    if (!file) continue;
+
+                    // Generar nombre con timestamp si no tiene
+                    const ext = file.type.split('/')[1] || 'png';
+                    const nombre = file.name && file.name !== 'image.png'
+                        ? file.name
+                        : `pegado-${Date.now()}.${ext}`;
+                    const archivoRenombrado = new File([file], nombre, { type: file.type });
+
+                    setUploading(true);
+                    try {
+                        await uploadImage(archivoRenombrado, currentFolder);
+                        showToast("Imagen pegada y subida con éxito", "success");
+                        loadContents(currentFolder);
+                    } catch {
+                        showToast("Error subiendo imagen pegada", "error");
+                    } finally {
+                        setUploading(false);
+                    }
+                    break; // Solo la primera imagen
+                }
+            }
+        };
+
+        document.addEventListener('paste', handlePaste);
+        return () => document.removeEventListener('paste', handlePaste);
+    }, [isOpen, currentFolder]);
+
     const navigateToFolder = (folder) => {
         setCurrentFolder(folder.id);
         const idx = breadcrumbs.findIndex(b => b.id === folder.id);
@@ -260,7 +300,7 @@ export default function FilerModal({ isOpen, onClose, onSelectImage, initialSear
                                         Carpeta vacía
                                     </Text>
                                     <Text variant="bodyXs" className="text-slate-400">
-                                        Usa el botón de arriba para subir imágenes.
+                                        Usa el botón de arriba para subir o pegá con Ctrl+V.
                                     </Text>
                                 </div>
                             )}

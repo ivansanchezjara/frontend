@@ -98,3 +98,14 @@ export async function toggleBanner(id) {
     "activar/desactivar banner",
   );
 }
+
+export async function eliminarBanner(id) {
+  return request(
+    `${API_URL}/ecommerce/admin/banners/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "eliminar banner",
+  );
+}

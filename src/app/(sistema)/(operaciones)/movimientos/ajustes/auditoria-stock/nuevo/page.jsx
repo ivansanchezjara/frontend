@@ -39,7 +39,7 @@ export default function NuevaAuditoriaStockPage() {
     const handleChange = (e) => { setFormData(prev => ({ ...prev, [e.target.name]: e.target.value })); };
 
     const handleAddProducto = (item) => {
-        // item viene del modal con shape de getProductos: { id, nombre_general, general_code, brand }
+        // item viene del modal con shape de getProductos: { id, nombre_general, general_code, marca }
         if (!productosSeleccionados.find(p => p.id === item.id)) {
             setProductosSeleccionados(prev => [...prev, item]);
         }
@@ -187,7 +187,7 @@ export default function NuevaAuditoriaStockPage() {
                                                             </td>
                                                             <td className="px-4 py-3">
                                                                 <Text variant="bodySm" className="text-slate-500">
-                                                                    {p.brand || '—'}
+                                                                    {p.marca?.nombre || '—'}
                                                                 </Text>
                                                             </td>
                                                             <td className="px-4 py-3 text-center">

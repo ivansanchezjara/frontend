@@ -46,7 +46,7 @@ function InlineToggle({ checked, onChange, loading, icon: Icon, activeColor = 'e
 export default function ProductoRow({ producto, onToggle }) {
     const router = useRouter();
     const { showToast } = useToast();
-    const { nombre_general, general_code, brand, imagen_principal_url, variants, slug, featured, is_published } = producto;
+    const { nombre_general, general_code, marca, imagen_principal_url, variants, slug, featured, is_published } = producto;
 
     const cantidadVariantes = variants?.length ?? 0;
     const imagenUrl = getFullImageUrl(imagen_principal_url);
@@ -101,7 +101,7 @@ export default function ProductoRow({ producto, onToggle }) {
             {/* Marca */}
             <td className="py-3 px-4 whitespace-nowrap">
                 <Text variant="bodySm">
-                    {brand}
+                    {marca?.nombre}
                 </Text>
             </td>
 

@@ -8,21 +8,21 @@ import { PageHeader, Section } from "@/components/ui";
 
 const SECCIONES = [
   {
-    href: "/ventas-crm/ecommerce/preguntas",
+    href: "/ecommerce/preguntas",
     icon: MessageSquare,
     title: "Preguntas",
     desc: "Responder consultas de clientes sobre productos",
     color: "bg-blue-50 text-blue-600",
   },
   {
-    href: "/ventas-crm/ecommerce/resenas",
+    href: "/ecommerce/resenas",
     icon: Star,
     title: "Reseñas",
     desc: "Moderar evaluaciones de productos",
     color: "bg-amber-50 text-amber-600",
   },
   {
-    href: "/ventas-crm/ecommerce/banners",
+    href: "/ecommerce/banners",
     icon: ImageIcon,
     title: "Banners",
     desc: "Gestionar el carousel y promociones de la tienda",

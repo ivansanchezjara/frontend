@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Badge, Heading, Text } from '@/components/ui';
 
 export default function ProductoCard({ producto }) {
-    const { nombre_general, general_code, brand, imagen_principal_url, variants, slug, featured, is_published } = producto;
+    const { nombre_general, general_code, marca, imagen_principal_url, variants, slug, featured, is_published } = producto;
     const cantidadVariantes = variants?.length ?? 0;
     const imagenUrl = getFullImageUrl(imagen_principal_url);
 
@@ -47,7 +47,7 @@ export default function ProductoCard({ producto }) {
                         <Heading level={5} className="text-sm mt-0.5 group-hover:text-emerald-600 transition-colors line-clamp-2 h-9 leading-tight">
                             {nombre_general}
                         </Heading>
-                        <Text variant="bodySm" className="mt-0.5">{brand}</Text>
+                        <Text variant="bodySm" className="mt-0.5">{marca?.nombre}</Text>
                     </div>
 
                     <div className="flex items-center justify-between pt-3 mt-4 border-t border-slate-100">

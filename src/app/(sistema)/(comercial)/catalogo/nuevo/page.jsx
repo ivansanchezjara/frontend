@@ -25,6 +25,7 @@ import {
   crearCategoria,
   crearProducto,
   getCategorias,
+  getMarcas,
   getFullImageUrl,
 } from "@/services/apis/catalogo.js";
 
@@ -34,7 +35,7 @@ const inputClass =
 const FORM_INICIAL = {
   nombre_general: "",
   general_code: "",
-  brand: "",
+  marca_id: "",
   categoria_id: "",
   sub_category: "",
   professional_area: "",
@@ -63,6 +64,10 @@ export default function NuevoProductoPage() {
     auto: true,
     initialData: [],
   });
+  const { data: marcasData, loading: loadingMarcas } = useApi(getMarcas, {
+    auto: true,
+    initialData: [],
+  });
 
   const [formData, setFormData] = useState(FORM_INICIAL);
   const [saving, setSaving] = useState(false);
@@ -71,6 +76,7 @@ export default function NuevoProductoPage() {
   const [newCatName, setNewCatName] = useState("");
   const [savingCat, setSavingCat] = useState(false);
   const [categorias, setCategorias] = useState([]);
+  const [marcas, setMarcas] = useState([]);
   const [isFilerOpen, setIsFilerOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isJSONModalOpen, setIsJSONModalOpen] = useState(false);
@@ -82,6 +88,13 @@ export default function NuevoProductoPage() {
       Array.isArray(categoriasData) ? categoriasData : categoriasData?.results || [],
     );
   }, [categoriasData]);
+
+  useEffect(() => {
+    if (!marcasData) return;
+    setMarcas(
+      Array.isArray(marcasData) ? marcasData : marcasData?.results || [],
+    );
+  }, [marcasData]);
 
   const field = (key) => (value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -139,7 +152,7 @@ export default function NuevoProductoPage() {
     formData.general_code.trim() !== "" &&
     !saving;
 
-  if (loadingCategorias) {
+  if (loadingCategorias || loadingMarcas) {
     return <LoadingScreen texto="Preparando formulario..." />;
   }
 
@@ -261,12 +274,18 @@ export default function NuevoProductoPage() {
                   placeholder="Ej: TH-CU-SIN"
                 />
 
-                <Input
-                  label="Marca"
-                  value={formData.brand}
-                  onChange={(e) => field("brand")(e.target.value)}
-                  placeholder="Ej: Thalys"
-                />
+                <Field label="Marca">
+                  <select
+                    className={`${inputClass}`}
+                    value={formData.marca_id}
+                    onChange={(e) => field("marca_id")(e.target.value)}
+                  >
+                    <option value="">Sin marca</option>
+                    {marcas.map((m) => (
+                      <option key={m.id} value={m.id}>{m.nombre}</option>
+                    ))}
+                  </select>
+                </Field>
 
                 <Field label="Categoría">
                   {!isCreatingCat ? (
@@ -464,7 +483,7 @@ export default function NuevoProductoPage() {
             <div className="p-6">
               <textarea
                 className="h-64 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                placeholder='{ "nombre_general": "Producto Ejemplo", "brand": "Marca" }'
+                placeholder='{ "nombre_general": "Producto Ejemplo", "marca_id": 1 }'
                 value={jsonInput}
                 onChange={(e) => setJsonInput(e.target.value)}
               />

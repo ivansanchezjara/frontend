@@ -58,7 +58,7 @@ export default function ProductDetailPanel({ producto, onClose }) {
                                 {producto.general_code}
                             </Text>
                             <Badge className="bg-slate-200/70 text-slate-600 text-[9px] py-1 border-none tracking-wider font-extrabold">
-                                {producto.brand || 'Sin Marca'}
+                                {producto.marca?.nombre || 'Sin Marca'}
                             </Badge>
                         </div>
                     </div>

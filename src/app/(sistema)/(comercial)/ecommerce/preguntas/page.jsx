@@ -139,7 +139,7 @@ export default function PreguntasEcommercePage() {
         title="Preguntas de la Tienda"
         subtitle="Responder consultas de clientes"
         subtitleClassName="text-emerald-600"
-        backHref="/ventas-crm/ecommerce"
+        backHref="/ecommerce"
         backIcon={ChevronLeft}
       />
 

@@ -11,6 +11,7 @@ export default function DatosGeneralesSection({
   formData,
   producto,
   categorias,
+  marcas = [],
   setCategorias,
   onChange,
   selectedMainImg,
@@ -95,12 +96,18 @@ export default function DatosGeneralesSection({
             placeholder="Ej: TH-CU-SIN"
           />
 
-          <Input
-            label="Marca"
-            value={formData.brand}
-            onChange={(e) => onChange("brand")(e.target.value)}
-            placeholder="Ej: Thalys"
-          />
+          <Field label="Marca">
+            <select
+              className={`${inputClass}`}
+              value={formData.marca_id}
+              onChange={(e) => onChange("marca_id")(e.target.value)}
+            >
+              <option value="">Sin marca</option>
+              {marcas.map((m) => (
+                <option key={m.id} value={m.id}>{m.nombre}</option>
+              ))}
+            </select>
+          </Field>
 
           <Field label="Categoría">
             {!isCreatingCat ? (

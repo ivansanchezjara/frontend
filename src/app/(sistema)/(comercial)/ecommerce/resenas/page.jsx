@@ -138,7 +138,7 @@ export default function ResenasEcommercePage() {
         title="Reseñas de la Tienda"
         subtitle="Moderar evaluaciones de clientes"
         subtitleClassName="text-emerald-600"
-        backHref="/ventas-crm/ecommerce"
+        backHref="/ecommerce"
         backIcon={ChevronLeft}
       />
 

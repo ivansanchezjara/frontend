@@ -18,6 +18,7 @@ import {
   eliminarProducto,
   eliminarVariante,
   getCategorias,
+  getMarcas,
   getProducto,
   getHistorialProducto,
 } from "@/services/apis/catalogo.js";
@@ -26,7 +27,7 @@ function getInitialFormData(producto) {
   return {
     nombre_general: producto.nombre_general || "",
     general_code: producto.general_code || "",
-    brand: producto.brand || "",
+    marca_id: producto.marca?.id ?? "",
     categoria_id: producto.categoria?.id ?? "",
     sub_category: producto.sub_category || "",
     professional_area: producto.professional_area || "",
@@ -68,6 +69,7 @@ export default function FichaProductoPage() {
   const [selectedMainImg, setSelectedMainImg] = useState(null);
   const [producto, setProducto] = useState(null);
   const [categorias, setCategorias] = useState([]);
+  const [marcas, setMarcas] = useState([]);
 
   const handleProductoError = useCallback((err) => {
     if (err.status === 404) setNotFound(true);
@@ -85,6 +87,11 @@ export default function FichaProductoPage() {
   });
 
   const { data: categoriasData } = useApi(getCategorias, {
+    auto: true,
+    initialData: [],
+  });
+
+  const { data: marcasData } = useApi(getMarcas, {
     auto: true,
     initialData: [],
   });
@@ -129,6 +136,13 @@ export default function FichaProductoPage() {
       Array.isArray(categoriasData) ? categoriasData : categoriasData.results || [],
     );
   }, [categoriasData]);
+
+  useEffect(() => {
+    if (!marcasData) return;
+    setMarcas(
+      Array.isArray(marcasData) ? marcasData : marcasData.results || [],
+    );
+  }, [marcasData]);
 
   const field = (key) => (value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -277,6 +291,7 @@ export default function FichaProductoPage() {
               formData={formData}
               producto={producto}
               categorias={categorias}
+              marcas={marcas}
               setCategorias={setCategorias}
               onChange={field}
               selectedMainImg={selectedMainImg}

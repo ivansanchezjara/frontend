@@ -203,7 +203,7 @@ export default function ProductTable({ productos, columnasVisibles, onSelectSKU 
             ...v,
             producto_nombre_general: prod.nombre_general,
             categoria_nombre: prod.categoria?.nombre || 'S/C',
-            brand: prod.brand,
+            marca: prod.marca?.nombre || '',
             imagen_url: v.imagen_variante_url || prod.imagen_principal_url,
             raw_producto: prod,
         }))

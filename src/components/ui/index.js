@@ -30,6 +30,7 @@ export { default as QuickLink } from './layout/QuickLink';
 export { default as ColumnSelector } from './data/ColumnSelector';
 export { default as DataTable } from './data/DataTable';
 export { default as FilerModal } from './data/FilerModal';
+export { default as ImageCropper } from './data/ImageCropper';
 export { FilterDropdown } from './data/FilterDropdown';
 export { SortableHeader } from './data/SortableHeader';
 export { default as HistorialCambios } from './data/HistorialCambios';

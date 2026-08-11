@@ -50,7 +50,7 @@ export default function FichaProductoModal({ varianteId, onClose }) {
       lineas.push(`Variante: ${detalle.nombre_variante}`);
     }
     lineas.push(`Código: ${detalle.product_code}`);
-    if (detalle.brand) lineas.push(`Marca: ${detalle.brand}`);
+    if (detalle.marca_nombre) lineas.push(`Marca: ${detalle.marca_nombre}`);
     if (detalle.categoria_nombre) lineas.push(`Categoría: ${detalle.categoria_nombre}`);
     if (detalle.sub_category) lineas.push(`Subcategoría: ${detalle.sub_category}`);
 
@@ -98,9 +98,9 @@ export default function FichaProductoModal({ varianteId, onClose }) {
                   <Text variant="bodyXs" className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 uppercase tracking-widest font-black shrink-0 inline-block">
                     {detalle.product_code}
                   </Text>
-                  {detalle.brand && (
+                  {detalle.marca_nombre && (
                     <Text variant="bodyXs" className="text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200 uppercase tracking-widest font-bold">
-                      {detalle.brand}
+                      {detalle.marca_nombre}
                     </Text>
                   )}
                   {detalle.categoria_nombre && (

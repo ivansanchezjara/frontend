@@ -87,7 +87,7 @@ export default function ProductSearchModal({
       if (mode === "producto") {
         return l.nombre_general?.toLowerCase().includes(search) ||
           l.general_code?.toLowerCase().includes(search) ||
-          l.brand?.toLowerCase().includes(search);
+          l.marca?.nombre?.toLowerCase().includes(search);
       }
       const matchesVariante =
         l.variante_nombre?.toLowerCase().includes(search) ||
@@ -178,9 +178,9 @@ export default function ProductSearchModal({
                         <Text className="font-black text-slate-900 truncate">
                           {l.nombre_general}
                         </Text>
-                        {l.brand && (
+                        {l.marca?.nombre && (
                           <Text variant="bodyXs" className="text-slate-400 font-bold uppercase mb-1">
-                            {l.brand}
+                            {l.marca.nombre}
                           </Text>
                         )}
                       </>

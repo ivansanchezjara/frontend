@@ -102,9 +102,9 @@ function buildProductColumns({ calcularPrecio, moneda, tipoCambio, carritoIds, a
                   {row.nombre_variante}
                 </Text>
               )}
-              {row.brand && (
+              {row.marca && (
                 <Text variant="bodyXs" className="text-[10px] text-slate-300 truncate">
-                  · {row.brand}
+                  · {row.marca}
                 </Text>
               )}
             </div>
@@ -355,7 +355,7 @@ export default function VentaBuilderSplit({
         product_code: variante.product_code,
         nombre: variante.producto_nombre,
         nombre_variante: variante.nombre_variante || "",
-        brand: variante.brand || "",
+        marca: variante.marca || "",
         cantidad: 1,
         stock: stockDisponible,
         precio_usd: precioUsd,

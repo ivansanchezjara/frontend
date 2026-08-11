@@ -5,7 +5,7 @@ import { getProductos } from '@/services/apis/catalogo.js';
 import { useApi } from '@/hooks/useApi';
 import { useDebounce } from '@/hooks/useDebounce';
 import Link from 'next/link';
-import { Image as ImageIcon, LayoutGrid, List, Globe, Star } from 'lucide-react';
+import { Image as ImageIcon, LayoutGrid, List, Globe, Star, Tag } from 'lucide-react';
 
 // Catálogo Components
 import ProductoCard from '@/components/comercial/catalogo/list/ProductoCard';
@@ -123,6 +123,16 @@ export default function CatalogoPage() {
                 subtitle={`Master Data · ${count} productos en total`}
                 subtitleClassName="text-emerald-600"
             >
+                <Link href="/catalogo/marcas">
+                    <Button
+                        variant="outline"
+                        icon={Tag}
+                        size="md"
+                        className="rounded-xl font-bold text-xs hover:text-emerald-600 hover:border-emerald-200 cursor-pointer"
+                    >
+                        MARCAS
+                    </Button>
+                </Link>
                 <Link href="/media-manager">
                     <Button
                         variant="outline"

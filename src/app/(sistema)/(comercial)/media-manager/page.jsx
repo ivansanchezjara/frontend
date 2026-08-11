@@ -156,6 +156,43 @@ export default function MediaManagerPage() {
     }
   };
 
+  // ─── Paste handler: Ctrl+V para subir imágenes del clipboard ────
+  useEffect(() => {
+    const handlePaste = async (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (!file) continue;
+
+          const ext = file.type.split('/')[1] || 'png';
+          const nombre = file.name && file.name !== 'image.png'
+            ? file.name
+            : `pegado-${Date.now()}.${ext}`;
+          const archivoRenombrado = new File([file], nombre, { type: file.type });
+
+          setLoading(true);
+          try {
+            await uploadImage(archivoRenombrado, carpetaActual);
+            showToast("Imagen pegada y subida con éxito", "success");
+            loadArchivos(carpetaActual, { page, search: searchTermDebounced });
+          } catch {
+            showToast("Error subiendo imagen pegada", "error");
+          } finally {
+            setLoading(false);
+          }
+          break;
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [carpetaActual, page, searchTermDebounced]);
+
   const handleDelete = async (id) => {
     const isConfirmed = await danger(
       "¿Estás seguro de eliminar este archivo?",
