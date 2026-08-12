@@ -6,6 +6,17 @@ import {
   toQueryString,
 } from "../api.js";
 
+// ─── Clientes Online ────────────────────────────────────────────
+
+export async function getClientesOnline(params = {}) {
+  const query = toQueryString({ cuenta_online: "true", ...params });
+  return request(
+    `${API_URL}/ventas/cuentas/${query}`,
+    { method: "GET", headers: authHeaders(), cache: "no-store" },
+    "ver clientes con cuenta online",
+  );
+}
+
 // ─── Preguntas de Productos ─────────────────────────────────────
 
 export async function getPreguntasAdmin(params = {}) {
@@ -26,6 +37,17 @@ export async function responderPregunta(id, respuesta) {
       body: JSON.stringify({ respuesta }),
     },
     "responder pregunta",
+  );
+}
+
+export async function eliminarPregunta(id) {
+  return request(
+    `${API_URL}/ecommerce/admin/preguntas/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "eliminar pregunta",
   );
 }
 

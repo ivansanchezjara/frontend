@@ -6,6 +6,16 @@ import {
   toQueryString,
 } from "../api.js";
 
+// ─── Dashboard ──────────────────────────────────────────────────
+
+export async function getDashboardRRHH() {
+  return request(
+    `${API_URL}/rrhh/dashboard/`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver dashboard RRHH",
+  );
+}
+
 // ─── Departamentos ──────────────────────────────────────────────
 
 export async function getDepartamentos(params = {}) {
@@ -240,6 +250,14 @@ export async function updateAsistencia(id, data) {
   );
 }
 
+export async function registroMasivoAsistencia(data) {
+  return request(
+    `${API_URL}/rrhh/asistencias/registro_masivo/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "registro masivo de asistencia",
+  );
+}
+
 // ─── Evaluaciones ───────────────────────────────────────────────
 
 export async function getEvaluaciones(params = {}) {
@@ -267,22 +285,22 @@ export async function updateEvaluacion(id, data) {
   );
 }
 
-// ─── Liquidaciones ──────────────────────────────────────────────
+// ─── Pagos de Salario ────────────────────────────────────────────
 
 export async function getLiquidaciones(params = {}) {
   const query = toQueryString(params);
   return request(
     `${API_URL}/rrhh/liquidaciones/${query}`,
     { headers: authHeaders(), cache: "no-store" },
-    "ver liquidaciones",
+    "ver pagos de salario",
   );
 }
 
 export async function createLiquidacion(data) {
   return request(
-    `${API_URL}/rrhh/liquidaciones/`,
+    `${API_URL}/rrhh/liquidaciones/generar/`,
     { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
-    "crear liquidación",
+    "generar pago de salario",
   );
 }
 
@@ -290,7 +308,7 @@ export async function updateLiquidacion(id, data) {
   return request(
     `${API_URL}/rrhh/liquidaciones/${id}/`,
     { method: "PATCH", headers: jsonHeaders(), body: JSON.stringify(data) },
-    "actualizar liquidación",
+    "actualizar pago de salario",
   );
 }
 
@@ -298,7 +316,7 @@ export async function aprobarLiquidacion(id) {
   return request(
     `${API_URL}/rrhh/liquidaciones/${id}/aprobar/`,
     { method: "POST", headers: authHeaders() },
-    "aprobar liquidación",
+    "aprobar pago de salario",
   );
 }
 
@@ -306,7 +324,7 @@ export async function marcarPagadaLiquidacion(id) {
   return request(
     `${API_URL}/rrhh/liquidaciones/${id}/marcar_pagada/`,
     { method: "POST", headers: authHeaders() },
-    "marcar liquidación como pagada",
+    "marcar pago como realizado",
   );
 }
 
@@ -361,5 +379,115 @@ export async function deleteDocumentoFuncionario(id) {
     `${API_URL}/rrhh/documentos/${id}/`,
     { method: "DELETE", headers: authHeaders() },
     "eliminar documento de funcionario",
+  );
+}
+
+// ─── Feriados ───────────────────────────────────────────────────
+
+export async function getFeriados(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/rrhh/feriados/${query}`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver feriados",
+  );
+}
+
+export async function createFeriado(data) {
+  return request(
+    `${API_URL}/rrhh/feriados/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "crear feriado",
+  );
+}
+
+export async function updateFeriado(id, data) {
+  return request(
+    `${API_URL}/rrhh/feriados/${id}/`,
+    { method: "PATCH", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "actualizar feriado",
+  );
+}
+
+export async function deleteFeriado(id) {
+  return request(
+    `${API_URL}/rrhh/feriados/${id}/`,
+    { method: "DELETE", headers: authHeaders() },
+    "eliminar feriado",
+  );
+}
+
+export async function cargarFeriadosParaguay(anio) {
+  return request(
+    `${API_URL}/rrhh/feriados/cargar_paraguay/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify({ anio }) },
+    "cargar feriados de Paraguay",
+  );
+}
+
+export function getReporteAsistenciaURL(funcionarioId, mes, anio) {
+  return `${API_URL}/rrhh/reportes/asistencia/${funcionarioId}/?mes=${mes}&anio=${anio}`;
+}
+
+export function getReciboSueldoURL(liquidacionId) {
+  return `${API_URL}/rrhh/reportes/recibo/${liquidacionId}/`;
+}
+
+export async function descargarReporteAsistencia(funcionarioId, mes, anio) {
+  const url = `${API_URL}/rrhh/reportes/asistencia/${funcionarioId}/?mes=${mes}&anio=${anio}`;
+  const response = await fetch(url, { headers: authHeaders() });
+  if (!response.ok) throw new Error("Error al generar reporte");
+  const blob = await response.blob();
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `asistencia_${funcionarioId}_${mes}_${anio}.pdf`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+export async function descargarReciboSueldo(liquidacionId) {
+  const url = `${API_URL}/rrhh/reportes/recibo/${liquidacionId}/`;
+  const response = await fetch(url, { headers: authHeaders() });
+  if (!response.ok) throw new Error("Error al generar recibo");
+  const blob = await response.blob();
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `recibo_${liquidacionId}.pdf`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+// ─── Horarios Laborales ─────────────────────────────────────────
+
+export async function getHorarios(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/rrhh/horarios/${query}`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver horarios laborales",
+  );
+}
+
+export async function createHorario(data) {
+  return request(
+    `${API_URL}/rrhh/horarios/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "crear horario laboral",
+  );
+}
+
+export async function updateHorario(id, data) {
+  return request(
+    `${API_URL}/rrhh/horarios/${id}/`,
+    { method: "PATCH", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "actualizar horario laboral",
+  );
+}
+
+export async function deleteHorario(id) {
+  return request(
+    `${API_URL}/rrhh/horarios/${id}/`,
+    { method: "DELETE", headers: authHeaders() },
+    "eliminar horario laboral",
   );
 }

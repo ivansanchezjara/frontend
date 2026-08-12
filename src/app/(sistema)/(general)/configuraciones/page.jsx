@@ -1,6 +1,6 @@
 import { PageHeader, Heading, Text } from '@/components/ui';
 import Link from 'next/link';
-import { User, Building2, ArrowRight, Settings } from 'lucide-react';
+import { User, Building2, ArrowRight, Settings, Briefcase } from 'lucide-react';
 
 export default function ConfiguracionesHubPage() {
   const secciones = [
@@ -16,6 +16,12 @@ export default function ConfiguracionesHubPage() {
       title: 'Mi Empresa',
       desc: 'Datos fiscales, logo, contacto y preferencias de visualización.',
       superuserOnly: true,
+    },
+    {
+      href: '/configuraciones/mi-legajo',
+      icon: <Briefcase size={32} />,
+      title: 'Mi Legajo',
+      desc: 'Asistencia, solicitudes de ausencia, liquidaciones y datos laborales.',
     },
   ];
 

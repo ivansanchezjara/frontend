@@ -1,211 +1,376 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Plus, Filter, Search, DollarSign, Calendar, Tag } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Filter, FileCheck, FileX } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
+import { useDebounce } from "@/hooks/useDebounce";
 import { getGastos, getCategoriasGasto } from "@/services/apis/finanzas";
+import {
+  PageHeader,
+  SearchBar,
+  Button,
+  EmptyState,
+  LoadingScreen,
+  Pagination,
+} from "@/components/ui";
 
-const estadoBadge = {
-  pendiente: "bg-yellow-100 text-yellow-700",
-  pagado: "bg-green-100 text-green-700",
-  anulado: "bg-red-100 text-red-700",
+const ESTADO_BADGE = {
+  pendiente: { label: "Pendiente", className: "bg-yellow-100 text-yellow-700" },
+  pagado: { label: "Pagado", className: "bg-green-100 text-green-700" },
+  anulado: { label: "Anulado", className: "bg-red-100 text-red-700" },
 };
 
+const PAGE_SIZE = 20;
+
 export default function FinanzasGastosPage() {
-  const [filtros, setFiltros] = useState({});
+  const router = useRouter();
+
+  // --- Filtros ---
+  const [busqueda, setBusqueda] = useState("");
+  const [estado, setEstado] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
+  const [tieneFactura, setTieneFactura] = useState("");
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
-  const { data: gastos, loading, refetch } = useApi(
-    () => getGastos(filtros),
-    [filtros]
-  );
+  const busquedaDebounced = useDebounce(busqueda, 400);
 
-  const { data: categorias } = useApi(() => getCategoriasGasto(), []);
+  // --- API ---
+  const {
+    data: gastosData,
+    loading,
+    error,
+    execute: fetchGastos,
+  } = useApi(getGastos);
 
-  const handleFiltro = useCallback((key, value) => {
-    setFiltros((prev) => ({
-      ...prev,
-      [key]: value || undefined,
-    }));
+  const { data: categorias, execute: fetchCategorias } = useApi(getCategoriasGasto);
+
+  const gastos = gastosData?.results || gastosData || [];
+  const count = gastosData?.count || gastos.length || 0;
+
+  // Cargar categorías al montar
+  useEffect(() => {
+    fetchCategorias();
+  }, [fetchCategorias]);
+
+  // Cargar gastos cuando cambian filtros o página
+  useEffect(() => {
+    const params = { page };
+    if (busquedaDebounced) params.search = busquedaDebounced;
+    if (estado) params.estado = estado;
+    if (categoria) params.categoria = categoria;
+    if (fechaDesde) params.fecha_desde = fechaDesde;
+    if (fechaHasta) params.fecha_hasta = fechaHasta;
+    if (tieneFactura) params.tiene_factura = tieneFactura;
+
+    fetchGastos(params).then(() => setHasLoadedOnce(true));
+  }, [fetchGastos, busquedaDebounced, estado, categoria, fechaDesde, fechaHasta, tieneFactura, page]);
+
+  // Resetear página al cambiar filtros
+  useEffect(() => {
+    setPage(1);
+  }, [busquedaDebounced, estado, categoria, fechaDesde, fechaHasta, tieneFactura]);
+
+  // --- Helpers ---
+  const hayFiltrosActivos =
+    busqueda !== "" || estado !== "" || categoria !== "" || fechaDesde !== "" || fechaHasta !== "" || tieneFactura !== "";
+
+  const limpiarFiltros = useCallback(() => {
+    setBusqueda("");
+    setEstado("");
+    setCategoria("");
+    setFechaDesde("");
+    setFechaHasta("");
+    setTieneFactura("");
   }, []);
 
+  const handleRowClick = useCallback(
+    (id) => {
+      router.push(`/finanzas-gastos/${id}`);
+    },
+    [router]
+  );
+
+  const handleRowKeyDown = useCallback(
+    (e, id) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        router.push(`/finanzas-gastos/${id}`);
+      }
+    },
+    [router]
+  );
+
+  // --- Loading inicial ---
+  const isInitialLoading = loading && !hasLoadedOnce;
+  if (isInitialLoading) return <LoadingScreen texto="Cargando Gastos..." />;
+
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Finanzas y Gastos
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Registro y control de gastos operativos
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setMostrarFiltros(!mostrarFiltros)}
-            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+      <PageHeader
+        title="Finanzas y Gastos"
+        subtitle={`Registro y control de gastos operativos · ${count} registros`}
+        subtitleClassName="text-purple-600"
+      >
+        <Button
+          variant="outline"
+          icon={Filter}
+          size="md"
+          onClick={() => setMostrarFiltros(!mostrarFiltros)}
+          className="rounded-xl font-bold text-xs hover:text-purple-600 hover:border-purple-200 cursor-pointer"
+        >
+          Filtros
+        </Button>
+        <Link href="/finanzas-gastos/nuevo">
+          <Button
+            variant="success"
+            icon={Plus}
+            size="md"
+            className="rounded-xl font-bold text-xs shadow-lg shadow-purple-100 cursor-pointer bg-purple-600 hover:bg-purple-700"
           >
-            <Filter className="w-4 h-4" />
-            Filtros
-          </button>
-          <a
-            href="/finanzas-gastos/nuevo"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
-          >
-            <Plus className="w-4 h-4" />
             Nuevo Gasto
-          </a>
-        </div>
-      </div>
+          </Button>
+        </Link>
+      </PageHeader>
 
-      {/* Filtros */}
-      {mostrarFiltros && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Estado
-            </label>
-            <select
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-              onChange={(e) => handleFiltro("estado", e.target.value)}
-              value={filtros.estado || ""}
-            >
-              <option value="">Todos</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="pagado">Pagado</option>
-              <option value="anulado">Anulado</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Categoría
-            </label>
-            <select
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-              onChange={(e) => handleFiltro("categoria", e.target.value)}
-              value={filtros.categoria || ""}
-            >
-              <option value="">Todas</option>
-              {categorias?.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Desde
-            </label>
-            <input
-              type="date"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-              onChange={(e) => handleFiltro("fecha_desde", e.target.value)}
-              value={filtros.fecha_desde || ""}
+      <main className="flex-1 overflow-y-auto p-8 min-w-0">
+        <div className="max-w-7xl mx-auto space-y-4">
+          {/* Barra de búsqueda + filtros */}
+          <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-3 relative z-20">
+            {/* Búsqueda */}
+            <SearchBar
+              value={busqueda}
+              onChange={setBusqueda}
+              placeholder="Buscar por concepto, número de factura..."
             />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Hasta
-            </label>
-            <input
-              type="date"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-              onChange={(e) => handleFiltro("fecha_hasta", e.target.value)}
-              value={filtros.fecha_hasta || ""}
-            />
-          </div>
-        </div>
-      )}
 
-      {/* Tabla de gastos */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Cargando gastos...</div>
-        ) : !gastos?.length ? (
-          <div className="p-8 text-center text-gray-500">
-            <DollarSign className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-            <p className="font-medium">No hay gastos registrados</p>
-            <p className="text-sm mt-1">
-              Registrá tu primer gasto con el botón &quot;Nuevo Gasto&quot;
-            </p>
+            {/* Filtros expandibles */}
+            {mostrarFiltros && (
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pt-2 border-t border-slate-100">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Estado
+                  </label>
+                  <select
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400"
+                    onChange={(e) => setEstado(e.target.value)}
+                    value={estado}
+                    aria-label="Filtrar por estado"
+                  >
+                    <option value="">Todos</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="pagado">Pagado</option>
+                    <option value="anulado">Anulado</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Categoría
+                  </label>
+                  <select
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400"
+                    onChange={(e) => setCategoria(e.target.value)}
+                    value={categoria}
+                    aria-label="Filtrar por categoría"
+                  >
+                    <option value="">Todas</option>
+                    {(categorias?.results || categorias || []).map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Factura Legal
+                  </label>
+                  <select
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400"
+                    onChange={(e) => setTieneFactura(e.target.value)}
+                    value={tieneFactura}
+                    aria-label="Filtrar por factura"
+                  >
+                    <option value="">Todos</option>
+                    <option value="true">Con factura</option>
+                    <option value="false">Sin factura</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Desde
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400"
+                    onChange={(e) => setFechaDesde(e.target.value)}
+                    value={fechaDesde}
+                    aria-label="Fecha desde"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Hasta
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400"
+                    onChange={(e) => setFechaHasta(e.target.value)}
+                    value={fechaHasta}
+                    aria-label="Fecha hasta"
+                  />
+                </div>
+              </div>
+            )}
           </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">
-                  Concepto
-                </th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">
-                  Categoría
-                </th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">
-                  Monto
-                </th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">
-                  USD
-                </th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">
-                  Fecha
-                </th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">
-                  Estado
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {gastos.map((gasto) => (
-                <tr
-                  key={gasto.id}
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() =>
-                    (window.location.href = `/finanzas-gastos/${gasto.id}`)
-                  }
-                >
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">
-                      {gasto.concepto}
-                    </div>
-                    {gasto.factura?.numero_factura && (
-                      <div className="text-xs text-gray-500">
-                        Fact. {gasto.factura.numero_factura}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {gasto.categoria_nombre}
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono">
-                    {Number(gasto.monto_original).toLocaleString("es-PY")}{" "}
-                    <span className="text-gray-400 text-xs">
-                      {gasto.moneda_original}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono text-gray-600">
-                    {Number(gasto.monto_usd).toLocaleString("es-PY", {
-                      minimumFractionDigits: 2,
+
+          {/* Error state */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+              <p className="font-medium">Error al cargar gastos</p>
+              <p className="text-red-600 mt-1">
+                {error.message || "Ocurrió un error inesperado. Intentá de nuevo."}
+              </p>
+            </div>
+          )}
+
+          {/* Tabla de gastos */}
+          <div
+            className={`transition-opacity duration-300 ${
+              loading && hasLoadedOnce ? "opacity-50 pointer-events-none" : "opacity-100"
+            }`}
+          >
+            {gastos.length === 0 ? (
+              <EmptyState
+                titulo={hayFiltrosActivos ? "Sin resultados" : "No hay gastos registrados"}
+                descripcion={
+                  hayFiltrosActivos
+                    ? "Intentá con otros términos o cambiá los filtros."
+                    : "Registrá tu primer gasto con el botón \"Nuevo Gasto\"."
+                }
+                icon={hayFiltrosActivos ? "🔍" : "💰"}
+                textoBoton={hayFiltrosActivos ? "Limpiar filtros" : undefined}
+                onAction={hayFiltrosActivos ? limpiarFiltros : undefined}
+              />
+            ) : (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="text-left px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500">
+                        Concepto
+                      </th>
+                      <th className="text-left px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500 hidden md:table-cell">
+                        Categoría
+                      </th>
+                      <th className="text-center px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500 hidden sm:table-cell">
+                        Factura
+                      </th>
+                      <th className="text-right px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500">
+                        Monto
+                      </th>
+                      <th className="text-right px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500 hidden lg:table-cell">
+                        USD
+                      </th>
+                      <th className="text-center px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500 hidden sm:table-cell">
+                        Fecha
+                      </th>
+                      <th className="text-center px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500">
+                        Estado
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {gastos.map((gasto) => {
+                      const tieneFactura = !!gasto.factura;
+                      return (
+                        <tr
+                          key={gasto.id}
+                          className="hover:bg-slate-50 cursor-pointer transition-colors"
+                          onClick={() => handleRowClick(gasto.id)}
+                          onKeyDown={(e) => handleRowKeyDown(e, gasto.id)}
+                          tabIndex={0}
+                          role="link"
+                          aria-label={`Ver detalle de gasto: ${gasto.concepto}`}
+                        >
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-slate-900">
+                              {gasto.concepto}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 hidden md:table-cell">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium">
+                              {gasto.categoria_nombre}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center hidden sm:table-cell">
+                            {tieneFactura ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg" title={`Fact. ${gasto.factura.numero_factura || "s/n"} — ${gasto.factura.razon_social_emisor || ""}`}>
+                                <FileCheck className="w-3.5 h-3.5" />
+                                <span className="hidden lg:inline">
+                                  {gasto.factura.numero_factura || "Con factura"}
+                                </span>
+                                <span className="lg:hidden">Sí</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-lg" title="Sin comprobante legal">
+                                <FileX className="w-3.5 h-3.5" />
+                                <span className="hidden lg:inline">Sin factura</span>
+                                <span className="lg:hidden">No</span>
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono">
+                            {Number(gasto.monto_original).toLocaleString("es-PY")}{" "}
+                            <span className="text-slate-400 text-xs">
+                              {gasto.moneda_original}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono text-slate-600 hidden lg:table-cell">
+                            US${" "}
+                            {Number(gasto.monto_usd).toLocaleString("es-PY", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </td>
+                          <td className="px-4 py-3 text-center text-slate-600 hidden sm:table-cell">
+                            {new Date(gasto.fecha_gasto).toLocaleDateString("es-PY")}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span
+                              className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                ESTADO_BADGE[gasto.estado]?.className || "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {ESTADO_BADGE[gasto.estado]?.label || gasto.estado}
+                            </span>
+                          </td>
+                        </tr>
+                      );
                     })}
-                  </td>
-                  <td className="px-4 py-3 text-center text-gray-600">
-                    {new Date(gasto.fecha_gasto).toLocaleDateString("es-PY")}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                        estadoBadge[gasto.estado] || ""
-                      }`}
-                    >
-                      {gasto.estado}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Paginación */}
+          {count > PAGE_SIZE && (
+            <Pagination
+              count={count}
+              pageSize={PAGE_SIZE}
+              currentPage={page}
+              onPageChange={setPage}
+            />
+          )}
+        </div>
+      </main>
     </div>
   );
 }
