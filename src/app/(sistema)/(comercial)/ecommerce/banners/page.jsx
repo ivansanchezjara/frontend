@@ -2,7 +2,7 @@
 import { useState, useCallback } from "react";
 import {
   Image as ImageIcon, Plus, Eye, EyeOff, Pencil, Trash2,
-  ExternalLink, Calendar, ChevronLeft,
+  ExternalLink, Calendar, ChevronLeft, Move,
 } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
 import {
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui";
 import { useToast } from "@/components/ui/feedback/ToastContext";
 import { getFullImageUrl } from "@/services/apis/catalogo";
+import BannerTextEditor from "@/components/ecommerce/BannerTextEditor";
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -135,7 +136,17 @@ function BannerModal({ open, onClose, onSave, editando }) {
     titulo: editando?.titulo || "",
     subtitulo: editando?.subtitulo || "",
     mostrar_texto: editando?.mostrar_texto ?? false,
-    posicion_texto: editando?.posicion_texto || "center-left",
+    posicion_texto: "custom",
+    texto_x: editando?.texto_x ?? 5,
+    texto_y: editando?.texto_y ?? 50,
+    texto_ancho: editando?.texto_ancho ?? 40,
+    font_size: editando?.font_size ?? 36,
+    texto_alineacion: editando?.texto_alineacion || "left",
+    mobile_texto_x: editando?.mobile_texto_x ?? 5,
+    mobile_texto_y: editando?.mobile_texto_y ?? 50,
+    mobile_texto_ancho: editando?.mobile_texto_ancho ?? 80,
+    mobile_font_size: editando?.mobile_font_size ?? 24,
+    mobile_texto_alineacion: editando?.mobile_texto_alineacion || "center",
     enlace: editando?.enlace || "",
     boton_texto: editando?.boton_texto || "",
     ubicacion: editando?.ubicacion || "hero",
@@ -157,6 +168,7 @@ function BannerModal({ open, onClose, onSave, editando }) {
   // Cropper state
   const [cropperSrc, setCropperSrc] = useState(null);
   const [cropperTarget, setCropperTarget] = useState(null); // "desktop" | "mobile"
+  const [cropperFolder, setCropperFolder] = useState("root");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -174,22 +186,24 @@ function BannerModal({ open, onClose, onSave, editando }) {
   };
 
   const handleFilerSelect = (image) => {
-    // En vez de asignar directo, abrir el cropper
+    // Abrir el cropper con la imagen seleccionada (como antes)
     const fullUrl = getFullImageUrl(image.url);
     setCropperSrc(fullUrl);
     setCropperTarget(filerTarget);
+    // Guardar el folder para subir el recorte en la misma carpeta
+    setCropperFolder(image.folder || "root");
     setFilerTarget(null);
   };
 
   const handleCropComplete = async (blob) => {
-    // Subir la imagen recortada como archivo nuevo
+    // Subir la imagen recortada en la misma carpeta de la imagen original
     const { uploadImage } = await import("@/services/apis/media.js");
     const ext = "jpg";
     const nombre = `banner-${cropperTarget}-${Date.now()}.${ext}`;
     const file = new File([blob], nombre, { type: "image/jpeg" });
 
     try {
-      const uploaded = await uploadImage(file, "root");
+      const uploaded = await uploadImage(file, cropperFolder);
       const imgUrl = uploaded.url || uploaded.file;
       const imgId = uploaded.id;
 
@@ -207,12 +221,16 @@ function BannerModal({ open, onClose, onSave, editando }) {
     setCropperTarget(null);
   };
 
+  const handleEditorChange = useCallback((changes) => {
+    setForm((f) => ({ ...f, ...changes }));
+  }, []);
+
   const inputClass = "w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300";
 
   return (
     <>
-      <Modal open={open} onClose={onClose} title={editando ? "Editar Banner" : "Nuevo Banner"} size="lg">
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <Modal open={open} onClose={onClose} title={editando ? "Editar Banner" : "Nuevo Banner"} size="xl">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
           {/* Imágenes */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Desktop */}
@@ -290,50 +308,58 @@ function BannerModal({ open, onClose, onSave, editando }) {
             </button>
           </div>
 
-          {/* Campos de texto (solo si mostrar_texto) */}
+          {/* Editor visual de texto */}
           {form.mostrar_texto && (
             <div className="space-y-4 p-4 rounded-xl border border-emerald-100 bg-emerald-50/30">
-              <Input
-                label="Título"
-                value={form.titulo}
-                onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-                maxLength={100}
-                placeholder="Texto principal sobre la imagen"
-              />
-
-              <Input
-                label="Subtítulo"
-                value={form.subtitulo}
-                onChange={(e) => setForm({ ...form, subtitulo: e.target.value })}
-                maxLength={200}
-                placeholder="Texto secundario"
-              />
-
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
-                  label="Texto del botón"
-                  value={form.boton_texto}
-                  onChange={(e) => setForm({ ...form, boton_texto: e.target.value })}
-                  maxLength={30}
-                  placeholder="Ver más"
+                  label="Título"
+                  value={form.titulo}
+                  onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+                  maxLength={100}
+                  placeholder="Texto principal sobre la imagen"
                 />
-                <Field label="Posición del texto">
-                  <select
-                    value={form.posicion_texto}
-                    onChange={(e) => setForm({ ...form, posicion_texto: e.target.value })}
-                    className={inputClass}
-                  >
-                    <option value="top-left">↖ Arriba izquierda</option>
-                    <option value="top-center">↑ Arriba centro</option>
-                    <option value="top-right">↗ Arriba derecha</option>
-                    <option value="center-left">← Centro izquierda</option>
-                    <option value="center">● Centro</option>
-                    <option value="center-right">→ Centro derecha</option>
-                    <option value="bottom-left">↙ Abajo izquierda</option>
-                    <option value="bottom-center">↓ Abajo centro</option>
-                    <option value="bottom-right">↘ Abajo derecha</option>
-                  </select>
-                </Field>
+                <Input
+                  label="Subtítulo"
+                  value={form.subtitulo}
+                  onChange={(e) => setForm({ ...form, subtitulo: e.target.value })}
+                  maxLength={200}
+                  placeholder="Texto secundario"
+                />
+              </div>
+
+              <Input
+                label="Texto del botón"
+                value={form.boton_texto}
+                onChange={(e) => setForm({ ...form, boton_texto: e.target.value })}
+                maxLength={30}
+                placeholder="Ver más (dejá vacío para no mostrar botón)"
+              />
+
+              {/* Editor canvas */}
+              <div className="mt-2">
+                <p className="text-[11px] font-bold text-slate-600 mb-2 flex items-center gap-1.5">
+                  <Move size={12} className="text-emerald-500" />
+                  Arrastrá el texto para posicionarlo — usá el borde derecho para redimensionar
+                </p>
+                <BannerTextEditor
+                  imagenUrl={selectedImg?.url ? getFullImageUrl(selectedImg.url) : null}
+                  imagenMobileUrl={selectedImgMobile?.url ? getFullImageUrl(selectedImgMobile.url) : null}
+                  titulo={form.titulo}
+                  subtitulo={form.subtitulo}
+                  botonTexto={form.boton_texto}
+                  textoX={form.texto_x}
+                  textoY={form.texto_y}
+                  textoAncho={form.texto_ancho}
+                  fontSize={form.font_size}
+                  textoAlineacion={form.texto_alineacion}
+                  mobileTextoX={form.mobile_texto_x}
+                  mobileTextoY={form.mobile_texto_y}
+                  mobileTextoAncho={form.mobile_texto_ancho}
+                  mobileFontSize={form.mobile_font_size}
+                  mobileTextoAlineacion={form.mobile_texto_alineacion}
+                  onChange={handleEditorChange}
+                />
               </div>
             </div>
           )}
