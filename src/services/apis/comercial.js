@@ -48,3 +48,66 @@ export async function getSeguimientoPipeline() {
     "seguimiento de pipeline",
   );
 }
+
+// ─── Metas de Vendedores ───────────────────────────────────────
+
+export async function getMetasResumen(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/ventas/metas-vendedor/resumen/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "resumen de metas",
+  );
+}
+
+export async function getMetasVendedor(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/ventas/metas-vendedor/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "metas de vendedores",
+  );
+}
+
+export async function crearMeta(data) {
+  return request(
+    `${API_URL}/ventas/metas-vendedor/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear meta",
+  );
+}
+
+export async function actualizarMeta(id, data) {
+  return request(
+    `${API_URL}/ventas/metas-vendedor/${id}/`,
+    {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar meta",
+  );
+}
+
+export async function cancelarMeta(id) {
+  return request(
+    `${API_URL}/ventas/metas-vendedor/${id}/cancelar/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "cancelar meta",
+  );
+}

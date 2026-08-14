@@ -2,7 +2,7 @@
 import Link from "next/link";
 import {
   Store, MessageSquare, Star, Image as ImageIcon,
-  ExternalLink, Tag, Users, Package, ArrowRight,
+  ExternalLink, Tag, Users, Package, ArrowRight, FileDown, Calendar,
 } from "lucide-react";
 import { PageHeader, Section, Text } from "@/components/ui";
 
@@ -40,6 +40,22 @@ const SECCIONES = [
     desc: "Gestionar el carousel y promociones de la tienda",
     color: "from-purple-500 to-purple-600",
     bgLight: "bg-purple-50",
+  },
+  {
+    href: "/ecommerce/catalogos",
+    icon: FileDown,
+    title: "Catálogos PDF",
+    desc: "Subir catálogos y fichas técnicas para descarga",
+    color: "from-rose-500 to-red-600",
+    bgLight: "bg-rose-50",
+  },
+  {
+    href: "/ecommerce/eventos",
+    icon: Calendar,
+    title: "Eventos",
+    desc: "Congresos, workshops y capacitaciones",
+    color: "from-indigo-500 to-indigo-600",
+    bgLight: "bg-indigo-50",
   },
 ];
 

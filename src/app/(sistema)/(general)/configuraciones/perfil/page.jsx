@@ -13,7 +13,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 
-import { Badge, Button, FilerModal, Heading, Input, LoadingScreen, PageHeader, Text } from "@/components/ui";
+import { Badge, Button, FilerModal, Heading, Input, LoadingScreen, PageHeader, PhoneInput, buildPhoneValue, Text } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import { getProfile, updateProfile } from "@/services/apis/auth.js";
 import { getFullImageUrl } from "@/services/apis/catalogo.js";
@@ -34,11 +34,29 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [isFilerOpen, setIsFilerOpen] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState(null);
+  const [waPrefix, setWaPrefix] = useState("+595");
+  const [waNumber, setWaNumber] = useState("");
 
   const { loading } = useApi(getProfile, {
     auto: true,
     initialData: null,
-    onSuccess: (data) => setProfile(data),
+    onSuccess: (data) => {
+      setProfile(data);
+      // Parse whatsapp into prefix + number
+      const wa = data?.whatsapp || "";
+      if (wa.startsWith("595")) {
+        setWaPrefix("+595");
+        setWaNumber(wa.slice(3));
+      } else if (wa.startsWith("55")) {
+        setWaPrefix("+55");
+        setWaNumber(wa.slice(2));
+      } else if (wa.startsWith("54")) {
+        setWaPrefix("+54");
+        setWaNumber(wa.slice(2));
+      } else {
+        setWaNumber(wa);
+      }
+    },
   });
 
   const handleChange = (e) => {
@@ -57,6 +75,7 @@ export default function ProfilePage() {
         first_name: profile.first_name,
         last_name: profile.last_name,
         email: profile.email,
+        whatsapp_input: buildPhoneValue(waPrefix, waNumber).replace(/[^0-9]/g, ""),
       };
 
       // Incluir avatar solo si se cambió
@@ -221,6 +240,14 @@ export default function ProfilePage() {
                 icon={Mail}
                 placeholder="tu@email.com"
                 fullWidth
+              />
+
+              <PhoneInput
+                label="WhatsApp"
+                prefix={waPrefix}
+                onPrefixChange={setWaPrefix}
+                value={waNumber}
+                onChange={(e) => setWaNumber(e.target.value)}
               />
             </div>
 

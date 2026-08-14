@@ -131,3 +131,118 @@ export async function eliminarBanner(id) {
     "eliminar banner",
   );
 }
+
+// ─── Catálogos PDF ──────────────────────────────────────────────
+
+export async function getCatalogosAdmin(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/ecommerce/admin/catalogos/${query}`,
+    { headers: authHeaders() },
+    "obtener catálogos",
+  );
+}
+
+export async function crearCatalogo(data) {
+  return request(
+    `${API_URL}/ecommerce/admin/catalogos/`,
+    {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+    "crear catálogo",
+  );
+}
+
+export async function actualizarCatalogo(id, data) {
+  return request(
+    `${API_URL}/ecommerce/admin/catalogos/${id}/`,
+    {
+      method: "PATCH",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+    "actualizar catálogo",
+  );
+}
+
+export async function toggleCatalogo(id) {
+  return request(
+    `${API_URL}/ecommerce/admin/catalogos/${id}/toggle/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "activar/desactivar catálogo",
+  );
+}
+
+export async function eliminarCatalogo(id) {
+  return request(
+    `${API_URL}/ecommerce/admin/catalogos/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "eliminar catálogo",
+  );
+}
+
+
+// ─── Eventos ────────────────────────────────────────────────────
+
+export async function getEventosAdmin(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/ecommerce/admin/eventos/${query}`,
+    { headers: authHeaders() },
+    "obtener eventos",
+  );
+}
+
+export async function crearEvento(data) {
+  return request(
+    `${API_URL}/ecommerce/admin/eventos/`,
+    {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+    "crear evento",
+  );
+}
+
+export async function actualizarEvento(id, data) {
+  return request(
+    `${API_URL}/ecommerce/admin/eventos/${id}/`,
+    {
+      method: "PATCH",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+    "actualizar evento",
+  );
+}
+
+export async function toggleEvento(id) {
+  return request(
+    `${API_URL}/ecommerce/admin/eventos/${id}/toggle/`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+    "activar/desactivar evento",
+  );
+}
+
+export async function eliminarEvento(id) {
+  return request(
+    `${API_URL}/ecommerce/admin/eventos/${id}/`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    },
+    "eliminar evento",
+  );
+}

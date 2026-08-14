@@ -1,7 +1,7 @@
 import { PageHeader, Heading, Text } from '@/components/ui';
 import Link from 'next/link';
 import {
-  DollarSign, TrendingUp, BarChart3, ClipboardList, Target, ArrowRight, Briefcase, Ticket
+  DollarSign, TrendingUp, BarChart3, ClipboardList, ArrowRight, Briefcase, Ticket
 } from 'lucide-react';
 
 export default function GestionComercialHubPage() {
@@ -16,8 +16,8 @@ export default function GestionComercialHubPage() {
     {
       href: '/gestion-comercial/rendimiento',
       icon: <TrendingUp size={32} />,
-      title: 'Rendimiento de Vendedores',
-      desc: 'Ranking de vendedores, montos vendidos, cantidad de pedidos y ticket promedio por período.',
+      title: 'Rendimiento y Metas',
+      desc: 'Ranking de vendedores, avance de metas, montos vendidos, cantidad de pedidos y ticket promedio por período.',
       color: 'emerald',
     },
     {
@@ -40,14 +40,6 @@ export default function GestionComercialHubPage() {
       title: 'Cupones de Descuento',
       desc: 'Crear, administrar y asignar cupones. Control de vigencia, restricciones por producto/marca y uso por cliente.',
       color: 'emerald',
-    },
-    {
-      href: '#',
-      icon: <Target size={32} />,
-      title: 'Metas y Objetivos',
-      desc: 'Definición y seguimiento de metas de venta por vendedor y equipo.',
-      color: 'emerald',
-      proximamente: true,
     },
   ];
 
