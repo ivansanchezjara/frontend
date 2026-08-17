@@ -141,12 +141,12 @@ export const erpModules = [
   },
   {
     category: "Logística y Servicios",
-    href: "#",
+    href: "/posventa",
     icon: "🛡️",
     title: "Servicio Posventa",
     desc: "Garantías, reclamos y devoluciones.",
     color: "blue",
-    estado: "proximamente",
+    estado: "activo",
     roles: ["Admin"],
   },
 
