@@ -19,11 +19,15 @@ import {
   entregarPedido,
   registrarVerificacion,
   verificarCodigo,
+  getLotesAlternativos,
+  reasignarLote,
+  reportarFaltante,
 } from "@/services/apis/caja";
 import {
   Package, PackageCheck, Search, X, Clock, ChevronDown, ChevronUp,
   MapPin, Warehouse, Calendar, Hash, Truck, Store, CheckCircle2,
-  ScanBarcode, UserCheck, ShieldCheck, AlertCircle,
+  ScanBarcode, UserCheck, ShieldCheck, AlertCircle, AlertTriangle,
+  RefreshCw, PackageX, TriangleAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,6 +76,308 @@ const ENTREGA_CONFIG = {
   retiro_sucursal: { icon: Store, label: "Retiro sucursal" },
 };
 
+const MOTIVOS_DISCREPANCIA = [
+  { value: "lote_no_encontrado", label: "Lote no encontrado", icon: AlertTriangle },
+  { value: "producto_no_encontrado", label: "Producto no encontrado", icon: PackageX },
+  { value: "producto_danado", label: "Producto dañado", icon: TriangleAlert },
+  { value: "cantidad_insuficiente", label: "Cantidad insuficiente en lote", icon: AlertCircle },
+];
+
+// ─── Modal de Reasignación de Lote ──────────────────────────────
+
+function ModalReasignarLote({ pedidoId, linea, asignacion, onClose, onReasignado }) {
+  const { showToast } = useToast();
+  const [lotes, setLotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loteSeleccionado, setLoteSeleccionado] = useState(null);
+  const [observaciones, setObservaciones] = useState("");
+  const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    const fetchLotes = async () => {
+      try {
+        const res = await getLotesAlternativos(pedidoId, linea.id, asignacion?.lote_id);
+        setLotes(res.lotes || []);
+      } catch {
+        showToast("Error al cargar lotes alternativos", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLotes();
+  }, [pedidoId, linea.id, asignacion?.lote_id, showToast]);
+
+  const handleReasignar = async () => {
+    if (!loteSeleccionado) return;
+    setEnviando(true);
+    try {
+      await reasignarLote(pedidoId, {
+        linea_venta_id: linea.id,
+        lote_original_id: asignacion.lote_id,
+        lote_nuevo_id: loteSeleccionado.id,
+        cantidad: asignacion.cantidad,
+        observaciones,
+      });
+      showToast("Lote reasignado correctamente", "success");
+      onReasignado?.();
+      onClose();
+    } catch (err) {
+      showToast(err?.data?.detail || "Error al reasignar lote", "error");
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">Reasignar Lote</h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {linea.product_code} · {linea.producto_nombre}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+            <X size={16} className="text-slate-400" />
+          </button>
+        </div>
+
+        {/* Info del lote original */}
+        <div className="px-6 py-3 bg-red-50 border-b border-red-100">
+          <p className="text-xs font-medium text-red-700 flex items-center gap-1.5">
+            <AlertTriangle size={12} />
+            Lote original no encontrado:
+            <code className="font-mono bg-red-100 px-1.5 py-0.5 rounded">
+              {asignacion?.lote_codigo}
+            </code>
+            <span className="text-red-500">({asignacion?.cantidad} unidades)</span>
+          </p>
+        </div>
+
+        {/* Lista de lotes alternativos */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {loading ? (
+            <p className="text-sm text-slate-400 text-center py-8">Buscando lotes disponibles...</p>
+          ) : lotes.length === 0 ? (
+            <div className="text-center py-8">
+              <PackageX size={32} className="mx-auto text-slate-300 mb-2" />
+              <p className="text-sm text-slate-500">No hay lotes alternativos disponibles</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Reportá el faltante para registrar la discrepancia.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                Lotes disponibles (FEFO)
+              </p>
+              {lotes.map((lote) => (
+                <button
+                  key={lote.id}
+                  type="button"
+                  onClick={() => setLoteSeleccionado(lote)}
+                  className={cn(
+                    "w-full text-left px-4 py-3 rounded-xl border transition-all",
+                    loteSeleccionado?.id === lote.id
+                      ? "border-blue-400 bg-blue-50 ring-2 ring-blue-200"
+                      : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Hash size={12} className="text-slate-400" />
+                      <span className="text-sm font-medium text-slate-700">{lote.lote_codigo}</span>
+                    </div>
+                    <Badge variant={lote.cantidad_disponible >= asignacion?.cantidad ? "success" : "warning"}>
+                      {lote.cantidad_disponible} disp.
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500">
+                    <span className="flex items-center gap-1">
+                      <Warehouse size={10} />{lote.deposito_nombre}
+                    </span>
+                    {lote.vencimiento && (
+                      <span className="flex items-center gap-1">
+                        <Calendar size={10} />{formatFechaCorta(lote.vencimiento)}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Observaciones */}
+          <div className="mt-4">
+            <label className="text-xs font-medium text-slate-500 block mb-1">
+              Observaciones (opcional)
+            </label>
+            <textarea
+              value={observaciones}
+              onChange={(e) => setObservaciones(e.target.value)}
+              placeholder="Ej: Lote no encontrado en estante B3..."
+              rows={2}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={RefreshCw}
+            onClick={handleReasignar}
+            disabled={!loteSeleccionado || enviando}
+            loading={enviando || undefined}
+          >
+            Reasignar Lote
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Modal de Reportar Faltante ─────────────────────────────────
+
+function ModalReportarFaltante({ pedidoId, linea, asignacion, onClose, onReportado }) {
+  const { showToast } = useToast();
+  const [motivo, setMotivo] = useState("");
+  const [cantidadAfectada, setCantidadAfectada] = useState(asignacion?.cantidad || linea.cantidad);
+  const [observaciones, setObservaciones] = useState("");
+  const [enviando, setEnviando] = useState(false);
+
+  const handleReportar = async () => {
+    if (!motivo) {
+      showToast("Seleccioná un motivo", "error");
+      return;
+    }
+    setEnviando(true);
+    try {
+      await reportarFaltante(pedidoId, {
+        linea_venta_id: linea.id,
+        motivo,
+        cantidad_afectada: cantidadAfectada,
+        lote_original_id: asignacion?.lote_id || null,
+        observaciones,
+      });
+      showToast("Faltante reportado correctamente", "success");
+      onReportado?.();
+      onClose();
+    } catch (err) {
+      showToast(err?.data?.detail || "Error al reportar faltante", "error");
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">Reportar Faltante</h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {linea.product_code} · {linea.producto_nombre}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+            <X size={16} className="text-slate-400" />
+          </button>
+        </div>
+
+        {/* Contenido */}
+        <div className="px-6 py-4 space-y-4">
+          {/* Motivo */}
+          <div>
+            <label className="text-xs font-medium text-slate-500 block mb-2">Motivo</label>
+            <div className="space-y-2">
+              {MOTIVOS_DISCREPANCIA.map((m) => {
+                const Icon = m.icon;
+                return (
+                  <button
+                    key={m.value}
+                    type="button"
+                    onClick={() => setMotivo(m.value)}
+                    className={cn(
+                      "w-full text-left px-3 py-2.5 rounded-xl border transition-all flex items-center gap-2.5",
+                      motivo === m.value
+                        ? "border-amber-400 bg-amber-50 ring-2 ring-amber-200"
+                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                    )}
+                  >
+                    <Icon size={14} className={motivo === m.value ? "text-amber-600" : "text-slate-400"} />
+                    <span className={cn("text-sm", motivo === m.value ? "text-amber-700 font-medium" : "text-slate-600")}>
+                      {m.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Cantidad afectada */}
+          <div>
+            <label className="text-xs font-medium text-slate-500 block mb-1">
+              Cantidad afectada
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={asignacion?.cantidad || linea.cantidad}
+              value={cantidadAfectada}
+              onChange={(e) => setCantidadAfectada(Number(e.target.value))}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
+            />
+            <p className="text-[10px] text-slate-400 mt-1">
+              Máximo: {asignacion?.cantidad || linea.cantidad} unidades
+            </p>
+          </div>
+
+          {/* Observaciones */}
+          <div>
+            <label className="text-xs font-medium text-slate-500 block mb-1">
+              Observaciones (opcional)
+            </label>
+            <textarea
+              value={observaciones}
+              onChange={(e) => setObservaciones(e.target.value)}
+              placeholder="Detalle adicional del problema..."
+              rows={2}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-400 resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            variant="warning"
+            size="sm"
+            icon={AlertTriangle}
+            onClick={handleReportar}
+            disabled={!motivo || enviando}
+            loading={enviando || undefined}
+          >
+            Reportar Faltante
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Componente de Detalle con Verificación ─────────────────────
 
 function PedidoDetalle({ pedidoId, onEntregado }) {
@@ -97,6 +403,10 @@ function PedidoDetalle({ pedidoId, onEntregado }) {
   const [lineasChecked, setLineasChecked] = useState({});
   const [scanResult, setScanResult] = useState(null);
   const [scanTimeout, setScanTimeout] = useState(null);
+
+  // Estado para modales de discrepancia
+  const [modalReasignar, setModalReasignar] = useState(null); // { linea, asignacion }
+  const [modalFaltante, setModalFaltante] = useState(null); // { linea, asignacion }
 
   useEffect(() => {
     fetchDetalle(pedidoId);
@@ -165,15 +475,30 @@ function PedidoDetalle({ pedidoId, onEntregado }) {
   // ─── Entrega ───────────────────────────────────────────────
 
   const handleEntrega = async () => {
-    const isConfirmed = await confirm(
-      `¿Confirmar que el pedido #${pedidoId} fue verificado y está listo para entregar?`,
-      "Confirmar Entrega",
-    );
+    const tieneFaltantes = (detalle?.discrepancias || []).some(d => d.resolucion === "entrega_parcial");
+    const mensajeConfirm = tieneFaltantes
+      ? `El pedido #${pedidoId} tiene faltantes reportados. Al confirmar la entrega se generará automáticamente una nota de crédito por los productos no entregados. ¿Continuar?`
+      : `¿Confirmar que el pedido #${pedidoId} fue verificado y está listo para entregar?`;
+
+    const isConfirmed = await confirm(mensajeConfirm, "Confirmar Entrega");
     if (!isConfirmed) return;
 
     try {
-      await ejecutarEntrega(pedidoId);
-      showToast("Entrega registrada correctamente", "success");
+      const result = await ejecutarEntrega(pedidoId);
+      // Mostrar mensaje con info de NC si se generó
+      if (result?.nota_credito) {
+        showToast(
+          `Entrega confirmada. NC Legal #${result.nota_credito.numero} emitida por faltantes.`,
+          "success",
+        );
+      } else if (result?.nota_credito_interna) {
+        showToast(
+          `Entrega confirmada. NC Interna #${result.nota_credito_interna.numero} emitida por faltantes.`,
+          "success",
+        );
+      } else {
+        showToast("Entrega registrada correctamente", "success");
+      }
       onEntregado?.();
     } catch (err) {
       showToast(err?.data?.detail || "Error al registrar la entrega", "error");
@@ -261,6 +586,7 @@ function PedidoDetalle({ pedidoId, onEntregado }) {
               <th className="py-2 px-2 text-left">Lote</th>
               <th className="py-2 px-2 text-left">Depósito</th>
               <th className="py-2 px-2 text-left">Vencimiento</th>
+              <th className="py-2 px-2 text-center w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -299,6 +625,16 @@ function PedidoDetalle({ pedidoId, onEntregado }) {
                     <td className="py-2.5 px-2 text-slate-400">—</td>
                     <td className="py-2.5 px-2 text-slate-400">—</td>
                     <td className="py-2.5 px-2 text-slate-400">—</td>
+                    <td className="py-2.5 px-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setModalFaltante({ linea, asignacion: null })}
+                        className="p-1 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors"
+                        title="Reportar problema"
+                      >
+                        <AlertTriangle size={13} />
+                      </button>
+                    </td>
                   </tr>
                 );
               }
@@ -353,6 +689,26 @@ function PedidoDetalle({ pedidoId, onEntregado }) {
                         <Calendar size={10} className="text-slate-400" />{formatFechaCorta(asig.vencimiento)}
                       </span>
                     ) : <span className="text-slate-400">—</span>}
+                  </td>
+                  <td className="py-2.5 px-2 text-center">
+                    <div className="flex items-center gap-0.5 justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setModalReasignar({ linea, asignacion: { ...asig, lote_id: asig.lote_id } })}
+                        className="p-1 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
+                        title="Cambiar lote"
+                      >
+                        <RefreshCw size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModalFaltante({ linea, asignacion: { ...asig, lote_id: asig.lote_id } })}
+                        className="p-1 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors"
+                        title="Reportar faltante"
+                      >
+                        <AlertTriangle size={12} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ));
@@ -412,6 +768,50 @@ function PedidoDetalle({ pedidoId, onEntregado }) {
         </div>
       )}
 
+      {/* Discrepancias registradas */}
+      {(detalle.discrepancias || []).length > 0 && (
+        <div className="px-6 py-3 border-t border-slate-100">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-2">
+            Discrepancias reportadas
+          </p>
+          <div className="space-y-2">
+            {detalle.discrepancias.map((d) => (
+              <div
+                key={d.id}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg border text-xs",
+                  d.resolucion === "reasignado"
+                    ? "bg-blue-50 border-blue-200 text-blue-700"
+                    : "bg-amber-50 border-amber-200 text-amber-700"
+                )}
+              >
+                {d.resolucion === "reasignado" ? (
+                  <RefreshCw size={12} className="shrink-0" />
+                ) : (
+                  <AlertTriangle size={12} className="shrink-0" />
+                )}
+                <span className="font-medium">{d.motivo_display}</span>
+                <span className="text-[10px] opacity-70">
+                  {d.cantidad_afectada} ud.
+                </span>
+                {d.lote_original_codigo && (
+                  <span className="text-[10px] opacity-70">
+                    Lote: {d.lote_original_codigo}
+                    {d.lote_reasignado_codigo && ` → ${d.lote_reasignado_codigo}`}
+                  </span>
+                )}
+                <Badge
+                  variant={d.resolucion === "reasignado" ? "info" : "warning"}
+                  className="ml-auto text-[9px]"
+                >
+                  {d.resolucion_display}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Footer: Acciones */}
       <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-2xl space-y-3">
         {/* Progreso */}
@@ -459,6 +859,26 @@ function PedidoDetalle({ pedidoId, onEntregado }) {
           </div>
         </div>
       </div>
+
+      {/* Modales de discrepancia */}
+      {modalReasignar && (
+        <ModalReasignarLote
+          pedidoId={pedidoId}
+          linea={modalReasignar.linea}
+          asignacion={modalReasignar.asignacion}
+          onClose={() => setModalReasignar(null)}
+          onReasignado={() => fetchDetalle(pedidoId)}
+        />
+      )}
+      {modalFaltante && (
+        <ModalReportarFaltante
+          pedidoId={pedidoId}
+          linea={modalFaltante.linea}
+          asignacion={modalFaltante.asignacion}
+          onClose={() => setModalFaltante(null)}
+          onReportado={() => fetchDetalle(pedidoId)}
+        />
+      )}
     </div>
   );
 }
@@ -603,6 +1023,48 @@ function PedidoDetalleHistorial({ pedidoId }) {
                   {new Date(v.verificado_at).toLocaleTimeString("es-PY", { hour: "2-digit", minute: "2-digit" })}
                 </span>
               </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Discrepancias (historial) */}
+      {(detalle.discrepancias || []).length > 0 && (
+        <div className="px-6 py-3 border-t border-slate-100">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-2">
+            Discrepancias registradas
+          </p>
+          <div className="space-y-2">
+            {detalle.discrepancias.map((d) => (
+              <div
+                key={d.id}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg border text-xs",
+                  d.resolucion === "reasignado"
+                    ? "bg-blue-50 border-blue-200 text-blue-700"
+                    : "bg-amber-50 border-amber-200 text-amber-700"
+                )}
+              >
+                {d.resolucion === "reasignado" ? (
+                  <RefreshCw size={12} className="shrink-0" />
+                ) : (
+                  <AlertTriangle size={12} className="shrink-0" />
+                )}
+                <span className="font-medium">{d.motivo_display}</span>
+                <span className="text-[10px] opacity-70">{d.cantidad_afectada} ud.</span>
+                {d.lote_original_codigo && (
+                  <span className="text-[10px] opacity-70">
+                    Lote: {d.lote_original_codigo}
+                    {d.lote_reasignado_codigo && ` → ${d.lote_reasignado_codigo}`}
+                  </span>
+                )}
+                <Badge
+                  variant={d.resolucion === "reasignado" ? "info" : "warning"}
+                  className="ml-auto text-[9px]"
+                >
+                  {d.resolucion_display}
+                </Badge>
+              </div>
             ))}
           </div>
         </div>

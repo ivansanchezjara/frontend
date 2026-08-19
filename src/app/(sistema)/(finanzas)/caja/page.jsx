@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Globe,
   Store,
+  FileMinusIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import { useToast } from "@/components/ui";
@@ -304,6 +305,12 @@ export default function CajaFacturacionPage() {
                 icon={FileText}
                 label="Facturas y Comprobantes"
                 description="Emisión y consulta de comprobantes"
+              />
+              <QuickLink
+                href="/caja/notas-credito-internas"
+                icon={FileMinusIcon}
+                label="Notas de Crédito Internas"
+                description="NC por faltantes en entregas (sin validez fiscal)"
               />
               <QuickLink
                 href="/caja/timbrados"

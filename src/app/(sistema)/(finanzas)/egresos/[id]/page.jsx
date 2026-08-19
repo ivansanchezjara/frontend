@@ -6,13 +6,10 @@ import {
   ArrowLeft,
   CreditCard,
   XCircle,
-  Receipt,
   Edit2,
-  DollarSign,
   Calendar,
   Tag,
   User,
-  FileText,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -44,7 +41,7 @@ function formatFecha(fechaStr) {
 function formatMonto(monto, moneda) {
   const num = Number(monto);
   if (moneda === "PYG") {
-    return num.toLocaleString("es-PY") + " ₲";
+    return "₲ " + num.toLocaleString("es-PY");
   }
   if (moneda === "BRL") {
     return "R$ " + num.toLocaleString("es-PY", { minimumFractionDigits: 2 });
@@ -77,7 +74,7 @@ export default function GastoDetallePage() {
 
   const handleError = useCallback(
     (err) => {
-      if (err.status === 404) router.push("/finanzas-gastos");
+      if (err.status === 404) router.push("/egresos");
     },
     [router]
   );
@@ -134,12 +131,13 @@ export default function GastoDetallePage() {
 
   const puedePagar = gasto.estado === "pendiente";
   const puedeAnular = gasto.estado !== "anulado";
+  const puedeEditar = gasto.estado !== "anulado";
 
   return (
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       <PageHeader
         breadcrumbs={[
-          { label: "Finanzas y Gastos", href: "/finanzas-gastos" },
+          { label: "Egresos", href: "/egresos" },
           { label: gasto.concepto },
         ]}
         subtitle={
@@ -151,6 +149,13 @@ export default function GastoDetallePage() {
         }
       >
         <div className="flex items-center gap-2 flex-wrap">
+          {puedeEditar && (
+            <Link href={`/egresos/${id}/editar`}>
+              <Button variant="secondary" size="sm" icon={Edit2}>
+                Editar
+              </Button>
+            </Link>
+          )}
           {puedePagar && (
             <Button
               variant="primary"
@@ -171,7 +176,7 @@ export default function GastoDetallePage() {
               Anular
             </Button>
           )}
-          <Link href="/finanzas-gastos">
+          <Link href="/egresos">
             <Button variant="ghost" size="sm" icon={ArrowLeft}>
               Volver
             </Button>
@@ -388,8 +393,8 @@ function PagarModal({ open, onClose, onPagar }) {
   };
 
   return (
-    <Modal isOpen={open} onClose={onClose} title="Registrar Pago">
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal open={open} onClose={onClose} title="Registrar Pago">
+      <form onSubmit={handleSubmit} className="space-y-4 p-6">
         <Field label="Método de Pago">
           <select
             value={metodoPago}
@@ -421,6 +426,7 @@ function PagarModal({ open, onClose, onPagar }) {
             type="submit"
             icon={CreditCard}
             disabled={saving}
+            className="bg-purple-600 hover:bg-purple-700 focus:ring-purple-500"
           >
             {saving ? "Guardando..." : "Confirmar Pago"}
           </Button>

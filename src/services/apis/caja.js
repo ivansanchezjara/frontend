@@ -192,6 +192,55 @@ export async function entregarPedido(id) {
   );
 }
 
+// ─── Discrepancias de Entrega ───────────────────────────────────
+
+export async function getLotesAlternativos(pedidoId, lineaId, loteOriginalId) {
+  const params = loteOriginalId ? `?lote_original=${loteOriginalId}` : "";
+  return request(
+    `${API_URL}/caja/cola-entrega/${pedidoId}/lotes-alternativos/${lineaId}/${params}`,
+    {
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "obtener lotes alternativos",
+  );
+}
+
+export async function reasignarLote(pedidoId, data) {
+  return request(
+    `${API_URL}/caja/cola-entrega/${pedidoId}/reasignar-lote/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "reasignar lote de entrega",
+  );
+}
+
+export async function reportarFaltante(pedidoId, data) {
+  return request(
+    `${API_URL}/caja/cola-entrega/${pedidoId}/reportar-faltante/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "reportar faltante de entrega",
+  );
+}
+
+export async function getDiscrepanciasEntrega(pedidoId) {
+  return request(
+    `${API_URL}/caja/cola-entrega/${pedidoId}/discrepancias/`,
+    {
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver discrepancias de entrega",
+  );
+}
+
 // ─── Comprobantes Internos ──────────────────────────────────────
 
 export async function getComprobantes(params = {}) {
@@ -281,6 +330,32 @@ export async function emitirNotaCredito(data) {
       body: JSON.stringify(data),
     },
     "emitir nota de crédito",
+  );
+}
+
+// ─── Notas de Crédito Internas ──────────────────────────────────
+
+export async function getNotasCreditoInternas(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/caja/notas-credito-internas/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver notas de crédito internas",
+  );
+}
+
+export async function getNotaCreditoInterna(id) {
+  return request(
+    `${API_URL}/caja/notas-credito-internas/${id}/`,
+    {
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver detalle de nota de crédito interna",
   );
 }
 

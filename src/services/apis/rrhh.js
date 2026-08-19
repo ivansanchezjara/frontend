@@ -491,3 +491,98 @@ export async function deleteHorario(id) {
     "eliminar horario laboral",
   );
 }
+
+// ─── Premios/Comisiones ─────────────────────────────────────────
+
+export async function getPremios(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/rrhh/premios/${query}`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver premios mensuales",
+  );
+}
+
+export async function getPremio(id) {
+  return request(
+    `${API_URL}/rrhh/premios/${id}/`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver detalle de premio",
+  );
+}
+
+export async function calcularPremiosMes(data) {
+  return request(
+    `${API_URL}/rrhh/premios/calcular/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "calcular premios del mes",
+  );
+}
+
+export async function aprobarPremio(id, data = {}) {
+  return request(
+    `${API_URL}/rrhh/premios/${id}/aprobar/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "aprobar premio",
+  );
+}
+
+export async function ajustarPremio(id, data) {
+  return request(
+    `${API_URL}/rrhh/premios/${id}/ajustar/`,
+    { method: "PATCH", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "ajustar premio",
+  );
+}
+
+export async function aprobarTodosPremios(data) {
+  return request(
+    `${API_URL}/rrhh/premios/aprobar-todos/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "aprobar todos los premios",
+  );
+}
+
+export async function getResumenPremios(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/rrhh/premios/resumen/${query}`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver resumen de premios",
+  );
+}
+
+// ─── Configuraciones de Premio ──────────────────────────────────
+
+export async function getConfiguracionesPremio(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/rrhh/configuraciones-premio/${query}`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver configuraciones de premio",
+  );
+}
+
+export async function createConfiguracionPremio(data) {
+  return request(
+    `${API_URL}/rrhh/configuraciones-premio/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "crear configuración de premio",
+  );
+}
+
+export async function updateConfiguracionPremio(id, data) {
+  return request(
+    `${API_URL}/rrhh/configuraciones-premio/${id}/`,
+    { method: "PATCH", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "actualizar configuración de premio",
+  );
+}
+
+export async function deleteConfiguracionPremio(id) {
+  return request(
+    `${API_URL}/rrhh/configuraciones-premio/${id}/`,
+    { method: "DELETE", headers: authHeaders() },
+    "eliminar configuración de premio",
+  );
+}

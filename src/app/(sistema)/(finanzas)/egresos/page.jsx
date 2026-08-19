@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Filter, FileCheck, FileX } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Plus, Filter, FileCheck, FileX, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
@@ -39,6 +39,7 @@ export default function FinanzasGastosPage() {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const busquedaDebounced = useDebounce(busqueda, 400);
+  const isFirstRender = useRef(true);
 
   // --- API ---
   const {
@@ -46,21 +47,17 @@ export default function FinanzasGastosPage() {
     loading,
     error,
     execute: fetchGastos,
-  } = useApi(getGastos);
+  } = useApi(getGastos, { handleError: false });
 
-  const { data: categorias, execute: fetchCategorias } = useApi(getCategoriasGasto);
+  const { data: categoriasData } = useApi(getCategoriasGasto, { auto: true, initialData: null });
+  const categoriasList = categoriasData?.results || categoriasData || [];
 
   const gastos = gastosData?.results || gastosData || [];
   const count = gastosData?.count || gastos.length || 0;
 
-  // Cargar categorías al montar
-  useEffect(() => {
-    fetchCategorias();
-  }, [fetchCategorias]);
-
-  // Cargar gastos cuando cambian filtros o página
-  useEffect(() => {
-    const params = { page };
+  // Función de carga unificada
+  const cargarGastos = useCallback((pageNum = page) => {
+    const params = { page: pageNum, page_size: PAGE_SIZE };
     if (busquedaDebounced) params.search = busquedaDebounced;
     if (estado) params.estado = estado;
     if (categoria) params.categoria = categoria;
@@ -69,16 +66,28 @@ export default function FinanzasGastosPage() {
     if (tieneFactura) params.tiene_factura = tieneFactura;
 
     fetchGastos(params).then(() => setHasLoadedOnce(true));
-  }, [fetchGastos, busquedaDebounced, estado, categoria, fechaDesde, fechaHasta, tieneFactura, page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busquedaDebounced, estado, categoria, fechaDesde, fechaHasta, tieneFactura, page]);
 
-  // Resetear página al cambiar filtros
+  // Fetch cuando cambian filtros o página
   useEffect(() => {
+    cargarGastos(page);
+  }, [cargarGastos, page]);
+
+  // Resetear página al cambiar filtros (no en el primer render)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     setPage(1);
   }, [busquedaDebounced, estado, categoria, fechaDesde, fechaHasta, tieneFactura]);
 
   // --- Helpers ---
   const hayFiltrosActivos =
-    busqueda !== "" || estado !== "" || categoria !== "" || fechaDesde !== "" || fechaHasta !== "" || tieneFactura !== "";
+    estado !== "" || categoria !== "" || fechaDesde !== "" || fechaHasta !== "" || tieneFactura !== "";
+
+  const filtrosActivosCount = [estado, categoria, fechaDesde, fechaHasta, tieneFactura].filter(Boolean).length;
 
   const limpiarFiltros = useCallback(() => {
     setBusqueda("");
@@ -91,7 +100,7 @@ export default function FinanzasGastosPage() {
 
   const handleRowClick = useCallback(
     (id) => {
-      router.push(`/finanzas-gastos/${id}`);
+      router.push(`/egresos/${id}`);
     },
     [router]
   );
@@ -100,21 +109,20 @@ export default function FinanzasGastosPage() {
     (e, id) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        router.push(`/finanzas-gastos/${id}`);
+        router.push(`/egresos/${id}`);
       }
     },
     [router]
   );
 
   // --- Loading inicial ---
-  const isInitialLoading = loading && !hasLoadedOnce;
-  if (isInitialLoading) return <LoadingScreen texto="Cargando Gastos..." />;
+  if (loading && !hasLoadedOnce) return <LoadingScreen texto="Cargando Gastos..." />;
 
   return (
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       {/* Header */}
       <PageHeader
-        title="Finanzas y Gastos"
+        title="Egresos"
         subtitle={`Registro y control de gastos operativos · ${count} registros`}
         subtitleClassName="text-purple-600"
       >
@@ -123,11 +131,16 @@ export default function FinanzasGastosPage() {
           icon={Filter}
           size="md"
           onClick={() => setMostrarFiltros(!mostrarFiltros)}
-          className="rounded-xl font-bold text-xs hover:text-purple-600 hover:border-purple-200 cursor-pointer"
+          className="rounded-xl font-bold text-xs hover:text-purple-600 hover:border-purple-200 cursor-pointer relative"
         >
           Filtros
+          {filtrosActivosCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-purple-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              {filtrosActivosCount}
+            </span>
+          )}
         </Button>
-        <Link href="/finanzas-gastos/nuevo">
+        <Link href="/egresos/nuevo">
           <Button
             variant="success"
             icon={Plus}
@@ -180,7 +193,7 @@ export default function FinanzasGastosPage() {
                     aria-label="Filtrar por categoría"
                   >
                     <option value="">Todas</option>
-                    {(categorias?.results || categorias || []).map((cat) => (
+                    {categoriasList.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.nombre}
                       </option>
@@ -228,6 +241,39 @@ export default function FinanzasGastosPage() {
                 </div>
               </div>
             )}
+
+            {/* Chips de filtros activos */}
+            {hayFiltrosActivos && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {estado && (
+                  <FilterChip label={`Estado: ${estado}`} onRemove={() => setEstado("")} />
+                )}
+                {categoria && (
+                  <FilterChip
+                    label={`Categoría: ${categoriasList.find(c => String(c.id) === categoria)?.nombre || categoria}`}
+                    onRemove={() => setCategoria("")}
+                  />
+                )}
+                {tieneFactura && (
+                  <FilterChip
+                    label={tieneFactura === "true" ? "Con factura" : "Sin factura"}
+                    onRemove={() => setTieneFactura("")}
+                  />
+                )}
+                {fechaDesde && (
+                  <FilterChip label={`Desde: ${fechaDesde}`} onRemove={() => setFechaDesde("")} />
+                )}
+                {fechaHasta && (
+                  <FilterChip label={`Hasta: ${fechaHasta}`} onRemove={() => setFechaHasta("")} />
+                )}
+                <button
+                  onClick={limpiarFiltros}
+                  className="text-xs text-purple-600 hover:text-purple-800 font-medium ml-1"
+                >
+                  Limpiar todos
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Error state */}
@@ -242,21 +288,21 @@ export default function FinanzasGastosPage() {
 
           {/* Tabla de gastos */}
           <div
-            className={`transition-opacity duration-300 ${
-              loading && hasLoadedOnce ? "opacity-50 pointer-events-none" : "opacity-100"
+            className={`transition-opacity duration-200 ${
+              loading && hasLoadedOnce ? "opacity-60" : "opacity-100"
             }`}
           >
             {gastos.length === 0 ? (
               <EmptyState
-                titulo={hayFiltrosActivos ? "Sin resultados" : "No hay gastos registrados"}
+                titulo={hayFiltrosActivos || busqueda ? "Sin resultados" : "No hay gastos registrados"}
                 descripcion={
-                  hayFiltrosActivos
+                  hayFiltrosActivos || busqueda
                     ? "Intentá con otros términos o cambiá los filtros."
                     : "Registrá tu primer gasto con el botón \"Nuevo Gasto\"."
                 }
-                icon={hayFiltrosActivos ? "🔍" : "💰"}
-                textoBoton={hayFiltrosActivos ? "Limpiar filtros" : undefined}
-                onAction={hayFiltrosActivos ? limpiarFiltros : undefined}
+                icon={hayFiltrosActivos || busqueda ? "🔍" : "💰"}
+                textoBoton={hayFiltrosActivos || busqueda ? "Limpiar filtros" : undefined}
+                onAction={hayFiltrosActivos || busqueda ? limpiarFiltros : undefined}
               />
             ) : (
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -287,73 +333,14 @@ export default function FinanzasGastosPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {gastos.map((gasto) => {
-                      const tieneFactura = !!gasto.factura;
-                      return (
-                        <tr
-                          key={gasto.id}
-                          className="hover:bg-slate-50 cursor-pointer transition-colors"
-                          onClick={() => handleRowClick(gasto.id)}
-                          onKeyDown={(e) => handleRowKeyDown(e, gasto.id)}
-                          tabIndex={0}
-                          role="link"
-                          aria-label={`Ver detalle de gasto: ${gasto.concepto}`}
-                        >
-                          <td className="px-4 py-3">
-                            <div className="font-medium text-slate-900">
-                              {gasto.concepto}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 hidden md:table-cell">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium">
-                              {gasto.categoria_nombre}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center hidden sm:table-cell">
-                            {tieneFactura ? (
-                              <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg" title={`Fact. ${gasto.factura.numero_factura || "s/n"} — ${gasto.factura.razon_social_emisor || ""}`}>
-                                <FileCheck className="w-3.5 h-3.5" />
-                                <span className="hidden lg:inline">
-                                  {gasto.factura.numero_factura || "Con factura"}
-                                </span>
-                                <span className="lg:hidden">Sí</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-lg" title="Sin comprobante legal">
-                                <FileX className="w-3.5 h-3.5" />
-                                <span className="hidden lg:inline">Sin factura</span>
-                                <span className="lg:hidden">No</span>
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right font-mono">
-                            {Number(gasto.monto_original).toLocaleString("es-PY")}{" "}
-                            <span className="text-slate-400 text-xs">
-                              {gasto.moneda_original}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-right font-mono text-slate-600 hidden lg:table-cell">
-                            US${" "}
-                            {Number(gasto.monto_usd).toLocaleString("es-PY", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </td>
-                          <td className="px-4 py-3 text-center text-slate-600 hidden sm:table-cell">
-                            {new Date(gasto.fecha_gasto).toLocaleDateString("es-PY")}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span
-                              className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                                ESTADO_BADGE[gasto.estado]?.className || "bg-slate-100 text-slate-600"
-                              }`}
-                            >
-                              {ESTADO_BADGE[gasto.estado]?.label || gasto.estado}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {gastos.map((gasto) => (
+                      <GastoRow
+                        key={gasto.id}
+                        gasto={gasto}
+                        onClick={handleRowClick}
+                        onKeyDown={handleRowKeyDown}
+                      />
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -372,5 +359,92 @@ export default function FinanzasGastosPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+// ─── Componentes internos ───────────────────────────────────────
+
+function GastoRow({ gasto, onClick, onKeyDown }) {
+  const tieneFactura = !!gasto.factura;
+
+  return (
+    <tr
+      className="hover:bg-slate-50 cursor-pointer transition-colors"
+      onClick={() => onClick(gasto.id)}
+      onKeyDown={(e) => onKeyDown(e, gasto.id)}
+      tabIndex={0}
+      role="link"
+      aria-label={`Ver detalle de gasto: ${gasto.concepto}`}
+    >
+      <td className="px-4 py-3">
+        <div className="font-medium text-slate-900">{gasto.concepto}</div>
+      </td>
+      <td className="px-4 py-3 hidden md:table-cell">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium">
+          {gasto.categoria_nombre}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-center hidden sm:table-cell">
+        {tieneFactura ? (
+          <span
+            className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg"
+            title={`Fact. ${gasto.factura.numero_factura || "s/n"} — ${gasto.factura.razon_social_emisor || ""}`}
+          >
+            <FileCheck className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">
+              {gasto.factura.numero_factura || "Con factura"}
+            </span>
+            <span className="lg:hidden">Sí</span>
+          </span>
+        ) : (
+          <span
+            className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-lg"
+            title="Sin comprobante legal"
+          >
+            <FileX className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">Sin factura</span>
+            <span className="lg:hidden">No</span>
+          </span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-right font-mono">
+        {Number(gasto.monto_original).toLocaleString("es-PY")}{" "}
+        <span className="text-slate-400 text-xs">{gasto.moneda_original}</span>
+      </td>
+      <td className="px-4 py-3 text-right font-mono text-slate-600 hidden lg:table-cell">
+        US${" "}
+        {Number(gasto.monto_usd).toLocaleString("es-PY", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
+      </td>
+      <td className="px-4 py-3 text-center text-slate-600 hidden sm:table-cell">
+        {new Date(gasto.fecha_gasto).toLocaleDateString("es-PY")}
+      </td>
+      <td className="px-4 py-3 text-center">
+        <span
+          className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+            ESTADO_BADGE[gasto.estado]?.className || "bg-slate-100 text-slate-600"
+          }`}
+        >
+          {ESTADO_BADGE[gasto.estado]?.label || gasto.estado}
+        </span>
+      </td>
+    </tr>
+  );
+}
+
+function FilterChip({ label, onRemove }) {
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-medium border border-purple-100">
+      {label}
+      <button
+        onClick={onRemove}
+        className="ml-0.5 p-0.5 rounded-full hover:bg-purple-200 transition-colors"
+        aria-label={`Quitar filtro: ${label}`}
+      >
+        <X size={12} />
+      </button>
+    </span>
   );
 }

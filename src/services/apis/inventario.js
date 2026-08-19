@@ -74,3 +74,30 @@ export async function getLotesDisponibles(varianteId, depositoId) {
     "ver lotes disponibles para asignación",
   );
 }
+
+// ─── Discrepancias de Entrega ───────────────────────────────────
+
+export async function getDiscrepancias(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/inventario/discrepancias/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver discrepancias de entrega",
+  );
+}
+
+export async function getDiscrepanciasResumen() {
+  return request(
+    `${API_URL}/inventario/discrepancias/resumen/`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver resumen de discrepancias",
+  );
+}

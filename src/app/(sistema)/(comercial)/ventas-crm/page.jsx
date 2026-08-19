@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ShoppingCart, Users, FileText, Target, MapPin, GraduationCap,
-  Building2, Truck,
+  Building2, Truck, MessageSquare,
 } from "lucide-react";
 import {
   LoadingScreen, PageHeader, Section, EmptyState,
@@ -52,6 +52,7 @@ const PIPELINE_STAGES = [
 
 const QUICK_ACTIONS = [
   { href: "/ventas-crm/ventas", icon: ShoppingCart, label: "Ventas" },
+  { href: "/ventas-crm/mensajeria", icon: MessageSquare, label: "Mensajería" },
   { href: "/ventas-crm/ventas-campo", icon: MapPin, label: "Ventas en Campo" },
   { href: "/ventas-crm/ventas/nueva", icon: ShoppingCart, label: "Venta rápida" },
   { href: "/ventas-crm/oportunidades", icon: Target, label: "Oportunidades" },

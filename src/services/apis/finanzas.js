@@ -139,3 +139,29 @@ export async function anularGasto(id) {
     "anular gasto",
   );
 }
+
+export async function getConceptosFrecuentes(q) {
+  const query = toQueryString({ q });
+  return request(
+    `${API_URL}/finanzas/gastos/conceptos-frecuentes/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "conceptos frecuentes",
+  );
+}
+
+export async function consultarRuc(ruc) {
+  const query = toQueryString({ ruc });
+  return request(
+    `${API_URL}/finanzas/gastos/consultar-ruc/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "consultar RUC",
+  );
+}
