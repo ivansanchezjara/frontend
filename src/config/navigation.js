@@ -131,6 +131,16 @@ export const erpModules = [
   },
   {
     category: "Logística y Servicios",
+    href: "/compras",
+    icon: "🚢",
+    title: "Compras e Importaciones",
+    desc: "Órdenes de compra, seguimiento de importaciones en tránsito y recepción.",
+    color: "blue",
+    estado: "activo",
+    roles: ["Admin", "gestorDeDeposito"],
+  },
+  {
+    category: "Logística y Servicios",
     href: "/asistencia-tecnica",
     icon: "🔧",
     title: "Asistencia Técnica",

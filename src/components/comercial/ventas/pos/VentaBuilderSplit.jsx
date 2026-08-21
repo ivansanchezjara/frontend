@@ -2,14 +2,13 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Search, User, X, ShoppingCart, Plus, Minus, Trash2,
-  Package, Tag, RefreshCw, Info, UserPlus, Save, Loader2, Warehouse, Layers,
+  Package, Tag, RefreshCw, Info, UserPlus, Save, Loader2, Layers,
 } from "lucide-react";
 import { Button, Badge, Text, Input, PhoneInput, validatePhone, buildPhoneValue, Modal, DataTable } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBuscarProductos } from "@/hooks/useBuscarProductos";
 import { getCuentas, createCliente } from "@/services/apis/ventas";
-import { getDepositos } from "@/services/apis/movimientos";
 import { getLotesPorVarianteId } from "@/services/apis/inventario";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui";
@@ -146,7 +145,7 @@ function buildProductColumns({ calcularPrecio, moneda, tipoCambio, carritoIds, a
       width: 120,
       minWidth: 90,
       render: (_, row) => {
-        const { precioMoneda, tieneOferta, precioTierUsd } = calcularPrecio(row);
+        const { precioMoneda, tieneOferta, precioTierUsd, precioPublicoMoneda } = calcularPrecio(row);
         return (
           <div className="text-right">
             <span className={cn("text-xs font-bold", tieneOferta ? "text-rose-600" : "text-emerald-700")}>
@@ -160,6 +159,11 @@ function buildProductColumns({ calcularPrecio, moneda, tipoCambio, carritoIds, a
                     : precioTierUsd,
                   moneda
                 )}
+              </div>
+            )}
+            {tier !== "publico" && precioPublicoMoneda > precioMoneda && (
+              <div className="text-[9px] text-slate-400 line-through">
+                Público: {formatMonto(precioPublicoMoneda, moneda)}
               </div>
             )}
           </div>
@@ -227,24 +231,6 @@ export default function VentaBuilderSplit({
   // ─── Tipo de cambio ─────────────────────────────────────────
   const [tipoCambio, setTipoCambio] = useState(null);
 
-  // ─── Depósitos ──────────────────────────────────────────────
-  const [depositos, setDepositos] = useState([]);
-  const { execute: fetchDepositos } = useApi(getDepositos);
-
-  useEffect(() => {
-    fetchDepositos().then((data) => {
-      const items = Array.isArray(data) ? data : (data?.results || []);
-      setDepositos(items);
-    }).catch(() => { });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Auto-seleccionar depósito si solo hay uno y no está seteado
-  useEffect(() => {
-    if (depositos.length === 1 && !ventaData.deposito_sucursal) {
-      onVentaChange({ ...ventaData, deposito_sucursal: depositos[0].id });
-    }
-  }, [depositos]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const tier = ventaData.cliente?.tier_precio || "publico";
   const moneda = ventaData.moneda_negociacion || "USD";
 
@@ -279,16 +265,19 @@ export default function VentaBuilderSplit({
   const calcularPrecio = useCallback((variante) => {
     const precioField = TIER_PRECIO_FIELD_MAP[tier] || "precio_0_publico";
     const precioTierUsd = parseFloat(variante[precioField]) || 0;
+    const precioPublicoUsd = parseFloat(variante.precio_0_publico) || 0;
     const precioOferta = variante.precio_oferta ? parseFloat(variante.precio_oferta) : null;
     const tieneOferta = precioOferta !== null && precioOferta < precioTierUsd;
     const precioUsd = tieneOferta ? precioOferta : precioTierUsd;
 
     let precioMoneda = precioUsd;
+    let precioPublicoMoneda = precioPublicoUsd;
     if (moneda !== "USD" && tipoCambio) {
       precioMoneda = Math.round(precioUsd * parseFloat(tipoCambio.valor));
+      precioPublicoMoneda = Math.round(precioPublicoUsd * parseFloat(tipoCambio.valor));
     }
 
-    return { precioUsd, precioMoneda, tieneOferta, precioOferta, precioTierUsd };
+    return { precioUsd, precioMoneda, tieneOferta, precioOferta, precioTierUsd, precioPublicoUsd, precioPublicoMoneda };
   }, [tier, moneda, tipoCambio]);
 
   // ─── Agregar producto ───────────────────────────────────────
@@ -349,7 +338,7 @@ export default function VentaBuilderSplit({
       nuevas[existente] = nueva;
       onLineasChange(nuevas);
     } else {
-      const { precioUsd, precioMoneda, tieneOferta, precioOferta, precioTierUsd } = calcularPrecio(variante);
+      const { precioUsd, precioMoneda, tieneOferta, precioOferta, precioTierUsd, precioPublicoUsd, precioPublicoMoneda } = calcularPrecio(variante);
       const nuevaLinea = {
         variante_id: variante.id,
         product_code: variante.product_code,
@@ -365,6 +354,8 @@ export default function VentaBuilderSplit({
         tiene_oferta: tieneOferta,
         precio_oferta: precioOferta,
         precio_tier_usd: precioTierUsd,
+        precio_publico_usd: precioPublicoUsd,
+        precio_publico_moneda: precioPublicoMoneda,
         oferta_vence: variante.oferta_vence || null,
         asignaciones: [],
       };
@@ -603,20 +594,6 @@ export default function VentaBuilderSplit({
               ))}
             </div>
 
-            {/* Depósito */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Warehouse size={14} className="text-slate-400" />
-              <select
-                value={ventaData.deposito_sucursal ? String(ventaData.deposito_sucursal) : ""}
-                onChange={(e) => onVentaChange({ ...ventaData, deposito_sucursal: e.target.value ? Number(e.target.value) : null })}
-                className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-all"
-              >
-                <option value="">Depósito...</option>
-                {depositos.map((dep) => (
-                  <option key={dep.id} value={String(dep.id)}>{dep.nombre}</option>
-                ))}
-              </select>
-            </div>
           </div>
 
           {/* Tipo de cambio widget */}
@@ -815,6 +792,11 @@ export default function VentaBuilderSplit({
                       <p className="text-[10px] text-slate-400">
                         {formatMonto(linea.precio_moneda, moneda)} × {linea.cantidad}
                       </p>
+                      {tier !== "publico" && linea.precio_publico_moneda > linea.precio_moneda && (
+                        <p className="text-[10px] text-slate-400 line-through">
+                          Público: {formatMonto(linea.precio_publico_moneda, moneda)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

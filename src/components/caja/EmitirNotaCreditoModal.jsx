@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
-import { Button, Field } from "@/components/ui";
+import { Button, Field, MontoInput } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { emitirNotaCredito } from "@/services/apis/caja";
 import { X, FileText, AlertCircle } from "lucide-react";
@@ -258,16 +258,13 @@ export default function EmitirNotaCreditoModal({ factura, onClose, onSuccess }) 
 
                   {/* Precio unitario */}
                   <div className="w-28">
-                    <input
-                      type="number"
-                      min="0"
-                      value={linea.precio_unitario}
-                      onChange={(e) =>
-                        handlePrecioChange(index, e.target.value)
+                    <MontoInput
+                      value={String(linea.precio_unitario || "")}
+                      onChange={(val) =>
+                        handlePrecioChange(index, val)
                       }
+                      moneda="PYG"
                       disabled={!linea.incluida}
-                      className="w-full px-2 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-sm text-right font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all disabled:opacity-50"
-                      placeholder="Precio"
                     />
                   </div>
 

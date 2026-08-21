@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useApi } from '@/hooks/useApi';
 import { getProductos, getVariantes } from '@/services/apis/catalogo';
-import { Modal, Button, Input, Field, Toggle } from '@/components/ui';
+import { Modal, Button, Input, Field, Toggle, MontoInput } from '@/components/ui';
 
 export default function PromocionForm({ initial, onSave, onClose }) {
   const [form, setForm] = useState({
@@ -177,15 +177,23 @@ export default function PromocionForm({ initial, onSave, onClose }) {
         </div>
 
         <Field label={form.tipo_descuento === 'porcentaje' ? 'Porcentaje (%)' : 'Precio fijo (USD)'}>
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            value={form.valor}
-            onChange={(e) => update('valor', e.target.value)}
-            placeholder={form.tipo_descuento === 'porcentaje' ? 'Ej: 15' : 'Ej: 8.50'}
-            required
-          />
+          {form.tipo_descuento === 'porcentaje' ? (
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.valor}
+              onChange={(e) => update('valor', e.target.value)}
+              placeholder="Ej: 15"
+              required
+            />
+          ) : (
+            <MontoInput
+              value={form.valor}
+              onChange={(val) => update('valor', val)}
+              moneda="USD"
+            />
+          )}
         </Field>
 
         <div className="grid grid-cols-2 gap-3">

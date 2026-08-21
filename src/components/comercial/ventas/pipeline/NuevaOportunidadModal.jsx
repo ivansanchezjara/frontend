@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Search, Users, UserPlus, ArrowLeft, Save, Loader2 } from "lucide-react";
-import { Input, Field, Button, Modal, PhoneInput, validatePhone, buildPhoneValue } from "@/components/ui";
+import { Input, Field, Button, Modal, PhoneInput, validatePhone, buildPhoneValue, MontoInput } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -156,12 +156,11 @@ export default function NuevaOportunidadModal({ open, onClose, onCreated }) {
 
         {/* Monto y Fecha */}
         <div className="grid grid-cols-2 gap-3">
-          <Input
-            label="Monto estimado (₲)"
-            type="number"
+          <MontoInput
+            label="Monto estimado"
             value={formData.monto_estimado}
-            onChange={handleField("monto_estimado")}
-            placeholder="0"
+            onChange={(val) => handleField("monto_estimado")(val)}
+            moneda="PYG"
             error={errors.monto_estimado}
           />
           <Input

@@ -1,5 +1,5 @@
 "use client";
-import { Button, Input, Field, Section } from "@/components/ui";
+import { Button, Input, Field, Section, MontoInput } from "@/components/ui";
 import { Plus, Trash2, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -10,9 +10,9 @@ const METODO_PAGO_OPTIONS = [
   { value: "efectivo_brl", label: "Efectivo BRL", moneda: "BRL" },
   { value: "efectivo_pyg", label: "Efectivo PYG", moneda: "PYG" },
   { value: "transferencia_pyg", label: "Transferencia PYG", moneda: "PYG" },
-  { value: "cuotas", label: "Pago a Cuotas", moneda: null },
-  { value: "tarjeta_credito", label: "Tarjeta Crédito", moneda: null },
-  { value: "tarjeta_debito", label: "Tarjeta Débito", moneda: null },
+  { value: "cuotas", label: "Pago a Cuotas", moneda: "PYG" },
+  { value: "tarjeta_credito", label: "Tarjeta Crédito", moneda: "PYG" },
+  { value: "tarjeta_debito", label: "Tarjeta Débito", moneda: "PYG" },
   { value: "pix", label: "PIX", moneda: "BRL" },
 ];
 
@@ -121,14 +121,11 @@ export default function PagoMultiple({
                 </Field>
 
                 <div className="flex-1">
-                  <Input
+                  <MontoInput
                     label="Monto"
-                    type="number"
-                    min="0"
-                    step="any"
                     value={pago.monto}
-                    onChange={(e) => handleMontoChange(index, e.target.value)}
-                    placeholder="0"
+                    onChange={(val) => handleMontoChange(index, val)}
+                    moneda={pago.moneda || monedaNegociacion}
                     error={montoInvalido ? "El monto debe ser mayor a cero" : undefined}
                   />
                 </div>

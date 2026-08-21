@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Save, Loader2 } from "lucide-react";
-import { Section, Button, Input, Field, Text } from "@/components/ui";
+import { Section, Button, Input, Field, Text, MontoInput } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { updateOportunidad } from "@/services/apis/ventas";
 
@@ -77,13 +77,13 @@ export default function DetalleSection({ oportunidad, cerrada, onUpdated }) {
                 }
               />
             </div>
-            <Input
-              label="Monto estimado (₲)"
-              type="number"
+            <MontoInput
+              label="Monto estimado"
               value={formData.monto_estimado}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, monto_estimado: e.target.value }))
+              onChange={(val) =>
+                setFormData((prev) => ({ ...prev, monto_estimado: val }))
               }
+              moneda="PYG"
             />
             <Input
               label="Cierre estimado"

@@ -6,6 +6,7 @@ export function Button({
   size = 'md',
   className = '',
   disabled = false,
+  loading = false,
   icon: Icon,
   iconPosition = 'left',
   type = 'button',
@@ -41,16 +42,23 @@ export function Button({
   const variantStyles = variants[variant] || variants.primary;
   const sizeStyles = sizes[size] || sizes.md;
 
-  const componentProps = Component === 'button' ? { type, disabled, ...props } : props;
+  const componentProps = Component === 'button' ? { type, disabled: disabled || loading, ...props } : props;
 
   return (
     <Component
       className={cn(baseStyles, variantStyles, sizeStyles, className)}
       {...componentProps}
     >
-      {Icon && iconPosition === 'left' && <Icon size={size === 'sm' || size === 'icon' ? 16 : 20} className="shrink-0" />}
+      {loading ? (
+        <svg className="animate-spin shrink-0" width={size === 'sm' || size === 'icon' ? 16 : 20} height={size === 'sm' || size === 'icon' ? 16 : 20} viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+      ) : (
+        Icon && iconPosition === 'left' && <Icon size={size === 'sm' || size === 'icon' ? 16 : 20} className="shrink-0" />
+      )}
       {children}
-      {Icon && iconPosition === 'right' && <Icon size={size === 'sm' || size === 'icon' ? 16 : 20} className="shrink-0" />}
+      {!loading && Icon && iconPosition === 'right' && <Icon size={size === 'sm' || size === 'icon' ? 16 : 20} className="shrink-0" />}
     </Component>
   );
 }

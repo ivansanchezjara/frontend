@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   PageHeader,
   Pagination,
@@ -8,26 +9,13 @@ import {
   EmptyState,
   Input,
   Button,
-  useToast,
-  useConfirm,
 } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import { useDebounce } from "@/hooks/useDebounce";
+import { getColaEntrega } from "@/services/apis/caja";
 import {
-  getColaEntrega,
-  getEntregaDetalle,
-  entregarPedido,
-  registrarVerificacion,
-  verificarCodigo,
-  getLotesAlternativos,
-  reasignarLote,
-  reportarFaltante,
-} from "@/services/apis/caja";
-import {
-  Package, PackageCheck, Search, X, Clock, ChevronDown, ChevronUp,
-  MapPin, Warehouse, Calendar, Hash, Truck, Store, CheckCircle2,
-  ScanBarcode, UserCheck, ShieldCheck, AlertCircle, AlertTriangle,
-  RefreshCw, PackageX, TriangleAlert,
+  Package, PackageCheck, Search, X, Clock, ChevronRight,
+  Truck, Store, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,12 +30,6 @@ function formatFecha(fecha) {
     day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit",
   });
-}
-
-function formatFechaCorta(fecha) {
-  if (!fecha) return "—";
-  const [year, month, day] = fecha.split("-");
-  return `${day}/${month}/${year}`;
 }
 
 function formatMonto(valor, moneda) {
@@ -70,1017 +52,20 @@ function getUrgenciaBadge(dias) {
   return null;
 }
 
-const ENTREGA_CONFIG = {
-  mostrador: { icon: Store, label: "Retira en mostrador" },
-  delivery: { icon: Truck, label: "Delivery" },
-  retiro_sucursal: { icon: Store, label: "Retiro sucursal" },
+const ENTREGA_ICONS = {
+  mostrador: Store,
+  delivery: Truck,
+  retiro_sucursal: Store,
 };
 
-const MOTIVOS_DISCREPANCIA = [
-  { value: "lote_no_encontrado", label: "Lote no encontrado", icon: AlertTriangle },
-  { value: "producto_no_encontrado", label: "Producto no encontrado", icon: PackageX },
-  { value: "producto_danado", label: "Producto dañado", icon: TriangleAlert },
-  { value: "cantidad_insuficiente", label: "Cantidad insuficiente en lote", icon: AlertCircle },
-];
-
-// ─── Modal de Reasignación de Lote ──────────────────────────────
-
-function ModalReasignarLote({ pedidoId, linea, asignacion, onClose, onReasignado }) {
-  const { showToast } = useToast();
-  const [lotes, setLotes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loteSeleccionado, setLoteSeleccionado] = useState(null);
-  const [observaciones, setObservaciones] = useState("");
-  const [enviando, setEnviando] = useState(false);
-
-  useEffect(() => {
-    const fetchLotes = async () => {
-      try {
-        const res = await getLotesAlternativos(pedidoId, linea.id, asignacion?.lote_id);
-        setLotes(res.lotes || []);
-      } catch {
-        showToast("Error al cargar lotes alternativos", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLotes();
-  }, [pedidoId, linea.id, asignacion?.lote_id, showToast]);
-
-  const handleReasignar = async () => {
-    if (!loteSeleccionado) return;
-    setEnviando(true);
-    try {
-      await reasignarLote(pedidoId, {
-        linea_venta_id: linea.id,
-        lote_original_id: asignacion.lote_id,
-        lote_nuevo_id: loteSeleccionado.id,
-        cantidad: asignacion.cantidad,
-        observaciones,
-      });
-      showToast("Lote reasignado correctamente", "success");
-      onReasignado?.();
-      onClose();
-    } catch (err) {
-      showToast(err?.data?.detail || "Error al reasignar lote", "error");
-    } finally {
-      setEnviando(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-slate-800">Reasignar Lote</h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {linea.product_code} · {linea.producto_nombre}
-            </p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
-            <X size={16} className="text-slate-400" />
-          </button>
-        </div>
-
-        {/* Info del lote original */}
-        <div className="px-6 py-3 bg-red-50 border-b border-red-100">
-          <p className="text-xs font-medium text-red-700 flex items-center gap-1.5">
-            <AlertTriangle size={12} />
-            Lote original no encontrado:
-            <code className="font-mono bg-red-100 px-1.5 py-0.5 rounded">
-              {asignacion?.lote_codigo}
-            </code>
-            <span className="text-red-500">({asignacion?.cantidad} unidades)</span>
-          </p>
-        </div>
-
-        {/* Lista de lotes alternativos */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          {loading ? (
-            <p className="text-sm text-slate-400 text-center py-8">Buscando lotes disponibles...</p>
-          ) : lotes.length === 0 ? (
-            <div className="text-center py-8">
-              <PackageX size={32} className="mx-auto text-slate-300 mb-2" />
-              <p className="text-sm text-slate-500">No hay lotes alternativos disponibles</p>
-              <p className="text-xs text-slate-400 mt-1">
-                Reportá el faltante para registrar la discrepancia.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-                Lotes disponibles (FEFO)
-              </p>
-              {lotes.map((lote) => (
-                <button
-                  key={lote.id}
-                  type="button"
-                  onClick={() => setLoteSeleccionado(lote)}
-                  className={cn(
-                    "w-full text-left px-4 py-3 rounded-xl border transition-all",
-                    loteSeleccionado?.id === lote.id
-                      ? "border-blue-400 bg-blue-50 ring-2 ring-blue-200"
-                      : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Hash size={12} className="text-slate-400" />
-                      <span className="text-sm font-medium text-slate-700">{lote.lote_codigo}</span>
-                    </div>
-                    <Badge variant={lote.cantidad_disponible >= asignacion?.cantidad ? "success" : "warning"}>
-                      {lote.cantidad_disponible} disp.
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500">
-                    <span className="flex items-center gap-1">
-                      <Warehouse size={10} />{lote.deposito_nombre}
-                    </span>
-                    {lote.vencimiento && (
-                      <span className="flex items-center gap-1">
-                        <Calendar size={10} />{formatFechaCorta(lote.vencimiento)}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Observaciones */}
-          <div className="mt-4">
-            <label className="text-xs font-medium text-slate-500 block mb-1">
-              Observaciones (opcional)
-            </label>
-            <textarea
-              value={observaciones}
-              onChange={(e) => setObservaciones(e.target.value)}
-              placeholder="Ej: Lote no encontrado en estante B3..."
-              rows={2}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 resize-none"
-            />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3">
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            icon={RefreshCw}
-            onClick={handleReasignar}
-            disabled={!loteSeleccionado || enviando}
-            loading={enviando || undefined}
-          >
-            Reasignar Lote
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Modal de Reportar Faltante ─────────────────────────────────
-
-function ModalReportarFaltante({ pedidoId, linea, asignacion, onClose, onReportado }) {
-  const { showToast } = useToast();
-  const [motivo, setMotivo] = useState("");
-  const [cantidadAfectada, setCantidadAfectada] = useState(asignacion?.cantidad || linea.cantidad);
-  const [observaciones, setObservaciones] = useState("");
-  const [enviando, setEnviando] = useState(false);
-
-  const handleReportar = async () => {
-    if (!motivo) {
-      showToast("Seleccioná un motivo", "error");
-      return;
-    }
-    setEnviando(true);
-    try {
-      await reportarFaltante(pedidoId, {
-        linea_venta_id: linea.id,
-        motivo,
-        cantidad_afectada: cantidadAfectada,
-        lote_original_id: asignacion?.lote_id || null,
-        observaciones,
-      });
-      showToast("Faltante reportado correctamente", "success");
-      onReportado?.();
-      onClose();
-    } catch (err) {
-      showToast(err?.data?.detail || "Error al reportar faltante", "error");
-    } finally {
-      setEnviando(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-slate-800">Reportar Faltante</h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {linea.product_code} · {linea.producto_nombre}
-            </p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
-            <X size={16} className="text-slate-400" />
-          </button>
-        </div>
-
-        {/* Contenido */}
-        <div className="px-6 py-4 space-y-4">
-          {/* Motivo */}
-          <div>
-            <label className="text-xs font-medium text-slate-500 block mb-2">Motivo</label>
-            <div className="space-y-2">
-              {MOTIVOS_DISCREPANCIA.map((m) => {
-                const Icon = m.icon;
-                return (
-                  <button
-                    key={m.value}
-                    type="button"
-                    onClick={() => setMotivo(m.value)}
-                    className={cn(
-                      "w-full text-left px-3 py-2.5 rounded-xl border transition-all flex items-center gap-2.5",
-                      motivo === m.value
-                        ? "border-amber-400 bg-amber-50 ring-2 ring-amber-200"
-                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                    )}
-                  >
-                    <Icon size={14} className={motivo === m.value ? "text-amber-600" : "text-slate-400"} />
-                    <span className={cn("text-sm", motivo === m.value ? "text-amber-700 font-medium" : "text-slate-600")}>
-                      {m.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Cantidad afectada */}
-          <div>
-            <label className="text-xs font-medium text-slate-500 block mb-1">
-              Cantidad afectada
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={asignacion?.cantidad || linea.cantidad}
-              value={cantidadAfectada}
-              onChange={(e) => setCantidadAfectada(Number(e.target.value))}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
-            />
-            <p className="text-[10px] text-slate-400 mt-1">
-              Máximo: {asignacion?.cantidad || linea.cantidad} unidades
-            </p>
-          </div>
-
-          {/* Observaciones */}
-          <div>
-            <label className="text-xs font-medium text-slate-500 block mb-1">
-              Observaciones (opcional)
-            </label>
-            <textarea
-              value={observaciones}
-              onChange={(e) => setObservaciones(e.target.value)}
-              placeholder="Detalle adicional del problema..."
-              rows={2}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-400 resize-none"
-            />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3">
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            variant="warning"
-            size="sm"
-            icon={AlertTriangle}
-            onClick={handleReportar}
-            disabled={!motivo || enviando}
-            loading={enviando || undefined}
-          >
-            Reportar Faltante
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Componente de Detalle con Verificación ─────────────────────
-
-function PedidoDetalle({ pedidoId, onEntregado }) {
-  const { showToast } = useToast();
-  const { confirm } = useConfirm();
-  const scanInputRef = useRef(null);
-
-  const { data: detalle, loading, execute: fetchDetalle } = useApi(getEntregaDetalle, {
-    auto: false, initialData: null,
-  });
-  const { execute: ejecutarEntrega, loading: entregando } = useApi(entregarPedido, {
-    auto: false, handleError: false,
-  });
-  const { execute: ejecutarVerificacion, loading: verificando } = useApi(registrarVerificacion, {
-    auto: false, handleError: false,
-  });
-  const { execute: ejecutarScanCheck } = useApi(verificarCodigo, {
-    auto: false, handleError: false,
-  });
-
-  // Estado local de escaneo
-  const [codigoInput, setCodigoInput] = useState("");
-  const [lineasChecked, setLineasChecked] = useState({});
-  const [scanResult, setScanResult] = useState(null);
-  const [scanTimeout, setScanTimeout] = useState(null);
-
-  // Estado para modales de discrepancia
-  const [modalReasignar, setModalReasignar] = useState(null); // { linea, asignacion }
-  const [modalFaltante, setModalFaltante] = useState(null); // { linea, asignacion }
-
-  useEffect(() => {
-    fetchDetalle(pedidoId);
-  }, [pedidoId, fetchDetalle]);
-
-  // ─── Verificación ──────────────────────────────────────────
-
-  const handleVerificar = async () => {
-    const lineasData = Object.entries(lineasChecked).map(([lineaId, info]) => ({
-      linea_venta_id: Number(lineaId),
-      cantidad_verificada: info.cantidad,
-      metodo: info.metodo || "manual",
-      codigo_escaneado: info.codigo || "",
-    }));
-
-    try {
-      await ejecutarVerificacion(pedidoId, { lineas: lineasData });
-      showToast("Verificación registrada", "success");
-      fetchDetalle(pedidoId);
-      setLineasChecked({});
-    } catch (err) {
-      showToast(err?.data?.detail || "Error al verificar", "error");
-    }
-  };
-
-  // ─── Escaneo ───────────────────────────────────────────────
-
-  const handleScan = async (e) => {
-    e.preventDefault();
-    const codigo = codigoInput.trim();
-    if (!codigo) return;
-
-    // Limpiar timeout anterior
-    if (scanTimeout) clearTimeout(scanTimeout);
-    setScanResult(null);
-
-    try {
-      const result = await ejecutarScanCheck(pedidoId, codigo);
-      if (result.match) {
-        setScanResult({ success: true, ...result });
-        setLineasChecked((prev) => ({
-          ...prev,
-          [result.linea_venta_id]: {
-            cantidad: result.cantidad_esperada,
-            metodo: "escaneo",
-            codigo,
-          },
-        }));
-        showToast(`✓ ${result.product_code} verificado`, "success");
-        // Auto-clear success después de 3s
-        const t = setTimeout(() => setScanResult(null), 3000);
-        setScanTimeout(t);
-      }
-    } catch (err) {
-      const detail = err?.data?.detail || "Código no encontrado";
-      setScanResult({ success: false, detail });
-      showToast(detail, "error");
-      // Auto-clear error después de 5s
-      const t = setTimeout(() => setScanResult(null), 5000);
-      setScanTimeout(t);
-    }
-    setCodigoInput("");
-    scanInputRef.current?.focus();
-  };
-
-  // ─── Entrega ───────────────────────────────────────────────
-
-  const handleEntrega = async () => {
-    const tieneFaltantes = (detalle?.discrepancias || []).some(d => d.resolucion === "entrega_parcial");
-    const mensajeConfirm = tieneFaltantes
-      ? `El pedido #${pedidoId} tiene faltantes reportados. Al confirmar la entrega se generará automáticamente una nota de crédito por los productos no entregados. ¿Continuar?`
-      : `¿Confirmar que el pedido #${pedidoId} fue verificado y está listo para entregar?`;
-
-    const isConfirmed = await confirm(mensajeConfirm, "Confirmar Entrega");
-    if (!isConfirmed) return;
-
-    try {
-      const result = await ejecutarEntrega(pedidoId);
-      // Mostrar mensaje con info de NC si se generó
-      if (result?.nota_credito) {
-        showToast(
-          `Entrega confirmada. NC Legal #${result.nota_credito.numero} emitida por faltantes.`,
-          "success",
-        );
-      } else if (result?.nota_credito_interna) {
-        showToast(
-          `Entrega confirmada. NC Interna #${result.nota_credito_interna.numero} emitida por faltantes.`,
-          "success",
-        );
-      } else {
-        showToast("Entrega registrada correctamente", "success");
-      }
-      onEntregado?.();
-    } catch (err) {
-      showToast(err?.data?.detail || "Error al registrar la entrega", "error");
-    }
-  };
-
-  // ─── Check manual de línea ─────────────────────────────────
-
-  const toggleLineaCheck = (lineaId, cantidad) => {
-    setLineasChecked((prev) => {
-      if (prev[lineaId]) {
-        const next = { ...prev };
-        delete next[lineaId];
-        return next;
-      }
-      return { ...prev, [lineaId]: { cantidad, metodo: "manual", codigo: "" } };
-    });
-  };
-
-  const handleMarcarTodos = () => {
-    if (!detalle) return;
-    const todas = {};
-    for (const linea of detalle.lineas || []) {
-      todas[linea.id] = { cantidad: linea.cantidad, metodo: "manual", codigo: "" };
-    }
-    setLineasChecked(todas);
-  };
-
-  const handleDesmarcarTodos = () => {
-    setLineasChecked({});
-  };
-
-  // ─── Render ────────────────────────────────────────────────
-
-  if (loading || !detalle) {
-    return <div className="p-6 text-center text-sm text-slate-400">Cargando detalle...</div>;
-  }
-
-  const lineas = detalle.lineas || [];
-  const verificaciones = detalle.verificaciones || [];
-  const verificacionesCount = detalle.verificaciones_count || 0;
-  const entregaInfo = ENTREGA_CONFIG[detalle.metodo_entrega] || ENTREGA_CONFIG.mostrador;
-  const EntregaIcon = entregaInfo.icon;
-  const puedeEntregar = verificacionesCount > 0;
-  const todosChecked = lineas.length > 0 && Object.keys(lineasChecked).length === lineas.length;
-
-  return (
-    <div className="border-t border-slate-100 bg-slate-50/30">
-      {/* Info de entrega */}
-      <div className="px-6 py-3 border-b border-slate-100 flex flex-wrap items-center gap-4 text-xs">
-        <span className="flex items-center gap-1.5 text-slate-500">
-          <EntregaIcon size={13} className="text-slate-400" />
-          <strong>{entregaInfo.label}</strong>
-        </span>
-        {detalle.direccion_entrega && (
-          <span className="flex items-center gap-1 text-blue-600">
-            <MapPin size={11} />{detalle.direccion_entrega}
-          </span>
-        )}
-        {detalle.observaciones_entrega && (
-          <span className="text-slate-400 italic">Obs: {detalle.observaciones_entrega}</span>
-        )}
-        <span className="ml-auto text-slate-400">
-          {detalle.total_items} pieza{detalle.total_items !== 1 ? "s" : ""}
-        </span>
-      </div>
-
-      {/* Tabla de picking con checkboxes */}
-      <div className="px-4 py-3">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">
-              <th className="py-2 px-2 w-8">
-                <input
-                  type="checkbox"
-                  checked={todosChecked}
-                  onChange={() => todosChecked ? handleDesmarcarTodos() : handleMarcarTodos()}
-                  className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                  title={todosChecked ? "Desmarcar todos" : "Marcar todos"}
-                />
-              </th>
-              <th className="py-2 px-2 text-left">Código</th>
-              <th className="py-2 px-2 text-left">Producto</th>
-              <th className="py-2 px-2 text-center">Cant.</th>
-              <th className="py-2 px-2 text-left">Lote</th>
-              <th className="py-2 px-2 text-left">Depósito</th>
-              <th className="py-2 px-2 text-left">Vencimiento</th>
-              <th className="py-2 px-2 text-center w-10"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {lineas.map((linea) => {
-              const asignaciones = linea.asignaciones || [];
-              const isChecked = !!lineasChecked[linea.id];
-
-              if (asignaciones.length === 0) {
-                return (
-                  <tr key={linea.id} className={cn("transition-colors", isChecked ? "bg-emerald-50/50" : "hover:bg-white/60")}>
-                    <td className="py-2.5 px-2">
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => toggleLineaCheck(linea.id, linea.cantidad)}
-                          className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                        />
-                        {isChecked && lineasChecked[linea.id]?.metodo === "escaneo" && (
-                          <ScanBarcode size={10} className="text-blue-500" title="Verificado por escaneo" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-2">
-                      <code className="text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                        {linea.product_code}
-                      </code>
-                    </td>
-                    <td className="py-2.5 px-2 text-slate-700 font-medium">
-                      {linea.producto_nombre}
-                      {linea.variante_nombre && linea.variante_nombre !== linea.producto_nombre && (
-                        <span className="text-slate-400 ml-1">· {linea.variante_nombre}</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-2 text-center font-bold text-slate-800">{linea.cantidad}</td>
-                    <td className="py-2.5 px-2 text-slate-400">—</td>
-                    <td className="py-2.5 px-2 text-slate-400">—</td>
-                    <td className="py-2.5 px-2 text-slate-400">—</td>
-                    <td className="py-2.5 px-2 text-center">
-                      <button
-                        type="button"
-                        onClick={() => setModalFaltante({ linea, asignacion: null })}
-                        className="p-1 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors"
-                        title="Reportar problema"
-                      >
-                        <AlertTriangle size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              }
-
-              return asignaciones.map((asig, idx) => (
-                <tr
-                  key={`${linea.id}-${idx}`}
-                  className={cn("transition-colors", isChecked ? "bg-emerald-50/50" : "hover:bg-white/60")}
-                >
-                  {idx === 0 && (
-                    <>
-                      <td className="py-2.5 px-2" rowSpan={asignaciones.length}>
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => toggleLineaCheck(linea.id, linea.cantidad)}
-                            className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                          />
-                          {isChecked && lineasChecked[linea.id]?.metodo === "escaneo" && (
-                            <ScanBarcode size={10} className="text-blue-500" title="Verificado por escaneo" />
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-2" rowSpan={asignaciones.length}>
-                        <code className="text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                          {linea.product_code}
-                        </code>
-                      </td>
-                      <td className="py-2.5 px-2 text-slate-700 font-medium" rowSpan={asignaciones.length}>
-                        {linea.producto_nombre}
-                        {linea.variante_nombre && linea.variante_nombre !== linea.producto_nombre && (
-                          <span className="text-slate-400 ml-1">· {linea.variante_nombre}</span>
-                        )}
-                      </td>
-                    </>
-                  )}
-                  <td className="py-2.5 px-2 text-center font-bold text-slate-800">{asig.cantidad}</td>
-                  <td className="py-2.5 px-2">
-                    <span className="flex items-center gap-1 text-slate-600">
-                      <Hash size={10} className="text-slate-400" />{asig.lote_codigo}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-2">
-                    <span className="flex items-center gap-1 text-slate-600">
-                      <Warehouse size={10} className="text-slate-400" />{asig.deposito_nombre}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-2">
-                    {asig.vencimiento ? (
-                      <span className="flex items-center gap-1 text-slate-600">
-                        <Calendar size={10} className="text-slate-400" />{formatFechaCorta(asig.vencimiento)}
-                      </span>
-                    ) : <span className="text-slate-400">—</span>}
-                  </td>
-                  <td className="py-2.5 px-2 text-center">
-                    <div className="flex items-center gap-0.5 justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setModalReasignar({ linea, asignacion: { ...asig, lote_id: asig.lote_id } })}
-                        className="p-1 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
-                        title="Cambiar lote"
-                      >
-                        <RefreshCw size={12} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setModalFaltante({ linea, asignacion: { ...asig, lote_id: asig.lote_id } })}
-                        className="p-1 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors"
-                        title="Reportar faltante"
-                      >
-                        <AlertTriangle size={12} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ));
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Escaneo de código (opcional) */}
-      <div className="px-6 py-3 border-t border-slate-100">
-        <form onSubmit={handleScan} className="flex items-center gap-3">
-          <ScanBarcode size={16} className="text-slate-400 shrink-0" />
-          <input
-            ref={scanInputRef}
-            type="text"
-            value={codigoInput}
-            onChange={(e) => setCodigoInput(e.target.value)}
-            placeholder="Escaneá o ingresá un código de producto..."
-            className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all"
-          />
-          <Button type="submit" variant="outline" size="sm" disabled={!codigoInput.trim()}>
-            Verificar
-          </Button>
-        </form>
-        {scanResult && !scanResult.success && (
-          <p className="mt-2 text-xs text-red-500 flex items-center gap-1">
-            <AlertCircle size={12} />{scanResult.detail}
-          </p>
-        )}
-        {scanResult && scanResult.success && (
-          <p className="mt-2 text-xs text-emerald-600 flex items-center gap-1">
-            <CheckCircle2 size={12} />✓ {scanResult.product_code} encontrado
-          </p>
-        )}
-      </div>
-
-      {/* Verificaciones registradas */}
-      {verificaciones.length > 0 && (
-        <div className="px-6 py-3 border-t border-slate-100">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-            Verificaciones registradas
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {verificaciones.map((v) => (
-              <span
-                key={v.id}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-700"
-              >
-                <ShieldCheck size={12} />
-                {v.verificador_nombre}
-                <span className="text-emerald-400 text-[10px]">
-                  {new Date(v.verificado_at).toLocaleTimeString("es-PY", { hour: "2-digit", minute: "2-digit" })}
-                </span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Discrepancias registradas */}
-      {(detalle.discrepancias || []).length > 0 && (
-        <div className="px-6 py-3 border-t border-slate-100">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-2">
-            Discrepancias reportadas
-          </p>
-          <div className="space-y-2">
-            {detalle.discrepancias.map((d) => (
-              <div
-                key={d.id}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg border text-xs",
-                  d.resolucion === "reasignado"
-                    ? "bg-blue-50 border-blue-200 text-blue-700"
-                    : "bg-amber-50 border-amber-200 text-amber-700"
-                )}
-              >
-                {d.resolucion === "reasignado" ? (
-                  <RefreshCw size={12} className="shrink-0" />
-                ) : (
-                  <AlertTriangle size={12} className="shrink-0" />
-                )}
-                <span className="font-medium">{d.motivo_display}</span>
-                <span className="text-[10px] opacity-70">
-                  {d.cantidad_afectada} ud.
-                </span>
-                {d.lote_original_codigo && (
-                  <span className="text-[10px] opacity-70">
-                    Lote: {d.lote_original_codigo}
-                    {d.lote_reasignado_codigo && ` → ${d.lote_reasignado_codigo}`}
-                  </span>
-                )}
-                <Badge
-                  variant={d.resolucion === "reasignado" ? "info" : "warning"}
-                  className="ml-auto text-[9px]"
-                >
-                  {d.resolucion_display}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Footer: Acciones */}
-      <div className="px-6 py-4 border-t border-slate-100 bg-white rounded-b-2xl space-y-3">
-        {/* Progreso */}
-        <div className="flex items-center justify-between text-[11px] text-slate-400">
-          <span>{Object.keys(lineasChecked).length}/{lineas.length} ítems checkeados</span>
-          {verificacionesCount > 0 && (
-            <span className="text-emerald-600 font-medium">
-              {verificacionesCount} verificación{verificacionesCount > 1 ? "es" : ""} registrada{verificacionesCount > 1 ? "s" : ""}
-            </span>
-          )}
-        </div>
-
-        {/* Botones */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <Button
-            variant="outline"
-            size="md"
-            icon={UserCheck}
-            onClick={handleVerificar}
-            disabled={verificando}
-            loading={verificando || undefined}
-            className="rounded-xl"
-          >
-            Verificar Pedido
-          </Button>
-
-          <div className="flex items-center gap-3">
-            {!puedeEntregar && (
-              <span className="text-[11px] text-amber-600 flex items-center gap-1 hidden sm:flex">
-                <AlertCircle size={12} />
-                Requiere verificación
-              </span>
-            )}
-            <Button
-              variant="success"
-              size="md"
-              icon={CheckCircle2}
-              onClick={handleEntrega}
-              disabled={!puedeEntregar || entregando}
-              loading={entregando || undefined}
-              className="rounded-xl font-bold shadow-lg shadow-emerald-100 w-full sm:w-auto"
-            >
-              Confirmar Entrega
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Modales de discrepancia */}
-      {modalReasignar && (
-        <ModalReasignarLote
-          pedidoId={pedidoId}
-          linea={modalReasignar.linea}
-          asignacion={modalReasignar.asignacion}
-          onClose={() => setModalReasignar(null)}
-          onReasignado={() => fetchDetalle(pedidoId)}
-        />
-      )}
-      {modalFaltante && (
-        <ModalReportarFaltante
-          pedidoId={pedidoId}
-          linea={modalFaltante.linea}
-          asignacion={modalFaltante.asignacion}
-          onClose={() => setModalFaltante(null)}
-          onReportado={() => fetchDetalle(pedidoId)}
-        />
-      )}
-    </div>
-  );
-}
-
-// ─── Componente de Detalle Historial (solo lectura) ─────────────
-
-function PedidoDetalleHistorial({ pedidoId }) {
-  const { data: detalle, loading, execute: fetchDetalle } = useApi(getEntregaDetalle, {
-    auto: false, initialData: null,
-  });
-
-  useEffect(() => {
-    fetchDetalle(pedidoId);
-  }, [pedidoId, fetchDetalle]);
-
-  if (loading || !detalle) {
-    return <div className="p-6 text-center text-sm text-slate-400">Cargando detalle...</div>;
-  }
-
-  const lineas = detalle.lineas || [];
-  const verificaciones = detalle.verificaciones || [];
-  const entregaInfo = ENTREGA_CONFIG[detalle.metodo_entrega] || ENTREGA_CONFIG.mostrador;
-  const EntregaIcon = entregaInfo.icon;
-
-  return (
-    <div className="border-t border-slate-100 bg-slate-50/30">
-      {/* Info de entrega */}
-      <div className="px-6 py-3 border-b border-slate-100 flex flex-wrap items-center gap-4 text-xs">
-        <span className="flex items-center gap-1.5 text-slate-500">
-          <EntregaIcon size={13} className="text-slate-400" />
-          <strong>{entregaInfo.label}</strong>
-        </span>
-        {detalle.direccion_entrega && (
-          <span className="flex items-center gap-1 text-blue-600">
-            <MapPin size={11} />{detalle.direccion_entrega}
-          </span>
-        )}
-        {detalle.observaciones_entrega && (
-          <span className="text-slate-400 italic">Obs: {detalle.observaciones_entrega}</span>
-        )}
-        <span className="ml-auto text-slate-400">
-          {detalle.total_items} pieza{detalle.total_items !== 1 ? "s" : ""}
-        </span>
-      </div>
-
-      {/* Tabla de productos (solo lectura) */}
-      <div className="px-4 py-3">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">
-              <th className="py-2 px-2 text-left">Código</th>
-              <th className="py-2 px-2 text-left">Producto</th>
-              <th className="py-2 px-2 text-center">Cant.</th>
-              <th className="py-2 px-2 text-left">Lote</th>
-              <th className="py-2 px-2 text-left">Depósito</th>
-              <th className="py-2 px-2 text-left">Vencimiento</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {lineas.map((linea) => {
-              const asignaciones = linea.asignaciones || [];
-
-              if (asignaciones.length === 0) {
-                return (
-                  <tr key={linea.id}>
-                    <td className="py-2.5 px-2">
-                      <code className="text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                        {linea.product_code}
-                      </code>
-                    </td>
-                    <td className="py-2.5 px-2 text-slate-700 font-medium">
-                      {linea.producto_nombre}
-                      {linea.variante_nombre && linea.variante_nombre !== linea.producto_nombre && (
-                        <span className="text-slate-400 ml-1">· {linea.variante_nombre}</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-2 text-center font-bold text-slate-800">{linea.cantidad}</td>
-                    <td className="py-2.5 px-2 text-slate-400">—</td>
-                    <td className="py-2.5 px-2 text-slate-400">—</td>
-                    <td className="py-2.5 px-2 text-slate-400">—</td>
-                  </tr>
-                );
-              }
-
-              return asignaciones.map((asig, idx) => (
-                <tr key={`${linea.id}-${idx}`}>
-                  {idx === 0 && (
-                    <>
-                      <td className="py-2.5 px-2" rowSpan={asignaciones.length}>
-                        <code className="text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                          {linea.product_code}
-                        </code>
-                      </td>
-                      <td className="py-2.5 px-2 text-slate-700 font-medium" rowSpan={asignaciones.length}>
-                        {linea.producto_nombre}
-                        {linea.variante_nombre && linea.variante_nombre !== linea.producto_nombre && (
-                          <span className="text-slate-400 ml-1">· {linea.variante_nombre}</span>
-                        )}
-                      </td>
-                    </>
-                  )}
-                  <td className="py-2.5 px-2 text-center font-bold text-slate-800">{asig.cantidad}</td>
-                  <td className="py-2.5 px-2">
-                    <span className="flex items-center gap-1 text-slate-600">
-                      <Hash size={10} className="text-slate-400" />{asig.lote_codigo}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-2">
-                    <span className="flex items-center gap-1 text-slate-600">
-                      <Warehouse size={10} className="text-slate-400" />{asig.deposito_nombre}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-2">
-                    {asig.vencimiento ? (
-                      <span className="flex items-center gap-1 text-slate-600">
-                        <Calendar size={10} className="text-slate-400" />{formatFechaCorta(asig.vencimiento)}
-                      </span>
-                    ) : <span className="text-slate-400">—</span>}
-                  </td>
-                </tr>
-              ));
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Verificaciones */}
-      {verificaciones.length > 0 && (
-        <div className="px-6 py-3 border-t border-slate-100">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-            Verificado por
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {verificaciones.map((v) => (
-              <span
-                key={v.id}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-700"
-              >
-                <ShieldCheck size={12} />
-                {v.verificador_nombre}
-                <span className="text-emerald-400 text-[10px]">
-                  {new Date(v.verificado_at).toLocaleTimeString("es-PY", { hour: "2-digit", minute: "2-digit" })}
-                </span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Discrepancias (historial) */}
-      {(detalle.discrepancias || []).length > 0 && (
-        <div className="px-6 py-3 border-t border-slate-100">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-2">
-            Discrepancias registradas
-          </p>
-          <div className="space-y-2">
-            {detalle.discrepancias.map((d) => (
-              <div
-                key={d.id}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg border text-xs",
-                  d.resolucion === "reasignado"
-                    ? "bg-blue-50 border-blue-200 text-blue-700"
-                    : "bg-amber-50 border-amber-200 text-amber-700"
-                )}
-              >
-                {d.resolucion === "reasignado" ? (
-                  <RefreshCw size={12} className="shrink-0" />
-                ) : (
-                  <AlertTriangle size={12} className="shrink-0" />
-                )}
-                <span className="font-medium">{d.motivo_display}</span>
-                <span className="text-[10px] opacity-70">{d.cantidad_afectada} ud.</span>
-                {d.lote_original_codigo && (
-                  <span className="text-[10px] opacity-70">
-                    Lote: {d.lote_original_codigo}
-                    {d.lote_reasignado_codigo && ` → ${d.lote_reasignado_codigo}`}
-                  </span>
-                )}
-                <Badge
-                  variant={d.resolucion === "reasignado" ? "info" : "warning"}
-                  className="ml-auto text-[9px]"
-                >
-                  {d.resolucion_display}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Página Principal ───────────────────────────────────────────
+// ─── Página Principal (Lista) ───────────────────────────────────
 
 export default function EntregaMercaderiaPage() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("pendientes");
   const [clienteSearch, setClienteSearch] = useState("");
   const [fechaFiltro, setFechaFiltro] = useState("");
-  const [expandedId, setExpandedId] = useState(null);
   const debouncedCliente = useDebounce(clienteSearch, 500);
 
   const { data: entregaData, loading, execute: fetchEntrega } = useApi(getColaEntrega, {
@@ -1104,20 +89,6 @@ export default function EntregaMercaderiaPage() {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setPage(1);
-    setExpandedId(null);
-  };
-
-  const handleToggleExpand = (pedidoId) => {
-    setExpandedId(expandedId === pedidoId ? null : pedidoId);
-  };
-
-  const handleEntregado = () => {
-    setExpandedId(null);
-    const params = { page };
-    if (activeTab === "entregados") params.estado = "entregado";
-    if (debouncedCliente) params.cliente = debouncedCliente;
-    if (fechaFiltro) params.fecha_cobro = fechaFiltro;
-    fetchEntrega(params);
   };
 
   const handleClearFilters = () => {
@@ -1144,7 +115,7 @@ export default function EntregaMercaderiaPage() {
       >
         {totalCount > 0 && !loading && (
           <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">
-            {totalCount} pendiente{totalCount !== 1 ? "s" : ""}
+            {totalCount} pedido{totalCount !== 1 ? "s" : ""}
           </span>
         )}
       </PageHeader>
@@ -1164,9 +135,6 @@ export default function EntregaMercaderiaPage() {
             >
               <Package size={16} />
               Pendientes
-              {activeTab !== "pendientes" && totalCount > 0 && activeTab === "pendientes" && (
-                <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{totalCount}</span>
-              )}
             </button>
             <button
               onClick={() => handleTabChange("entregados")}
@@ -1212,7 +180,7 @@ export default function EntregaMercaderiaPage() {
 
           {/* Contenido */}
           {loading ? (
-            <LoadingScreen message="Cargando pedidos pendientes..." />
+            <LoadingScreen message="Cargando pedidos..." />
           ) : pedidos.length === 0 ? (
             <EmptyState
               icon="📦"
@@ -1232,31 +200,47 @@ export default function EntregaMercaderiaPage() {
               }
             />
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {pedidos.map((pedido) => {
                 const dias = diasDesde(pedido.cobrado_at);
-                const isExpanded = expandedId === pedido.id;
                 const tieneVerificaciones = (pedido.verificaciones_count || 0) > 0;
                 const esHistorial = activeTab === "entregados";
+                const EntregaIcon = ENTREGA_ICONS[pedido.metodo_entrega] || Store;
 
                 return (
-                  <div
+                  <button
                     key={pedido.id}
+                    type="button"
+                    onClick={() => router.push(
+                      esHistorial
+                        ? `/inventario/entregas/historial/${pedido.id}`
+                        : `/inventario/entregas/${pedido.id}`
+                    )}
                     className={cn(
-                      "bg-white rounded-2xl border shadow-sm overflow-hidden transition-all",
-                      !esHistorial && dias >= 3 ? "border-red-200" : "border-slate-200",
-                      isExpanded && "ring-2 ring-blue-200"
+                      "w-full bg-white rounded-2xl border shadow-sm overflow-hidden transition-all",
+                      "flex items-center gap-4 px-6 py-4 text-left",
+                      "hover:bg-slate-50 hover:shadow-md hover:border-blue-200 cursor-pointer group",
+                      !esHistorial && dias >= 3 && "border-red-200",
+                      !esHistorial && dias < 3 && "border-slate-200",
+                      esHistorial && "border-slate-200"
                     )}
                   >
-                    {/* Fila resumen */}
-                    <button
-                      type="button"
-                      onClick={() => handleToggleExpand(pedido.id)}
-                      className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-slate-50/50 transition-colors cursor-pointer"
-                    >
-                      <div className="flex-1 min-w-0 flex items-center gap-4">
-                        <span className="text-xs font-bold text-slate-400 shrink-0">#{pedido.id}</span>
-                        <span className="text-sm font-bold text-slate-800 truncate flex-1">
+                    {/* Icono de entrega */}
+                    <div className={cn(
+                      "p-2.5 rounded-xl shrink-0 transition-colors",
+                      esHistorial ? "bg-emerald-50" : "bg-blue-50 group-hover:bg-blue-100"
+                    )}>
+                      {esHistorial
+                        ? <PackageCheck size={18} className="text-emerald-600" />
+                        : <EntregaIcon size={18} className="text-blue-600" />
+                      }
+                    </div>
+
+                    {/* Info principal */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-400">#{pedido.id}</span>
+                        <span className="text-sm font-bold text-slate-800 truncate">
                           {pedido.cliente_nombre || "Sin cliente"}
                         </span>
                         {tieneVerificaciones && (
@@ -1265,44 +249,32 @@ export default function EntregaMercaderiaPage() {
                             {pedido.verificaciones_count}
                           </span>
                         )}
-                        <div className="hidden sm:flex items-center gap-2 shrink-0">
-                          {esHistorial ? (
-                            <>
-                              <span className="text-xs text-slate-500">
-                                {formatFecha(pedido.entregado_at)}
-                              </span>
-                              {pedido.entregado_por_username && (
-                                <Badge variant="default" className="text-[10px]">
-                                  {pedido.entregado_por_username}
-                                </Badge>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <span className="text-xs text-slate-500">{formatFecha(pedido.cobrado_at)}</span>
-                              {getUrgenciaBadge(dias)}
-                            </>
-                          )}
-                        </div>
-                        <span className="text-sm font-bold text-slate-700 shrink-0">
-                          {formatMonto(pedido.total_moneda_negociacion, pedido.moneda_negociacion)}
-                        </span>
-                        {isExpanded
-                          ? <ChevronUp size={16} className="text-slate-400 shrink-0" />
-                          : <ChevronDown size={16} className="text-slate-400 shrink-0" />
-                        }
                       </div>
-                    </button>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                        {esHistorial ? (
+                          <>
+                            <span>Entregado: {formatFecha(pedido.entregado_at)}</span>
+                            {pedido.entregado_por_username && (
+                              <Badge variant="default" className="text-[10px]">
+                                {pedido.entregado_por_username}
+                              </Badge>
+                            )}
+                          </>
+                        ) : (
+                          <span>Cobrado: {formatFecha(pedido.cobrado_at)}</span>
+                        )}
+                      </div>
+                    </div>
 
-                    {/* Detalle expandido (solo en pendientes) */}
-                    {isExpanded && !esHistorial && (
-                      <PedidoDetalle pedidoId={pedido.id} onEntregado={handleEntregado} />
-                    )}
-                    {/* Detalle en modo lectura (historial) */}
-                    {isExpanded && esHistorial && (
-                      <PedidoDetalleHistorial pedidoId={pedido.id} />
-                    )}
-                  </div>
+                    {/* Monto + urgencia */}
+                    <div className="flex items-center gap-3 shrink-0">
+                      {!esHistorial && getUrgenciaBadge(dias)}
+                      <span className="text-sm font-bold text-slate-700">
+                        {formatMonto(pedido.total_moneda_negociacion, pedido.moneda_negociacion)}
+                      </span>
+                      <ChevronRight size={16} className="text-slate-300 group-hover:text-blue-400 transition-colors" />
+                    </div>
+                  </button>
                 );
               })}
             </div>

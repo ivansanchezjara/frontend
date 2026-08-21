@@ -9,16 +9,21 @@ import {
   ChevronRight,
   Globe,
   Store,
-  FileMinusIcon,
+  CheckCircle,
+  XCircle,
+  Settings,
+  ChevronDown,
+  CreditCard,
 } from "lucide-react";
-import { PageHeader } from "@/components/ui";
+import { PageHeader, Button, Badge } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
-import { getColaCobro } from "@/services/apis/caja";
+import { getSesiones, getColaCobro } from "@/services/apis/caja";
 import { getVentas, getTipoCambioVigente, createTipoCambio } from "@/services/apis/ventas";
 import { cn } from "@/lib/utils";
 
-/** Formatea un valor de tipo de cambio sin ceros innecesarios */
+// ─── Helpers ────────────────────────────────────────────────────
+
 function formatTCValor(valor) {
   const num = Number(valor);
   if (isNaN(num)) return "0";
@@ -55,7 +60,7 @@ function StatCard({ icon: Icon, label, count, color, href }) {
 
 // ─── Quick Link ─────────────────────────────────────────────────
 
-function QuickLink({ href, icon: Icon, label, description }) {
+function QuickLink({ href, icon: Icon, label, description, badge, badgeColor }) {
   return (
     <Link
       href={href}
@@ -65,9 +70,19 @@ function QuickLink({ href, icon: Icon, label, description }) {
         <Icon className="h-5 w-5 text-purple-600" />
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-slate-800 group-hover:text-purple-700 transition-colors">
-          {label}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-bold text-slate-800 group-hover:text-purple-700 transition-colors">
+            {label}
+          </p>
+          {badge && (
+            <span className={cn(
+              "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+              badgeColor || "bg-amber-100 text-amber-700"
+            )}>
+              {badge}
+            </span>
+          )}
+        </div>
         {description && (
           <p className="text-xs text-slate-400 mt-0.5 truncate">{description}</p>
         )}
@@ -77,7 +92,71 @@ function QuickLink({ href, icon: Icon, label, description }) {
   );
 }
 
-// ─── Tipo de Cambio Widget con banderas ─────────────────────────
+// ─── Estado de Sesión ───────────────────────────────────────────
+
+function SesionCard({ sesion, loading }) {
+  if (loading) {
+    return (
+      <div className="p-5 rounded-2xl border-2 border-slate-200 bg-white animate-pulse">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-slate-100" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 bg-slate-100 rounded w-32" />
+            <div className="h-3 bg-slate-100 rounded w-48" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (sesion) {
+    return (
+      <div className="p-5 rounded-2xl border-2 border-emerald-200 bg-emerald-50/50">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+              <CheckCircle className="h-5 w-5 text-emerald-600" />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-emerald-800">Caja abierta</p>
+              <p className="text-xs text-emerald-600">
+                Sesión activa desde {new Date(sesion.abierta_at).toLocaleDateString("es-PY", { day: "2-digit", month: "2-digit", year: "numeric" })} {new Date(sesion.abierta_at).toLocaleTimeString("es-PY", { hour: "2-digit", minute: "2-digit" })}
+              </p>
+            </div>
+          </div>
+          <Link href="/caja/cobros">
+            <Button variant="success" size="sm" icon={Receipt}>
+              Ir a cobrar
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-5 rounded-2xl border-2 border-slate-200 bg-slate-50/50">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
+            <XCircle className="h-5 w-5 text-slate-400" />
+          </span>
+          <div>
+            <p className="text-sm font-bold text-slate-700">Caja cerrada</p>
+            <p className="text-xs text-slate-400">Abrí una sesión para empezar a cobrar</p>
+          </div>
+        </div>
+        <Link href="/caja/sesiones">
+          <Button variant="primary" size="sm" icon={Wallet}>
+            Abrir caja
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ─── Tipo de Cambio Widget ──────────────────────────────────────
 
 const PARES_CONFIG = [
   { par: "USD/PYG", from: "🇺🇸", to: "🇵🇾", fromLabel: "USD", toLabel: "PYG", symbol: "₲" },
@@ -109,7 +188,6 @@ function TipoCambioCard() {
     const clean = nuevoValor.replace(/\./g, "").replace(",", ".");
     const valor = parseFloat(clean);
     if (!valor || valor <= 0) { showToast("Valor inválido", "error"); return; }
-    // Limitar decimales: PYG sin decimales, otros máx 2
     const parTo = par.split("/")[1];
     const valorFinal = parTo === "PYG" ? Math.round(valor) : Math.round(valor * 100) / 100;
     setGuardando(true);
@@ -219,48 +297,61 @@ function TipoCambioCard() {
 
 // ─── Página Principal ───────────────────────────────────────────
 
-export default function CajaFacturacionPage() {
-  // Fetch pedidos pendientes por canal
-  const { data: colaCaja, execute: fetchColaCaja } = useApi(getColaCobro);
-  const { data: colaOnline, execute: fetchColaOnline } = useApi(getVentas);
+export default function CajaPage() {
+  const { showToast } = useToast();
+  const [showConfig, setShowConfig] = useState(false);
+
+  // Estado de sesión activa del cajero
+  const { data: sesionesData, loading: loadingSesion, execute: fetchSesiones } = useApi(getSesiones, {
+    auto: false, initialData: null,
+  });
+
+  // Contadores de pendientes
+  const { data: colaCaja, execute: fetchColaCaja } = useApi(getColaCobro, { auto: false });
+  const { data: colaOnline, execute: fetchColaOnline } = useApi(getVentas, { auto: false });
 
   useEffect(() => {
+    fetchSesiones({ estado: "abierta", page_size: 1 });
     fetchColaCaja({ page_size: 1 });
     fetchColaOnline({ estado: "confirmado", metodo_cobro: "pasarela_online", page_size: 1 });
-  }, [fetchColaCaja, fetchColaOnline]);
+  }, [fetchSesiones, fetchColaCaja, fetchColaOnline]);
 
+  const sesionActiva = sesionesData?.results?.[0] || null;
   const pendientesCaja = colaCaja?.count ?? null;
   const pendientesOnline = colaOnline?.count ?? null;
 
   return (
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       <PageHeader
-        title="Caja y Facturación"
-        subtitle="Panel principal"
+        title="Caja"
+        subtitle="Cobros, entregas y facturación"
         subtitleClassName="text-purple-600"
       />
 
       <main className="flex-1 overflow-y-auto p-6 lg:p-8 min-w-0">
         <div className="max-w-4xl mx-auto space-y-8">
 
+          {/* ─── MI CAJA ────────────────────────────────────── */}
+          <SesionCard sesion={sesionActiva} loading={loadingSesion} />
+
           {/* ─── RESUMEN RÁPIDO ──────────────────────────────── */}
           <div>
             <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-3">
-              Pendientes hoy
+              Pendientes
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <StatCard
                 icon={Store}
-                label="Cola de Caja"
+                label="Cobros"
                 count={pendientesCaja}
                 color="bg-purple-500"
-                href="/caja/cola"
+                href="/caja/cobros"
               />
               <StatCard
                 icon={Globe}
                 label="Pagos Online"
                 count={pendientesOnline}
-                color="bg-blue-500"
+                color="bg-emerald-500"
               />
             </div>
           </div>
@@ -280,10 +371,11 @@ export default function CajaFacturacionPage() {
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <QuickLink
-                href="/caja/cola"
+                href="/caja/cobros"
                 icon={Receipt}
-                label="Cola de Cobro"
-                description="Pedidos presenciales pendientes de cobro"
+                label="Cobros"
+                description="Cobrar pendientes y consultar historial"
+                badge={pendientesCaja > 0 ? `${pendientesCaja}` : null}
               />
               <QuickLink
                 href="/caja/sesiones"
@@ -291,40 +383,48 @@ export default function CajaFacturacionPage() {
                 label="Sesiones de Caja"
                 description="Apertura, cierre y control de sesiones"
               />
+              <QuickLink
+                href="/caja/documentos"
+                icon={FileText}
+                label="Documentos"
+                description="Cobros, facturas y notas de crédito"
+              />
             </div>
           </div>
 
-          {/* ─── FACTURACIÓN Y CONFIGURACIÓN ─────────────────── */}
+          {/* ─── CONFIGURACIÓN (colapsable) ──────────────────── */}
           <div>
-            <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-4">
-              Facturación y configuración
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <QuickLink
-                href="/caja/facturas"
-                icon={FileText}
-                label="Facturas y Comprobantes"
-                description="Emisión y consulta de comprobantes"
-              />
-              <QuickLink
-                href="/caja/notas-credito-internas"
-                icon={FileMinusIcon}
-                label="Notas de Crédito Internas"
-                description="NC por faltantes en entregas (sin validez fiscal)"
-              />
-              <QuickLink
-                href="/caja/timbrados"
-                icon={Bookmark}
-                label="Timbrados"
-                description="Gestión de timbrados y numeración"
-              />
-              <QuickLink
-                href="/caja/puntos-expedicion"
-                icon={Store}
-                label="Puntos de Expedición"
-                description="Establecimientos y puntos de emisión"
-              />
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowConfig(!showConfig)}
+              className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors mb-3"
+            >
+              <Settings size={12} />
+              Configuración
+              <ChevronDown size={12} className={cn("transition-transform", showConfig && "rotate-180")} />
+            </button>
+            {showConfig && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <QuickLink
+                  href="/caja/timbrados"
+                  icon={Bookmark}
+                  label="Timbrados"
+                  description="Gestión de timbrados y numeración fiscal"
+                />
+                <QuickLink
+                  href="/caja/puntos-expedicion"
+                  icon={Store}
+                  label="Puntos de Expedición"
+                  description="Establecimientos y puntos de emisión"
+                />
+                <QuickLink
+                  href="/caja/terminales-pos"
+                  icon={CreditCard}
+                  label="Terminales POS"
+                  description="Configurar terminales, comisiones y cuentas bancarias"
+                />
+              </div>
+            )}
           </div>
 
         </div>

@@ -27,10 +27,8 @@ function formatFecha(f) {
 const ESTADO_BADGE = {
   en_cartera: { variant: "info", label: "En Cartera" },
   depositado: { variant: "warning", label: "Depositado" },
-  cobrado: { variant: "success", label: "Cobrado" },
+  acreditado: { variant: "success", label: "Acreditado" },
   rechazado: { variant: "danger", label: "Rechazado" },
-  vencido: { variant: "default", label: "Vencido" },
-  endosado: { variant: "default", label: "Endosado" },
 };
 
 export default function ChequesPage() {
@@ -96,7 +94,7 @@ export default function ChequesPage() {
                 <option value="">Todos</option>
                 <option value="en_cartera">En Cartera</option>
                 <option value="depositado">Depositado</option>
-                <option value="cobrado">Cobrado</option>
+                <option value="acreditado">Acreditado</option>
                 <option value="rechazado">Rechazado</option>
               </select>
             </div>
@@ -129,7 +127,7 @@ export default function ChequesPage() {
                           <td className="px-4 py-3 font-mono text-xs">{ch.numero_cheque}</td>
                           <td className="px-4 py-3 text-slate-700">{ch.banco_emisor}</td>
                           <td className="px-4 py-3 text-slate-700">{ch.cliente_nombre}{ch.es_tercero && <span className="text-[10px] text-amber-500 ml-1">(tercero)</span>}</td>
-                          <td className="px-4 py-3 text-right font-bold">{formatMonto(ch.monto, ch.moneda)}</td>
+                          <td className="px-4 py-3 text-right font-bold">{formatMonto(ch.monto_original || ch.monto, ch.moneda)}</td>
                           <td className="px-4 py-3 text-slate-600">{formatFecha(ch.fecha_cobro)}</td>
                           <td className="px-4 py-3 text-center"><Badge variant={badge.variant} className="text-[10px]">{badge.label}</Badge></td>
                           <td className="px-4 py-3 text-center">

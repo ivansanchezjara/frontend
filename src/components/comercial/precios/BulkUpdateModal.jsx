@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { Modal, Button, Input, Field } from '@/components/ui';
+import { Modal, Button, Input, Field, MontoInput } from '@/components/ui';
 
 const CAMPOS = [
   { value: 'precio_0_publico', label: 'Precio Público' },
@@ -82,14 +82,22 @@ export default function BulkUpdateModal({ count, onConfirm, onClose }) {
         </Field>
 
         <Field label="Valor">
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-            placeholder={tipoOperacion.includes('porcentaje') ? 'Ej: 10' : 'Ej: 25.00'}
-          />
+          {tipoOperacion === 'valor_fijo' ? (
+            <MontoInput
+              value={valor}
+              onChange={(val) => setValor(val)}
+              moneda="USD"
+            />
+          ) : (
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={valor}
+              onChange={(e) => setValor(e.target.value)}
+              placeholder="Ej: 10"
+            />
+          )}
         </Field>
 
         {getPreview() && (

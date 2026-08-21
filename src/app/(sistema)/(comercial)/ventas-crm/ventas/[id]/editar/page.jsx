@@ -21,7 +21,6 @@ export default function EditarVentaPage() {
     origen: "sucursal",
     moneda_negociacion: "USD",
     cliente: null,
-    deposito_sucursal: null,
   });
   const [lineas, setLineas] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -54,7 +53,6 @@ export default function EditarVentaPage() {
               tier_precio: ventaOriginal.cliente_detalle.tier_precio || "publico",
             }
           : null,
-        deposito_sucursal: ventaOriginal.deposito_sucursal || null,
       });
 
       // Mapear líneas y luego buscar stock para cada una
@@ -140,7 +138,6 @@ export default function EditarVentaPage() {
         origen: ventaData.origen,
         moneda_negociacion: ventaData.moneda_negociacion,
         cliente: ventaData.cliente?.id || null,
-        deposito_sucursal: ventaData.deposito_sucursal || null,
         requiere_factura_legal: ventaData.requiere_factura_legal ?? true,
         lineas: lineas.map((l) => ({
           variante: l.variante_id,

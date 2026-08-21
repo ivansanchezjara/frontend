@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useApi } from '@/hooks/useApi';
 import { getVariantes } from '@/services/apis/catalogo';
 import { crearCombo, actualizarCombo } from '@/services/apis/precios';
-import { Modal, Button, Input, Field, Toggle } from '@/components/ui';
+import { Modal, Button, Input, Field, Toggle, MontoInput } from '@/components/ui';
 import { useToast } from '@/components/ui';
 import { Plus, Trash2 } from 'lucide-react';
 
@@ -200,14 +200,10 @@ export default function ComboForm({ initial, onClose }) {
         {/* Precio */}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Precio del combo (USD)">
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
+            <MontoInput
               value={form.precio_combo}
-              onChange={(e) => update('precio_combo', e.target.value)}
-              placeholder="Ej: 45.00"
-              required
+              onChange={(val) => update('precio_combo', val)}
+              moneda="USD"
             />
           </Field>
           <div className="flex flex-col justify-end">

@@ -26,6 +26,7 @@ import { useConfirm, useToast } from "@/components/ui";
 import { Text } from "@/components/ui/basics/Typography";
 import { useApi } from "@/hooks/useApi";
 import { getGasto, pagarGasto, anularGasto } from "@/services/apis/finanzas";
+import { getCuentas } from "@/services/apis/tesoreria";
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -92,11 +93,12 @@ export default function GastoDetallePage() {
 
   // ─── Acciones ─────────────────────────────────────────────────
 
-  const handlePagar = async (metodoPago, fechaPago) => {
+  const handlePagar = async (metodoPago, fechaPago, cuentaOrigen) => {
     try {
       const res = await pagarGasto(id, {
         metodo_pago: metodoPago,
         fecha_pago: fechaPago || undefined,
+        cuenta_origen: cuentaOrigen || undefined,
       });
       setGasto(res);
       setShowPagarModal(false);
@@ -381,20 +383,51 @@ function PagarModal({ open, onClose, onPagar }) {
   const [fechaPago, setFechaPago] = useState(
     new Date().toISOString().split("T")[0]
   );
+  const [cuentaOrigen, setCuentaOrigen] = useState("");
+  const [cuentas, setCuentas] = useState([]);
   const [saving, setSaving] = useState(false);
+
+  // Cargar cuentas (tesorería y banco) al abrir
+  useEffect(() => {
+    if (open) {
+      getCuentas().then((data) => {
+        const lista = data?.results || data || [];
+        // Solo mostrar cuentas tipo tesorería o banco
+        setCuentas(lista.filter((c) => c.tipo === "tesoreria" || c.tipo === "banco"));
+      }).catch(() => {});
+    }
+  }, [open]);
 
   if (!open) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    await onPagar(metodoPago, fechaPago);
+    await onPagar(metodoPago, fechaPago, cuentaOrigen ? Number(cuentaOrigen) : null);
     setSaving(false);
   };
 
   return (
     <Modal open={open} onClose={onClose} title="Registrar Pago">
       <form onSubmit={handleSubmit} className="space-y-4 p-6">
+        <Field label="Cuenta Origen *">
+          <select
+            value={cuentaOrigen}
+            onChange={(e) => setCuentaOrigen(e.target.value)}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="">Seleccionar cuenta...</option>
+            {cuentas.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre} ({c.tipo_display}) — Saldo: US$ {Number(c.saldo_usd).toLocaleString("es-PY", { minimumFractionDigits: 2 })}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-slate-400 mt-1">
+            El dinero sale de esta cuenta (tesorería o banco).
+          </p>
+        </Field>
+
         <Field label="Método de Pago">
           <select
             value={metodoPago}
@@ -425,7 +458,7 @@ function PagarModal({ open, onClose, onPagar }) {
             variant="primary"
             type="submit"
             icon={CreditCard}
-            disabled={saving}
+            disabled={saving || !cuentaOrigen}
             className="bg-purple-600 hover:bg-purple-700 focus:ring-purple-500"
           >
             {saving ? "Guardando..." : "Confirmar Pago"}

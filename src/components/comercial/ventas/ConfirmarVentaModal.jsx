@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import {
-  Store, Truck, Building2, CreditCard, Wallet, Package,
+  Store, Truck, Building2, Wallet, Package,
   MapPin, MessageSquare, CheckCircle2, Loader2, Phone, User,
 } from "lucide-react";
 import { Modal, Button, Input } from "@/components/ui";
@@ -17,7 +17,6 @@ const METODOS_ENTREGA = [
 
 const METODOS_COBRO = [
   { value: "caja_presencial", label: "Caja presencial", description: "Se cobra en el local", icon: Wallet },
-  { value: "pasarela_online", label: "Pago online", description: "Paga por transferencia o pasarela", icon: CreditCard },
   { value: "contra_entrega", label: "Contra entrega", description: "Se cobra al momento de entregar", icon: Package },
 ];
 

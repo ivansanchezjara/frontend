@@ -267,6 +267,19 @@ export async function getComprobante(id) {
   );
 }
 
+export async function getHistorialCobros(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/caja/comprobantes/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver historial de cobros",
+  );
+}
+
 export async function anularComprobante(id, data) {
   return request(
     `${API_URL}/caja/comprobantes/${id}/anular/`,
@@ -449,5 +462,44 @@ export async function getResumenDiario(params = {}) {
       cache: "no-store",
     },
     "ver resumen diario de caja",
+  );
+}
+
+// ─── Terminales POS ─────────────────────────────────────────────
+
+export async function getTerminalesPOS(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/caja/terminales-pos/${query}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+      cache: "no-store",
+    },
+    "ver terminales POS",
+  );
+}
+
+export async function crearTerminalPOS(data) {
+  return request(
+    `${API_URL}/caja/terminales-pos/`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "crear terminal POS",
+  );
+}
+
+export async function actualizarTerminalPOS(id, data) {
+  return request(
+    `${API_URL}/caja/terminales-pos/${id}/`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    },
+    "actualizar terminal POS",
   );
 }

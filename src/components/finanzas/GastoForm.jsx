@@ -11,7 +11,7 @@ import {
   getConceptosFrecuentes,
   consultarRuc,
 } from "@/services/apis/finanzas";
-import MontoInput from "./MontoInput";
+import { MontoInput } from "@/components/ui";
 
 /**
  * Formulario reutilizable para crear/editar gastos.
