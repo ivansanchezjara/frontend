@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Ship, Filter, X } from "lucide-react";
+import { Plus, Ship, Filter, X, Bell, Package } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
 import { useDebounce } from "@/hooks/useDebounce";
-import { getOrdenesCompra } from "@/services/apis/compras";
+import { getOrdenesCompra, getMarcasConSolicitudes } from "@/services/apis/compras";
 import {
   PageHeader,
   SearchBar,
@@ -18,8 +18,7 @@ import {
 
 const ESTADO_BADGE = {
   borrador: { label: "Borrador", className: "bg-slate-100 text-slate-700" },
-  confirmada: { label: "Confirmada", className: "bg-blue-100 text-blue-700" },
-  pagada: { label: "Pagada (en tránsito)", className: "bg-amber-100 text-amber-700" },
+  en_transito: { label: "En Tránsito", className: "bg-amber-100 text-amber-700" },
   recibida_parcial: { label: "Recibida Parcial", className: "bg-purple-100 text-purple-700" },
   recibida: { label: "Recibida", className: "bg-green-100 text-green-700" },
   cancelada: { label: "Cancelada", className: "bg-red-100 text-red-700" },
@@ -41,10 +40,16 @@ function formatFecha(f) {
   });
 }
 
+const TABS = [
+  { id: "ordenes", label: "Órdenes de Compra", icon: Ship },
+  { id: "abastecimiento", label: "Solicitudes de Abastecimiento", icon: Bell },
+];
+
 export default function ComprasPage() {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState("ordenes");
 
-  // Filtros
+  // ─── Datos de órdenes ─────────────────────────────────────────
   const [busqueda, setBusqueda] = useState("");
   const [estado, setEstado] = useState("");
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
@@ -58,6 +63,15 @@ export default function ComprasPage() {
     execute: fetchOrdenes,
   } = useApi(getOrdenesCompra, { auto: false, initialData: { results: [], count: 0 } });
 
+  // ─── Badge de solicitudes pendientes ──────────────────────────
+  const { data: marcasData, execute: fetchMarcas } = useApi(
+    getMarcasConSolicitudes, { auto: false, initialData: [] }
+  );
+
+  const totalSolicitudes = (marcasData || []).reduce(
+    (sum, m) => sum + (m.cantidad_solicitudes || 0), 0
+  );
+
   const cargarDatos = useCallback(() => {
     fetchOrdenes({
       page,
@@ -70,6 +84,10 @@ export default function ComprasPage() {
     cargarDatos();
   }, [cargarDatos]);
 
+  useEffect(() => {
+    fetchMarcas();
+  }, [fetchMarcas]);
+
   const ordenes = ordenesData?.results || [];
   const totalCount = ordenesData?.count || 0;
 
@@ -77,7 +95,7 @@ export default function ComprasPage() {
     <div className="flex flex-col flex-1 h-screen overflow-hidden bg-slate-50/50">
       <PageHeader
         breadcrumbs={[{ label: "Compras e Importaciones" }]}
-        subtitle="Órdenes de compra, seguimiento de mercadería en tránsito"
+        subtitle="Órdenes de compra, abastecimiento y seguimiento de importaciones"
         subtitleClassName="text-blue-600"
       >
         <Link href="/compras/nuevo">
@@ -86,6 +104,41 @@ export default function ComprasPage() {
           </Button>
         </Link>
       </PageHeader>
+
+      {/* Tabs */}
+      <div className="border-b border-slate-200 bg-white px-8">
+        <div className="flex gap-1">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (tab.id === "abastecimiento") {
+                    router.push("/compras/abastecimiento");
+                  } else {
+                    setActiveTab(tab.id);
+                  }
+                }}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  isActive
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                }`}
+              >
+                <Icon size={16} />
+                {tab.label}
+                {tab.id === "abastecimiento" && totalSolicitudes > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                    {totalSolicitudes}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Barra de búsqueda y filtros */}
       <div className="px-8 py-4 bg-white border-b border-slate-200">
@@ -119,8 +172,7 @@ export default function ComprasPage() {
             >
               <option value="">Todos los estados</option>
               <option value="borrador">Borrador</option>
-              <option value="confirmada">Confirmada</option>
-              <option value="pagada">Pagada (en tránsito)</option>
+              <option value="en_transito">En Tránsito</option>
               <option value="recibida_parcial">Recibida Parcial</option>
               <option value="recibida">Recibida</option>
               <option value="cancelada">Cancelada</option>

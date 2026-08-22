@@ -337,6 +337,17 @@ export default function VentaBuilderSplit({
       nueva.subtotal_moneda = nueva.precio_moneda * nueva.cantidad;
       nuevas[existente] = nueva;
       onLineasChange(nuevas);
+
+      // Re-asignar FEFO con la nueva cantidad
+      autoAsignarFEFO(variante.id, siguienteCantidad).then((asignaciones) => {
+        onLineasChange((prev) => {
+          const copy = [...prev];
+          if (copy[existente]?.variante_id === variante.id) {
+            copy[existente] = { ...copy[existente], asignaciones };
+          }
+          return copy;
+        });
+      });
     } else {
       const { precioUsd, precioMoneda, tieneOferta, precioOferta, precioTierUsd, precioPublicoUsd, precioPublicoMoneda } = calcularPrecio(variante);
       const nuevaLinea = {

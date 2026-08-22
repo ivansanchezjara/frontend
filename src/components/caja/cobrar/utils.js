@@ -44,6 +44,18 @@ export function getMonedaSymbol(moneda) {
   return moneda;
 }
 
+export function formatFecha(fecha) {
+  if (!fecha) return "—";
+  const d = new Date(fecha);
+  return d.toLocaleDateString("es-PY", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /**
  * Convierte un monto de una moneda a otra usando tasas de cambio.
  * Las tasas están expresadas como USD/X (cuántas X por 1 USD).

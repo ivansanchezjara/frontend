@@ -378,6 +378,11 @@ function GastoRow({ gasto, onClick, onKeyDown }) {
     >
       <td className="px-4 py-3">
         <div className="font-medium text-slate-900">{gasto.concepto}</div>
+        {gasto.orden_compra_id && (
+          <div className="text-xs text-blue-600 mt-0.5">
+            Vinculado a OC
+          </div>
+        )}
       </td>
       <td className="px-4 py-3 hidden md:table-cell">
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium">

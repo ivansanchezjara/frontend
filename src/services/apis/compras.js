@@ -67,22 +67,6 @@ export async function getSiguienteNumeroOC() {
 
 // ─── Acciones de Estado ─────────────────────────────────────────
 
-export async function confirmarOrden(id) {
-  return request(
-    `${API_URL}/compras/ordenes/${id}/confirmar/`,
-    { method: "POST", headers: jsonHeaders() },
-    "confirmar orden de compra",
-  );
-}
-
-export async function marcarPagadaOrden(id, data = {}) {
-  return request(
-    `${API_URL}/compras/ordenes/${id}/marcar-pagada/`,
-    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
-    "marcar orden como pagada",
-  );
-}
-
 export async function recepcionParcialOrden(id) {
   return request(
     `${API_URL}/compras/ordenes/${id}/recepcion-parcial/`,
@@ -123,6 +107,19 @@ export async function vincularPagoOrden(ordenId, data) {
 }
 
 /**
+ * Registra un pago y lo vincula a la OC en un solo paso.
+ * @param {number} ordenId - ID de la orden
+ * @param {Object} data - { categoria, concepto, monto_original, moneda_original, fecha_gasto, metodo_pago, tipo_costo, concepto_pago, observaciones }
+ */
+export async function registrarPagoOrden(ordenId, data) {
+  return request(
+    `${API_URL}/compras/ordenes/${ordenId}/registrar-pago/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "registrar pago de importación",
+  );
+}
+
+/**
  * Vincula un ingreso de mercadería a una orden de compra.
  * @param {number} ordenId - ID de la orden
  * @param {Object} data - { ingreso_mercaderia_id }
@@ -132,5 +129,102 @@ export async function vincularIngresoOrden(ordenId, data) {
     `${API_URL}/compras/ordenes/${ordenId}/vincular-ingreso/`,
     { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
     "vincular ingreso de mercadería",
+  );
+}
+
+
+// ─── Solicitudes de Abastecimiento ─────────────────────────────
+
+/**
+ * Crea una solicitud de abastecimiento (vendedor).
+ * @param {Object} data - { variante_id, prioridad, observaciones }
+ */
+export async function crearSolicitudAbastecimiento(data) {
+  return request(
+    `${API_URL}/compras/abastecimiento/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "crear solicitud de abastecimiento",
+  );
+}
+
+/**
+ * Obtiene las solicitudes del vendedor actual.
+ */
+export async function getMisSolicitudes() {
+  return request(
+    `${API_URL}/compras/abastecimiento/mis-solicitudes/`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver mis solicitudes de abastecimiento",
+  );
+}
+
+/**
+ * Obtiene el tablero de abastecimiento agrupado por producto.
+ * @param {Object} params - { marca }
+ */
+export async function getTableroAbastecimiento(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/compras/abastecimiento/tablero/${query}`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver tablero de abastecimiento",
+  );
+}
+
+/**
+ * Obtiene las marcas que tienen solicitudes activas.
+ */
+export async function getMarcasConSolicitudes() {
+  return request(
+    `${API_URL}/compras/abastecimiento/marcas-con-solicitudes/`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver marcas con solicitudes",
+  );
+}
+
+/**
+ * Marca solicitudes como en gestión (vincular a OC).
+ * @param {Object} data - { solicitud_ids: [1,2,3], orden_compra_id: 5 }
+ */
+export async function marcarEnGestion(data) {
+  return request(
+    `${API_URL}/compras/abastecimiento/marcar-en-gestion/`,
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
+    "marcar solicitudes en gestión",
+  );
+}
+
+/**
+ * Desestima una solicitud.
+ */
+export async function desestimarSolicitud(id) {
+  return request(
+    `${API_URL}/compras/abastecimiento/${id}/desestimar/`,
+    { method: "POST", headers: jsonHeaders() },
+    "desestimar solicitud",
+  );
+}
+
+/**
+ * Obtiene solicitudes vinculadas a una OC específica.
+ */
+export async function getSolicitudesPorOrden(ordenId) {
+  return request(
+    `${API_URL}/compras/abastecimiento/por-orden/${ordenId}/`,
+    { headers: authHeaders(), cache: "no-store" },
+    "ver solicitudes de una orden",
+  );
+}
+
+/**
+ * Lista todas las solicitudes con filtros.
+ * @param {Object} params - { estado, marca, prioridad, variante, page }
+ */
+export async function getSolicitudesAbastecimiento(params = {}) {
+  const query = toQueryString(params);
+  return request(
+    `${API_URL}/compras/abastecimiento/${query}`,
+    { headers: authHeaders(), cache: "no-store" },
+    "listar solicitudes de abastecimiento",
   );
 }

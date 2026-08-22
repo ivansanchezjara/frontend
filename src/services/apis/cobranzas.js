@@ -107,10 +107,10 @@ export async function getCheques(params = {}) {
   );
 }
 
-export async function depositarCheque(id) {
+export async function depositarCheque(id, data) {
   return request(
     `${API_URL}/cobranzas/cheques/${id}/depositar/`,
-    { method: "POST", headers: authHeaders() },
+    { method: "POST", headers: jsonHeaders(), body: JSON.stringify(data) },
     "depositar cheque",
   );
 }

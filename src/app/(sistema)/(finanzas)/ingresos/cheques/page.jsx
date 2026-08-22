@@ -6,6 +6,7 @@ import {
 } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import { getCheques, depositarCheque, confirmarCobroCheque, rechazarCheque } from "@/services/apis/cobranzas";
+import { getCuentas } from "@/services/apis/tesoreria";
 import { Landmark, Calendar, Hash, X, CheckCircle2, XCircle, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,10 +37,18 @@ export default function ChequesPage() {
   const { confirm } = useConfirm();
   const [page, setPage] = useState(1);
   const [filtroEstado, setFiltroEstado] = useState("");
+  const [depositarId, setDepositarId] = useState(null);
+  const [cuentaDestino, setCuentaDestino] = useState("");
 
   const { data, loading, execute: fetchCheques } = useApi(getCheques, {
     auto: false, initialData: { results: [], count: 0 },
   });
+
+  // Cuentas bancarias para depositar
+  const { data: cuentasData } = useApi(getCuentas, { auto: true, initialData: { results: [] } });
+  const cuentasBanco = (cuentasData?.results || cuentasData || []).filter(
+    (c) => c.tipo === "banco"
+  );
 
   useEffect(() => {
     const params = { page };
@@ -50,10 +59,16 @@ export default function ChequesPage() {
   const cheques = data?.results || [];
   const totalCount = data?.count || 0;
 
-  const handleDepositar = async (id) => {
+  const handleDepositar = async () => {
+    if (!cuentaDestino) {
+      showToast("Seleccioná la cuenta bancaria destino", "error");
+      return;
+    }
     try {
-      await depositarCheque(id);
-      showToast("Cheque marcado como depositado", "success");
+      await depositarCheque(depositarId, { cuenta_destino: Number(cuentaDestino) });
+      showToast("Cheque depositado. Movimiento registrado en tesorería.", "success");
+      setDepositarId(null);
+      setCuentaDestino("");
       fetchCheques({ page });
     } catch (err) { showToast(err?.data?.detail || "Error", "error"); }
   };
@@ -61,7 +76,7 @@ export default function ChequesPage() {
   const handleCobrar = async (id) => {
     try {
       await confirmarCobroCheque(id);
-      showToast("Cheque cobrado exitosamente", "success");
+      showToast("Cheque acreditado exitosamente", "success");
       fetchCheques({ page });
     } catch (err) { showToast(err?.data?.detail || "Error", "error"); }
   };
@@ -133,19 +148,24 @@ export default function ChequesPage() {
                           <td className="px-4 py-3 text-center">
                             <div className="flex items-center justify-center gap-1">
                               {ch.estado === "en_cartera" && (
-                                <button onClick={() => handleDepositar(ch.id)} className="px-2 py-1 rounded text-[10px] font-bold text-blue-600 hover:bg-blue-50" title="Depositar">
+                                <button onClick={() => setDepositarId(ch.id)} className="px-2 py-1 rounded text-[10px] font-bold text-blue-600 hover:bg-blue-50" title="Depositar">
                                   <ArrowDown size={12} />
                                 </button>
                               )}
-                              {(ch.estado === "en_cartera" || ch.estado === "depositado") && (
+                              {ch.estado === "depositado" && (
                                 <>
-                                  <button onClick={() => handleCobrar(ch.id)} className="px-2 py-1 rounded text-[10px] font-bold text-emerald-600 hover:bg-emerald-50" title="Cobrado">
+                                  <button onClick={() => handleCobrar(ch.id)} className="px-2 py-1 rounded text-[10px] font-bold text-emerald-600 hover:bg-emerald-50" title="Acreditar">
                                     <CheckCircle2 size={12} />
                                   </button>
-                                  <button onClick={() => handleRechazar(ch.id)} className="px-2 py-1 rounded text-[10px] font-bold text-red-600 hover:bg-red-50" title="Rechazado">
+                                  <button onClick={() => handleRechazar(ch.id)} className="px-2 py-1 rounded text-[10px] font-bold text-red-600 hover:bg-red-50" title="Rechazar">
                                     <XCircle size={12} />
                                   </button>
                                 </>
+                              )}
+                              {ch.estado === "en_cartera" && (
+                                <button onClick={() => handleRechazar(ch.id)} className="px-2 py-1 rounded text-[10px] font-bold text-red-600 hover:bg-red-50" title="Rechazar">
+                                  <XCircle size={12} />
+                                </button>
                               )}
                             </div>
                           </td>
@@ -158,6 +178,30 @@ export default function ChequesPage() {
             </div>
           )}
           {!loading && totalCount > PAGE_SIZE && <Pagination count={totalCount} pageSize={PAGE_SIZE} currentPage={page} onPageChange={setPage} />}
+
+          {/* Modal depositar: selector de cuenta bancaria */}
+          {depositarId && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+              <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
+                <h3 className="text-sm font-bold text-slate-800">Depositar Cheque</h3>
+                <p className="text-xs text-slate-500">Seleccioná la cuenta bancaria donde se deposita el cheque.</p>
+                <select
+                  value={cuentaDestino}
+                  onChange={(e) => setCuentaDestino(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm"
+                >
+                  <option value="">Seleccionar cuenta...</option>
+                  {cuentasBanco.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre} ({c.moneda_principal})</option>
+                  ))}
+                </select>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => { setDepositarId(null); setCuentaDestino(""); }}>Cancelar</Button>
+                  <Button variant="primary" size="sm" onClick={handleDepositar} className="bg-blue-600 hover:bg-blue-700">Depositar</Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

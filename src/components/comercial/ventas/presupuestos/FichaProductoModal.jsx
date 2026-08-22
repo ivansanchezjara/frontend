@@ -1,11 +1,11 @@
 "use client";
-import { useEffect } from "react";
-import { X, MapPin, Info, Image as ImageIcon, Tag, Package, Copy } from "lucide-react";
-import { Button, Text } from "@/components/ui";
-import { useToast } from "@/components/ui";
+import { useEffect, useState } from "react";
+import { X, MapPin, Info, Image as ImageIcon, Tag, Package, Copy, AlertTriangle } from "lucide-react";
+import { Button, Text, Modal, Field, useToast } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
 import { getVarianteDetalleVenta, getFullImageUrl } from "@/services/apis/catalogo";
 import { getLotesPorVarianteId } from "@/services/apis/inventario";
+import { crearSolicitudAbastecimiento } from "@/services/apis/compras";
 
 /**
  * Modal de ficha completa de producto para vendedores.
@@ -29,6 +29,12 @@ export default function FichaProductoModal({ varianteId, onClose }) {
     { auto: false, initialData: [] }
   );
 
+  // Solicitud de abastecimiento
+  const [modalSolicitud, setModalSolicitud] = useState(false);
+  const [prioridad, setPrioridad] = useState("media");
+  const [observaciones, setObservaciones] = useState("");
+  const [enviando, setEnviando] = useState(false);
+
   useEffect(() => {
     if (varianteId) {
       fetchDetalle(varianteId);
@@ -39,6 +45,25 @@ export default function FichaProductoModal({ varianteId, onClose }) {
   if (!varianteId) return null;
 
   const lotes = Array.isArray(lotesData) ? lotesData : (lotesData?.results || []);
+
+  const handleSolicitarAbastecimiento = async () => {
+    setEnviando(true);
+    try {
+      await crearSolicitudAbastecimiento({
+        variante_id: varianteId,
+        prioridad,
+        observaciones,
+      });
+      showToast("Solicitud de abastecimiento creada", "success");
+      setModalSolicitud(false);
+      setPrioridad("media");
+      setObservaciones("");
+    } catch (e) {
+      showToast(e.message || "Error al crear solicitud", "error");
+    } finally {
+      setEnviando(false);
+    }
+  };
 
   // Genera texto para compartir con el cliente (sin info interna de stock)
   const handleCopiarInfo = () => {
@@ -166,8 +191,80 @@ export default function FichaProductoModal({ varianteId, onClose }) {
 
           {/* ─── Sección: Stock ────────────────────────────────── */}
           <SeccionStock detalle={detalle} lotes={lotes} loading={loadingLotes} />
+
+          {/* ─── Solicitar Abastecimiento ─────────────────────── */}
+          {!loadingLotes && detalle && (
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Package className="w-5 h-5 text-blue-500 shrink-0" />
+                <div>
+                  <Text className="text-sm font-bold text-slate-800">¿Necesitás reposición?</Text>
+                  <Text variant="bodySm" className="text-slate-500">
+                    Avisá a compras para que incluyan este producto en el próximo pedido.
+                  </Text>
+                </div>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setModalSolicitud(true)}
+              >
+                Solicitar Abastecimiento
+              </Button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Modal: Solicitar Abastecimiento */}
+      <Modal
+        open={modalSolicitud}
+        title="Solicitar Abastecimiento"
+        onClose={() => setModalSolicitud(false)}
+        size="sm"
+      >
+        <div className="p-5 space-y-4">
+          <p className="text-sm text-slate-600">
+            Se enviará un aviso al área de compras para que incluya{" "}
+            <strong>{detalle?.product_code}</strong> en el próximo pedido.
+          </p>
+
+          <Field label="Prioridad">
+            <select
+              value={prioridad}
+              onChange={(e) => setPrioridad(e.target.value)}
+              className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+            >
+              <option value="baja">Baja</option>
+              <option value="media">Media</option>
+              <option value="alta">Alta — Urgente</option>
+            </select>
+          </Field>
+
+          <Field label="Observaciones (opcional)">
+            <textarea
+              value={observaciones}
+              onChange={(e) => setObservaciones(e.target.value)}
+              rows={2}
+              placeholder="Ej: Cliente esperando, demanda alta este mes..."
+              className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm resize-none bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-transparent outline-none transition-all"
+            />
+          </Field>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => setModalSolicitud(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSolicitarAbastecimiento}
+              disabled={enviando}
+            >
+              {enviando ? "Enviando..." : "Enviar Solicitud"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
